@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
+import '../models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/dashboard_controller.dart';
 import '../models/dashboard_period.dart';
@@ -36,26 +36,30 @@ class DashboardFilterBar extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             color: AppColors.border,
           ),
-          AppDropdown<String?>(
-            value: dashboard.branchId,
-            width: 210,
-            height: 38,
-            icon: Icons.store_outlined,
-            onChanged: dashboard.setBranch,
-            items: <AppDropdownItem<String?>>[
-              const AppDropdownItem<String?>(
-                value: null,
-                label: 'كل الفروع',
-                icon: Icons.apps_rounded,
-              ),
-              for (final Branch b in MockData.branches)
-                AppDropdownItem<String?>(
-                  value: b.id,
-                  label: b.name,
-                  icon: b.isMain ? Icons.star_rounded : Icons.store_outlined,
+          // الفروع بتتاخد من تقرير المقارنة، وهو مقصور على اللي بيشوف الفروع.
+          // غير كده الفلتر بيتقفل على فرع المستخدم.
+          if (dashboard.canSwitchBranch &&
+              dashboard.branchesPerformance.isNotEmpty)
+            AppDropdown<String?>(
+              value: dashboard.branchId,
+              width: 210,
+              height: 38,
+              icon: Icons.store_outlined,
+              onChanged: dashboard.setBranch,
+              items: <AppDropdownItem<String?>>[
+                const AppDropdownItem<String?>(
+                  value: null,
+                  label: 'كل الفروع',
+                  icon: Icons.apps_rounded,
                 ),
-            ],
-          ),
+                for (final BranchStats b in dashboard.branchesPerformance)
+                  AppDropdownItem<String?>(
+                    value: b.id,
+                    label: b.name,
+                    icon: Icons.store_outlined,
+                  ),
+              ],
+            ),
         ],
       ),
     );

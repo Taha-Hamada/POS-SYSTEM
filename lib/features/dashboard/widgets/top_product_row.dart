@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/progress_track.dart';
-import '../../../mock_data/mock_data.dart';
+import '../models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
@@ -11,16 +11,21 @@ class TopProductRow extends StatelessWidget {
     super.key,
     required this.stat,
     required this.maxRevenue,
+    required this.rank,
   });
 
-  final ProductSalesStat stat;
+  final TopProduct stat;
 
   /// إيراد أعلى منتج — الأساس اللي بيتقاس عليه طول الشريط.
   final double maxRevenue;
 
+  /// ترتيب الصف — بيحدد لونه، لأن تقرير المبيعات بيرجّع أرقام مش منتجات كاملة.
+  final int rank;
+
   @override
   Widget build(BuildContext context) {
-    final Product p = stat.product;
+    final Color accent =
+        AppColors.productPalette[rank % AppColors.productPalette.length];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -34,13 +39,13 @@ class TopProductRow extends StatelessWidget {
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
                 colors: <Color>[
-                  p.accentColor.withValues(alpha: 0.22),
-                  p.accentColor.withValues(alpha: 0.08),
+                  accent.withValues(alpha: 0.22),
+                  accent.withValues(alpha: 0.08),
                 ],
               ),
               borderRadius: AppRadius.mdAll,
             ),
-            child: Icon(p.categoryIcon, size: 20, color: p.accentColor),
+            child: Icon(Icons.inventory_2_outlined, size: 20, color: accent),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -52,7 +57,7 @@ class TopProductRow extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        p.name,
+                        stat.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.bodyMedium.copyWith(fontSize: 13),
@@ -73,15 +78,15 @@ class TopProductRow extends StatelessWidget {
                         ratio: stat.revenue / maxRevenue,
                         gradient: LinearGradient(
                           colors: <Color>[
-                            p.accentColor,
-                            p.accentColor.withValues(alpha: 0.55),
+                            accent,
+                            accent.withValues(alpha: 0.55),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      '${Fmt.count(stat.units)} وحدة',
+                      '${Fmt.count(stat.units.round())} وحدة',
                       style: AppText.caption.copyWith(fontSize: 10.5),
                     ),
                   ],

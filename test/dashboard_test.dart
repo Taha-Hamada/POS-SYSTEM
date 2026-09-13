@@ -60,16 +60,13 @@ void main() {
     testWidgets('تغيير الفترة بيحدّث الأرقام', (WidgetTester tester) async {
       await _openScreen(tester, 'لوحة التحكم');
 
-      final double monthSales = MockData.seriesFor(days: 30)
-          .fold<double>(0, (double s, SalesPoint p) => s + p.sales);
-      expect(find.text(formatRounded(monthSales)), findsOneWidget);
+      // الباك اند المزيّف بيدي 1000 لكل يوم.
+      expect(find.text(formatRounded(30000)), findsOneWidget);
 
       await tester.tap(find.text('آخر 7 أيام'));
       await tester.pumpAndSettle();
 
-      final double weekSales = MockData.seriesFor(days: 7)
-          .fold<double>(0, (double s, SalesPoint p) => s + p.sales);
-      expect(find.text(formatRounded(weekSales)), findsOneWidget);
+      expect(find.text(formatRounded(7000)), findsOneWidget);
       expect(find.textContaining('آخر 7 أيام'), findsWidgets);
     });
 
@@ -80,14 +77,11 @@ void main() {
 
       await tester.tap(find.text('كل الفروع'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(MockData.branches[2].name).last);
+      await tester.tap(find.text('فرع المعادي').last);
       await tester.pumpAndSettle();
 
-      // الرقم بيظهر في البطاقة وفي جدول الفروع
-      final double branchSales =
-          MockData.seriesFor(days: 30, branchId: MockData.branches[2].id)
-              .fold<double>(0, (double s, SalesPoint p) => s + p.sales);
-      expect(find.text(formatRounded(branchSales)), findsWidgets);
+      // نصيب الفرع 40% من 30000
+      expect(find.text(formatRounded(12000)), findsWidgets);
     });
   });
 

@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import 'dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 

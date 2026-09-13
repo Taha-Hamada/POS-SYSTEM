@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
 import '../controllers/dashboard_controller.dart';
-import '../models/branch_performance.dart';
+import '../models/dashboard_data.dart';
 import 'dashboard_card_header.dart';
 import 'top_branch_row.dart';
 
@@ -13,7 +13,7 @@ class TopBranchesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<BranchPerformance> rows =
+    final List<BranchStats> rows =
         context.watch<DashboardController>().branchesPerformance;
     final double max = rows.isEmpty ? 1 : rows.first.sales;
 
@@ -26,7 +26,7 @@ class TopBranchesCard extends StatelessWidget {
           const DashboardCardHeader(
             icon: Icons.storefront_outlined,
             title: 'أفضل الفروع أداءً',
-            subtitle: 'ترتيب الفروع حسب المبيعات',
+            subtitle: 'ترتيب الفروع حسب المبيعات ونصيب كل فرع',
           ),
           Expanded(
             child: ListView.builder(

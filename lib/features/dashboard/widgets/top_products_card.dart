@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/dashboard_controller.dart';
 import 'dashboard_card_header.dart';
@@ -13,7 +13,7 @@ class TopProductsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<ProductSalesStat> stats =
+    final List<TopProduct> stats =
         context.watch<DashboardController>().topProducts;
     final double max = stats.isEmpty ? 1 : stats.first.revenue;
 
@@ -36,7 +36,7 @@ class TopProductsCard extends StatelessWidget {
               ),
               itemCount: stats.length,
               itemBuilder: (BuildContext context, int i) =>
-                  TopProductRow(stat: stats[i], maxRevenue: max),
+                  TopProductRow(stat: stats[i], maxRevenue: max, rank: i),
             ),
           ),
         ],

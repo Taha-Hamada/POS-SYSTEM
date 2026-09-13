@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/progress_track.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
-import '../models/branch_performance.dart';
+import '../models/dashboard_data.dart';
 
 /// صف فرع في بطاقة أفضل الفروع.
 class TopBranchRow extends StatelessWidget {
@@ -14,7 +14,7 @@ class TopBranchRow extends StatelessWidget {
     required this.maxSales,
   });
 
-  final BranchPerformance performance;
+  final BranchStats performance;
 
   /// صفر = الأول (بياخد لون مميّز).
   final int rank;
@@ -55,20 +55,9 @@ class TopBranchRow extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: performance.branch.isOpen
-                            ? AppColors.success
-                            : AppColors.textMuted,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        performance.branch.name,
+                        performance.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.bodyMedium.copyWith(fontSize: 13),
@@ -96,17 +85,11 @@ class TopBranchRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    const Icon(
-                      Icons.trending_up_rounded,
-                      size: 13,
-                      color: AppColors.success,
-                    ),
-                    const SizedBox(width: 3),
                     Text(
-                      Fmt.changePercent(performance.change),
+                      '${performance.share.toStringAsFixed(1)}%',
                       style: AppText.caption.copyWith(
                         fontSize: 10.5,
-                        color: AppColors.success,
+                        color: AppColors.accent,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

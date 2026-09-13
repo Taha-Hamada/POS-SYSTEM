@@ -70,6 +70,95 @@ class FakeBackend {
     };
   }
 
+  /// مبيعات كل فرع — الأرقام ثابتة عشان الاختبار يعرف يتوقعها.
+  static const Map<String, double> _branchSales = <String, double>{
+    'b1': 60000,
+    'b2': 40000,
+  };
+
+  static const Map<String, String> _branchNames = <String, String>{
+    'b1': 'الفرع الرئيسي',
+    'b2': 'فرع المعادي',
+  };
+
+  /// داشبورد بأرقام ثابتة: المبيعات = 1000 لكل يوم في الفترة.
+  Map<String, dynamic> _dashboard({required int days, String? branchId}) {
+    const double perDay = 1000;
+
+    final double scale = branchId == null
+        ? 1
+        : (_branchSales[branchId] ?? 0) /
+            _branchSales.values.fold<double>(0, (double s, double v) => s + v);
+
+    final double sales = perDay * days * scale;
+    final DateTime today = DateTime.now();
+
+    return <String, dynamic>{
+      'today': <String, dynamic>{
+        'sales': perDay * scale,
+        'invoices': 8,
+        'profit': perDay * scale * 0.25,
+        'tax': 0,
+      },
+      'period': <String, dynamic>{
+        'days': days,
+        'sales': sales,
+        'invoices': days * 8,
+        'profit': sales * 0.25,
+        'discounts': 0,
+        'returns': 0,
+        'expenses': 0,
+        'netProfit': sales * 0.25,
+        'averageTicket': sales / (days * 8),
+      },
+      'previous': <String, dynamic>{
+        'sales': sales * 0.9,
+        'invoices': days * 7,
+        'profit': sales * 0.9 * 0.25,
+        'averageTicket': (sales * 0.9) / (days * 7),
+      },
+      'paymentMethods': <String, dynamic>{
+        'cash': <String, dynamic>{'amount': sales * 0.6, 'count': 10},
+        'card': <String, dynamic>{'amount': sales * 0.4, 'count': 5},
+      },
+      'series': <Map<String, dynamic>>[
+        for (int i = days - 1; i >= 0; i -= 1)
+          <String, dynamic>{
+            'date': today
+                .subtract(Duration(days: i))
+                .toIso8601String()
+                .substring(0, 10),
+            'sales': perDay * scale,
+            'profit': perDay * scale * 0.25,
+            'invoices': 8,
+          },
+      ],
+      'topProducts': <Map<String, dynamic>>[
+        for (final Map<String, dynamic> p in products.take(3))
+          <String, dynamic>{
+            'product': p['id'],
+            'name': p['name'],
+            'sku': p['sku'],
+            'units': 20,
+            'revenue': (p['price'] as num) * 20,
+            'profit': (p['price'] as num) * 8,
+          },
+      ],
+      'lowStock': <Map<String, dynamic>>[],
+      'inventory': <String, dynamic>{
+        'items': products.length,
+        'units': 200,
+        'costValue': 5000,
+        'retailValue': 9000,
+        'expectedProfit': 4000,
+        'outOfStock': 1,
+      },
+      'receivables': <String, dynamic>{'total': 1200, 'count': 2},
+      'payables': <String, dynamic>{'total': 800, 'count': 1},
+      'expiringSoon': <Map<String, dynamic>>[],
+    };
+  }
+
   Map<String, dynamic> _closeShift(double countedCash) {
     final Map<String, dynamic> shift =
         currentShift!['shift'] as Map<String, dynamic>;
@@ -158,6 +247,30 @@ class FakeBackend {
 
     if (path.endsWith('/categories')) {
       return _page(categories);
+    }
+
+    if (path.endsWith('/reports/dashboard')) {
+      final int days =
+          int.tryParse(request.url.queryParameters['days'] ?? '30') ?? 30;
+      final String? branch = request.url.queryParameters['branch'];
+      return _ok(_dashboard(days: days, branchId: branch));
+    }
+
+    if (path.endsWith('/reports/branches')) {
+      return _ok(<String, dynamic>{
+        'total': _branchSales.values.fold<double>(0, (double s, double v) => s + v),
+        'branches': <Map<String, dynamic>>[
+          for (final MapEntry<String, double> entry in _branchSales.entries)
+            <String, dynamic>{
+              'branch': entry.key,
+              'name': _branchNames[entry.key],
+              'sales': entry.value,
+              'profit': entry.value * 0.25,
+              'invoices': 40,
+              'share': (entry.value / 100000) * 100,
+            },
+        ],
+      });
     }
 
     // أي مسار مش متغطّى بيرجع قايمة فاضية بدل ما يكسر الاختبار،

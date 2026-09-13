@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../models/sales_trend_chart_data.dart';
 import 'chart_legend_dot.dart';
