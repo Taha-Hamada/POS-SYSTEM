@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/shift.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/shift_controller.dart';
@@ -12,7 +12,7 @@ class CloseShiftHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ShiftSummary shift = context.read<ShiftController>().shift;
+    final Shift? shift = context.read<ShiftController>().shift;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -53,8 +53,9 @@ class CloseShiftHeader extends StatelessWidget {
                 Text('إغلاق الوردية', style: AppText.sectionTitle),
                 const SizedBox(height: 2),
                 Text(
-                  'وردية ${shift.id} • ${shift.employee?.name ?? '—'} • '
-                  'بدأت ${Fmt.time(shift.startedAt)}',
+                  'وردية ${shift?.number ?? '—'} • '
+                  '${shift?.cashierName ?? '—'} • '
+                  'بدأت ${shift == null ? '—' : Fmt.time(shift.openedAt)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption,

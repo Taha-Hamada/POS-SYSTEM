@@ -16,7 +16,7 @@ Future<double?> showOpenShiftDialog(BuildContext context) {
     context: context,
     barrierDismissible: false,
     barrierColor: AppColors.primary.withValues(alpha: 0.55),
-    builder: (BuildContext context) => const OpenShiftDialog(),
+    builder: (_) => const OpenShiftDialog(),
   );
 }
 
@@ -30,6 +30,8 @@ class OpenShiftDialog extends StatelessWidget {
 
     return ChangeNotifierProvider<ShiftController>(
       create: (_) => ShiftController(),
+      // الحوار بيرجّع المبلغ بس؛ اللي فتحه هو اللي بيبعته للسيرفر،
+      // عشان الحوار يفضل بسيط ومالوش دعوة بالشبكة.
       child: Dialog(
         insetPadding: const EdgeInsets.all(AppSpacing.xxl),
         child: ConstrainedBox(

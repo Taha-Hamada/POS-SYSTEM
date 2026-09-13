@@ -5,7 +5,6 @@ import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/core/widgets/numpad.dart';
 import 'package:pos_system/features/payment/screens/payment_dialog.dart';
 import 'package:pos_system/features/pos_sale/screens/pos_sale_screen.dart';
-import 'package:pos_system/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_backend.dart';

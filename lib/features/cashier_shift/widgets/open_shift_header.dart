@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/session/auth_user.dart';
+import '../../../core/session/session_controller.dart';
 import '../../../theme/app_theme.dart';
 
 /// هيدر حوار بدء الوردية: أيقونة كبيرة + اسم الكاشير والفرع.
@@ -9,7 +12,7 @@ class OpenShiftHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Employee user = MockData.currentUser;
+    final AuthUser? user = context.read<SessionController>().user;
 
     return Column(
       children: <Widget>[
@@ -45,7 +48,7 @@ class OpenShiftHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '${user.name} • ${MockData.currentBranch.name}',
+          '${user?.name ?? ''} • ${user?.branchName ?? ''}',
           textAlign: TextAlign.center,
           style: AppText.caption,
         ),

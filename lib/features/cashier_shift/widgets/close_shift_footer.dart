@@ -38,7 +38,7 @@ class CloseShiftFooter extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(
-                    '${Fmt.count(shift.shift.invoicesCount)} فاتورة • '
+                    '${Fmt.count(shift.totals.invoicesCount)} فاتورة • '
                     'رصيد افتتاحي ${Fmt.money(shift.opening)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -60,8 +60,9 @@ class CloseShiftFooter extends StatelessWidget {
             icon: Icons.lock_outline_rounded,
             size: AppButtonSize.large,
             color: AppColors.warning,
+            // بيرجّع المبلغ المعدود عشان اللي فتح الحوار يبعته للسيرفر.
             onPressed: shift.isCounted
-                ? () => Navigator.of(context).pop(true)
+                ? () => Navigator.of(context).pop(shift.actual)
                 : null,
           ),
         ],

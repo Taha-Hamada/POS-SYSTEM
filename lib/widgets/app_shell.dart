@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../mock_data/mock_data.dart';
+import '../core/api/api_client.dart';
+import '../core/models/shift.dart';
+import '../core/session/session_controller.dart';
+import '../features/cashier_shift/controllers/current_shift_controller.dart';
+import '../features/cashier_shift/data/shift_repository.dart';
 import '../features/cashier_shift/screens/close_shift_dialog.dart';
 import '../features/cashier_shift/screens/open_shift_dialog.dart';
+import '../mock_data/mock_data.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
@@ -140,46 +146,94 @@ List<NavItem> get kNavItems =>
     kNavSections.expand((NavSection s) => s.items).toList(growable: false);
 
 /// الهيكل العام للتطبيق: Sidebar على اليمين + Top Bar فوق + محتوى الشاشة.
-class AppShell extends StatefulWidget {
+/// الشل بيوفّر الوردية الحالية لكل الشاشات اللي جواه،
+/// لأن شاشة البيع والشريط الجانبي محتاجينها مع بعض.
+class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  Widget build(BuildContext context) {
+    final String? branchId = context.read<SessionController>().user?.branchId;
+
+    return ChangeNotifierProvider<CurrentShiftController>(
+      create: (BuildContext context) => CurrentShiftController(
+        ShiftRepository(context.read<ApiClient>()),
+        branchId: branchId,
+      )..load(),
+      child: _AppShellBody(child: child),
+    );
+  }
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellBody extends StatefulWidget {
+  const _AppShellBody({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AppShellBody> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShellBody> {
   static const double _expandedWidth = 268;
   static const double _collapsedWidth = 84;
 
   bool _collapsed = false;
   Branch _branch = MockData.currentBranch;
 
-  /// حالة الوردية — بتتحكم في شكل بطاقة الوردية أسفل الـSidebar
-  bool _shiftOpen = true;
-  double _openingBalance = MockData.currentShift.openingBalance;
-
   Future<void> _openShift() async {
+    final CurrentShiftController shifts = context.read<CurrentShiftController>();
+
     final double? balance = await showOpenShiftDialog(context);
     if (balance == null || !mounted) return;
 
-    setState(() {
-      _shiftOpen = true;
-      _openingBalance = balance;
-    });
-    _toast('تم بدء الوردية برصيد افتتاحي ${Fmt.money(balance)}');
+    final String? error = await shifts.open(balance);
+    if (!mounted) return;
+
+    _toast(
+      error ?? 'تم بدء الوردية برصيد افتتاحي ${Fmt.money(balance)}',
+    );
   }
 
   Future<void> _closeShift() async {
-    final bool? closed = await showCloseShiftDialog(
-      context,
-      openingBalance: _openingBalance,
-    );
-    if (closed != true || !mounted) return;
+    final CurrentShiftController shifts = context.read<CurrentShiftController>();
 
-    setState(() => _shiftOpen = false);
-    _toast('تم إغلاق الوردية وطباعة التقرير');
+    // الأرقام بتتقرا من السيرفر قبل ما نعرضها، عشان الكاشير يعدّ الدرج
+    // على رقم محدّث مش رقم قديم من أول الوردية.
+    await shifts.refreshTotals();
+    if (!mounted) return;
+
+    final Shift? open = shifts.shift;
+    if (open == null) {
+      _toast('مفيش وردية مفتوحة');
+      return;
+    }
+
+    final double? counted = await showCloseShiftDialog(
+      context,
+      shift: open,
+      totals: shifts.totals,
+    );
+    if (counted == null || !mounted) return;
+
+    final String? error = await shifts.close(countedCash: counted);
+    if (!mounted) return;
+
+    if (error != null) {
+      _toast(error);
+      return;
+    }
+
+    final ShiftClosing? closing = shifts.lastClosed?.closing;
+    _toast(
+      closing == null || closing.isBalanced
+          ? 'اتقفلت الوردية والدرج مظبوط'
+          : closing.isShort
+              ? 'اتقفلت الوردية — عجز ${Fmt.money(closing.difference.abs())}'
+              : 'اتقفلت الوردية — زيادة ${Fmt.money(closing.difference)}',
+    );
   }
 
   void _toast(String message) {
@@ -199,6 +253,9 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final CurrentShiftController shifts =
+        context.watch<CurrentShiftController>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Row(
@@ -207,10 +264,12 @@ class _AppShellState extends State<AppShell> {
             collapsed: _collapsed,
             width: _collapsed ? _collapsedWidth : _expandedWidth,
             currentLocation: _location,
-            shiftOpen: _shiftOpen,
+            shiftOpen: shifts.isOpen,
+            shiftSales: shifts.totals.salesTotal,
+            busy: shifts.isLoading,
             onToggle: () => setState(() => _collapsed = !_collapsed),
             onNavigate: (String route) => context.go(route),
-            onShiftTap: _shiftOpen ? _closeShift : _openShift,
+            onShiftTap: shifts.isOpen ? _closeShift : _openShift,
           ),
           Expanded(
             child: Column(
@@ -242,6 +301,8 @@ class _Sidebar extends StatelessWidget {
     required this.width,
     required this.currentLocation,
     required this.shiftOpen,
+    required this.shiftSales,
+    required this.busy,
     required this.onToggle,
     required this.onNavigate,
     required this.onShiftTap,
@@ -251,6 +312,13 @@ class _Sidebar extends StatelessWidget {
   final double width;
   final String currentLocation;
   final bool shiftOpen;
+
+  /// مبيعات الوردية المفتوحة، محسوبة على السيرفر.
+  final double shiftSales;
+
+  /// بنقفل زرار الوردية أثناء الفتح أو الإغلاق عشان مايتضغطش مرتين.
+  final bool busy;
+
   final VoidCallback onToggle;
   final ValueChanged<String> onNavigate;
   final VoidCallback onShiftTap;
@@ -411,7 +479,7 @@ class _Sidebar extends StatelessWidget {
               ? Icons.lock_clock_rounded
               : Icons.play_circle_outline_rounded,
           tooltip: shiftOpen ? 'إغلاق الوردية' : 'بدء وردية جديدة',
-          onTap: onShiftTap,
+          onTap: busy ? null : onShiftTap,
         ),
       );
     }
@@ -457,8 +525,7 @@ class _Sidebar extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             shiftOpen
-                ? 'مبيعات الوردية: '
-                    '${Fmt.moneyRounded(MockData.currentShift.totalSales)}'
+                ? 'مبيعات الوردية: ${Fmt.moneyRounded(shiftSales)}'
                 : 'ابدأ وردية جديدة عشان تقدر تبيع',
             style: const TextStyle(
               fontSize: 11.5,
@@ -473,7 +540,7 @@ class _Sidebar extends StatelessWidget {
                 ? Icons.lock_outline_rounded
                 : Icons.play_arrow_rounded,
             highlighted: !shiftOpen,
-            onTap: onShiftTap,
+            onTap: busy ? null : onShiftTap,
           ),
         ],
       ),
@@ -493,7 +560,9 @@ class _ShiftButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final bool highlighted;
-  final VoidCallback onTap;
+
+  /// null معناها الزرار متعطّل — بيحصل أثناء فتح أو إغلاق الوردية.
+  final VoidCallback? onTap;
 
   @override
   State<_ShiftButton> createState() => _ShiftButtonState();
@@ -661,7 +730,9 @@ class _SidebarIconButton extends StatefulWidget {
 
   final IconData icon;
   final String tooltip;
-  final VoidCallback onTap;
+
+  /// null معناها الزرار متعطّل.
+  final VoidCallback? onTap;
 
   static const double size = 34;
 

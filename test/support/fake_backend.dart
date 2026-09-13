@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:http/testing.dart';
 import 'package:pos_system/core/api/api_client.dart';
 import 'package:pos_system/core/session/session_controller.dart';
+import 'package:pos_system/features/cashier_shift/controllers/current_shift_controller.dart';
+import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
 import 'package:pos_system/theme/app_theme.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 /// باك اند مزيّف لاختبارات الواجهة.
 ///
@@ -21,6 +24,9 @@ class FakeBackend {
   final List<Map<String, dynamic>> products;
   final List<Map<String, dynamic>> heldInvoices = <Map<String, dynamic>>[];
 
+  /// الوردية المفتوحة، أو null لو الكاشير مقفول.
+  Map<String, dynamic>? currentShift;
+
   Map<String, dynamic> settings = <String, dynamic>{
     'storeName': 'متجر الاختبار',
     'currency': 'EGP',
@@ -30,6 +36,64 @@ class FakeBackend {
     'requireCustomerForCredit': true,
     'requireOpenShift': false,
   };
+
+  /// بيفتح وردية بالأرقام اللي الاختبار محتاجها.
+  ///
+  /// الأرقام بتتحط صراحة مش بتتحسب، عشان الاختبار يعرف يتوقع رقم بعينه.
+  void openShift(
+    double openingBalance, {
+    double cashSales = 0,
+    double cashIn = 0,
+    double cashOut = 0,
+    double salesTotal = 0,
+    int invoicesCount = 0,
+  }) {
+    currentShift = <String, dynamic>{
+      'shift': <String, dynamic>{
+        'id': 'sh-1',
+        'number': 'SH-00001',
+        'status': 'open',
+        'openingBalance': openingBalance,
+        'openedAt': DateTime.now().toIso8601String(),
+        'cashier': <String, dynamic>{'id': 'u1', 'name': 'مستخدم الاختبار'},
+        'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+      },
+      'totals': <String, dynamic>{
+        'salesTotal': salesTotal,
+        'invoicesCount': invoicesCount,
+        'cashSales': cashSales,
+        'cashIn': cashIn,
+        'cashOut': cashOut,
+        'expectedCash': openingBalance + cashSales + cashIn - cashOut,
+        'byMethod': <String, dynamic>{},
+      },
+    };
+  }
+
+  Map<String, dynamic> _closeShift(double countedCash) {
+    final Map<String, dynamic> shift =
+        currentShift!['shift'] as Map<String, dynamic>;
+    final Map<String, dynamic> totals =
+        currentShift!['totals'] as Map<String, dynamic>;
+
+    final double expected = (totals['expectedCash'] as num).toDouble();
+
+    final Map<String, dynamic> closed = <String, dynamic>{
+      ...shift,
+      'status': 'closed',
+      'closedAt': DateTime.now().toIso8601String(),
+      'closing': <String, dynamic>{
+        'countedCash': countedCash,
+        'expectedCash': expected,
+        'difference': countedCash - expected,
+        'salesTotal': totals['salesTotal'],
+        'invoicesCount': totals['invoicesCount'],
+      },
+    };
+
+    currentShift = null;
+    return closed;
+  }
 
   /// المسارات اللي اتطلبت — مفيدة للتأكد إن الشاشة طلبت اللي المفروض تطلبه.
   final List<String> requestedPaths = <String>[];
@@ -53,6 +117,29 @@ class FakeBackend {
     }
 
     if (path.endsWith('/settings')) return _ok(settings);
+
+    // مفيش وردية مفتوحة افتراضيًا؛ الاختبار بيقدر يفتحها بـopenShift().
+    if (path.endsWith('/shifts/current')) return _ok2(currentShift);
+
+    if (path.endsWith('/shifts') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      openShift((body['openingBalance'] as num).toDouble());
+      return _ok(currentShift!['shift'] as Object);
+    }
+
+    if (path.endsWith('/close')) {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final Map<String, dynamic> closed = _closeShift(
+        (body['countedCash'] as num).toDouble(),
+      );
+      return _ok(closed);
+    }
+
+    if (path.endsWith('/cash')) return _ok(currentShift!['shift'] as Object);
+
+    if (path.contains('/shifts/')) return _ok2(currentShift);
 
     // المعلّقات بتتخزن في الذاكرة عشان اختبارات التعليق تشتغل من غير سيرفر.
     if (path.endsWith('/invoices/held') && request.method == 'GET') {
@@ -138,6 +225,13 @@ class FakeBackend {
   }
 
   int _invoiceCounter = 0;
+
+  /// زي [_ok] بس بيسمح بقيمة فاضية، للمسارات اللي ردها ممكن يكون null.
+  static http.Response _ok2(Object? data) => http.Response(
+        jsonEncode(<String, dynamic>{'success': true, 'message': null, 'data': data}),
+        200,
+        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
+      );
 
   static http.Response _ok(Object data) => http.Response(
         jsonEncode(<String, dynamic>{'success': true, 'message': null, 'data': data}),
@@ -271,18 +365,21 @@ Future<Widget> wrapScreen(Widget child, {FakeBackend? backend}) async {
 
   await session.login(username: 'tester', password: 'x');
 
+  final CurrentShiftController shifts =
+      CurrentShiftController(ShiftRepository(api));
+  await shifts.load();
+
   return MultiProvider(
-    providers: <ChangeNotifierProvider<SessionController>>[
+    providers: <SingleChildWidget>[
       ChangeNotifierProvider<SessionController>.value(value: session),
+      ChangeNotifierProvider<CurrentShiftController>.value(value: shifts),
+      Provider<ApiClient>.value(value: api),
     ],
-    child: Provider<ApiClient>.value(
-      value: api,
-      child: MaterialApp(
-        theme: AppTheme.light,
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(body: child),
-        ),
+    child: MaterialApp(
+      theme: AppTheme.light,
+      home: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(body: child),
       ),
     ),
   );

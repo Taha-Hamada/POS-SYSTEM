@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/shift.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/shift_controller.dart';
 import '../widgets/close_shift_footer.dart';
@@ -9,33 +10,42 @@ import '../widgets/shift_count_field.dart';
 import '../widgets/shift_difference_card.dart';
 import '../widgets/shift_stat_cards.dart';
 
-/// يفتح حوار إغلاق الوردية ويرجّع true لو اتقفلت فعلاً.
-Future<bool?> showCloseShiftDialog(
+/// يفتح حوار إغلاق الوردية ويرجّع المبلغ المعدود (أو null لو اتلغى).
+Future<double?> showCloseShiftDialog(
   BuildContext context, {
-  double? openingBalance,
+  required Shift shift,
+  required ShiftTotals totals,
 }) {
-  return showDialog<bool>(
+  return showDialog<double>(
     context: context,
     barrierColor: AppColors.primary.withValues(alpha: 0.55),
-    builder: (BuildContext context) => CloseShiftDialog(
-      openingBalance: openingBalance,
-    ),
+    builder: (_) => CloseShiftDialog(shift: shift, totals: totals),
   );
 }
 
 /// حوار إغلاق الوردية — بيجمّع الهيدر والإحصائيات وحقل العدّ وبطاقة الفرق.
 class CloseShiftDialog extends StatelessWidget {
-  const CloseShiftDialog({super.key, this.openingBalance});
+  const CloseShiftDialog({
+    super.key,
+    required this.shift,
+    required this.totals,
+  });
 
-  /// لو اتمرر، بيحل محل الرصيد الافتتاحي المسجّل في الوردية
-  final double? openingBalance;
+  final Shift shift;
+
+  /// أرقام الوردية زي ما السيرفر حسبها.
+  final ShiftTotals totals;
 
   @override
   Widget build(BuildContext context) {
     final Size screen = MediaQuery.sizeOf(context);
 
     return ChangeNotifierProvider<ShiftController>(
-      create: (_) => ShiftController(openingBalanceOverride: openingBalance),
+      create: (_) => ShiftController(
+        openingBalance: shift.openingBalance,
+        shift: shift,
+        totals: totals,
+      ),
       child: Dialog(
         insetPadding: const EdgeInsets.all(AppSpacing.xxl),
         child: ConstrainedBox(

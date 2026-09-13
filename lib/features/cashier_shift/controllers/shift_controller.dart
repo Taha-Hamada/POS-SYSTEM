@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/models/shift.dart';
 import '../../../core/widgets/numpad.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../models/shift_diff_style.dart';
 import '../models/shift_stat.dart';
 
-/// حالة الوردية: الرصيد الافتتاحي عند الفتح، والعدّ الفعلي عند الإغلاق.
+/// حالة حوارات الوردية: الرصيد الافتتاحي عند الفتح، والعدّ الفعلي عند الإغلاق.
+///
+/// الأرقام بتيجي محسوبة من السيرفر، فالكنترولر ده مسؤول عن إدخال الكاشير بس.
 class ShiftController extends ChangeNotifier {
-  ShiftController({this.openingBalanceOverride});
+  ShiftController({
+    this.openingBalance = 0,
+    this.shift,
+    ShiftTotals? totals,
+  }) : totals = totals ?? const ShiftTotals();
 
-  /// لو اتمرر، بيحل محل الرصيد الافتتاحي المسجّل في الوردية
-  final double? openingBalanceOverride;
+  /// الرصيد الافتتاحي للوردية المفتوحة.
+  final double openingBalance;
+
+  /// الوردية اللي بيتقفل عليها — null في حوار الفتح.
+  final Shift? shift;
+
+  /// أرقام الوردية زي ما السيرفر حسبها.
+  final ShiftTotals totals;
 
   /// مبالغ افتتاحية شائعة للاختيار السريع
   static const List<double> presets = <double>[500, 1000, 2000, 5000];
@@ -21,8 +33,6 @@ class ShiftController extends ChangeNotifier {
 
   /// العدّ الفعلي اللي دخّله الكاشير
   final TextEditingController countController = TextEditingController();
-
-  ShiftSummary get shift => MockData.currentShift;
 
   // ── بدء الوردية ──────────────────────────────────────────────────────────
   String get openingText => _entry.isEmpty ? '0' : _entry.text;
@@ -49,11 +59,11 @@ class ShiftController extends ChangeNotifier {
   }
 
   // ── إغلاق الوردية ────────────────────────────────────────────────────────
-  double get opening => openingBalanceOverride ?? shift.openingBalance;
+  double get opening => openingBalance;
 
-  /// المفروض يكون في الدرج
-  double get expected =>
-      opening + shift.cashSales + shift.cashIn - shift.cashOut;
+  /// المفروض يكون في الدرج — محسوب على السيرفر عشان يحسب المرتجعات
+  /// والمصروفات الكاش كمان، مش المبيعات بس.
+  double get expected => totals.expectedCash;
 
   double? get actual {
     final String text = countController.text.trim();
@@ -71,31 +81,31 @@ class ShiftController extends ChangeNotifier {
   List<ShiftStat> get stats => <ShiftStat>[
         ShiftStat(
           label: 'إجمالي المبيعات',
-          value: shift.totalSales,
+          value: totals.salesTotal,
           icon: Icons.receipt_long_rounded,
           color: AppColors.accent,
         ),
         ShiftStat(
           label: 'كاش',
-          value: shift.cashSales,
+          value: totals.cashSales,
           icon: Icons.payments_rounded,
           color: AppColors.success,
         ),
         ShiftStat(
           label: 'بطاقة',
-          value: shift.cardSales,
+          value: totals.cardSales,
           icon: Icons.credit_card_rounded,
           color: AppColors.info,
         ),
         ShiftStat(
           label: 'Cash In',
-          value: shift.cashIn,
+          value: totals.cashIn,
           icon: Icons.arrow_downward_rounded,
           color: AppColors.success,
         ),
         ShiftStat(
           label: 'Cash Out',
-          value: shift.cashOut,
+          value: totals.cashOut,
           icon: Icons.arrow_upward_rounded,
           color: AppColors.danger,
         ),

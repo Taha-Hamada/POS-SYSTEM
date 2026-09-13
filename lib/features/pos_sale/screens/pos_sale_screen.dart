@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/widgets/async_state_views.dart';
 import '../../../theme/app_theme.dart';
+import '../../cashier_shift/controllers/current_shift_controller.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/sales_session_controller.dart';
 import '../data/pos_repository.dart';
@@ -62,6 +63,23 @@ class _PosSaleBody extends StatelessWidget {
           title: 'مفيش منتجات للبيع',
           description: 'ضيف منتجات من شاشة المنتجات الأول.',
           icon: Icons.inventory_2_outlined,
+        ),
+      );
+    }
+
+    // السيرفر بيرفض البيع من غير وردية، فبنقول للكاشير ده من الأول
+    // بدل ما يملا السلة ويترفض عند الدفع.
+    final CurrentShiftController shifts =
+        context.watch<CurrentShiftController>();
+
+    if (session.settings.requireOpenShift && !shifts.isOpen && !shifts.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xxl),
+        child: EmptyView(
+          title: 'مفيش وردية مفتوحة',
+          description:
+              'افتح وردية من بطاقة الوردية تحت القائمة الجانبية عشان تبدأ البيع.',
+          icon: Icons.lock_clock_rounded,
         ),
       );
     }

@@ -9,11 +9,13 @@ import 'package:pos_system/features/cashier_shift/screens/open_shift_dialog.dart
 
 const Size _desktop = Size(1600, 950);
 
+late FakeBackend _backend;
+
 Future<void> _pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = _desktop;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
+  await tester.pumpWidget(PosSystemApp(api: _backend.client()));
   // التطبيق بيبدأ على شاشة انتظار لحد ما يقرا الجلسة المحفوظة.
   await tester.pumpAndSettle();
 }
@@ -35,12 +37,24 @@ void main() {
       'pos.access_token': 'fake-access',
       'pos.refresh_token': 'fake-refresh',
     });
+
+    _backend = FakeBackend();
   });
 
   group('الورديات', () {
     testWidgets('إغلاق الوردية بيحسب الفرق ويلوّنه', (
       WidgetTester tester,
     ) async {
+      // درج متوقّع = 2000 + 8000 + 500 − 300 = 10200
+      _backend.openShift(
+        2000,
+        cashSales: 8000,
+        cashIn: 500,
+        cashOut: 300,
+        salesTotal: 12000,
+        invoicesCount: 24,
+      );
+
       await _pumpApp(tester);
 
       await tester.tap(find.text('إغلاق الوردية'));
@@ -51,8 +65,7 @@ void main() {
       expect(find.text('Cash Out'), findsOneWidget);
       expect(find.text('في انتظار العدّ'), findsOneWidget);
 
-      final ShiftSummary shift = MockData.currentShift;
-      final double expected = shift.expectedCash;
+      const double expected = 10200;
 
       // عدّ مطابق تمامًا → أخضر
       await tester.enterText(
@@ -73,6 +86,7 @@ void main() {
     });
 
     testWidgets('بدء وردية جديدة بالـNumpad', (WidgetTester tester) async {
+      _backend.openShift(2000);
       await _pumpApp(tester);
 
       // نقفل الوردية الحالية الأول

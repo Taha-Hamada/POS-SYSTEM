@@ -15,7 +15,7 @@ import '../models/cart_line.dart';
 /// الاتنين بيستخدموا نفس الخطوات، فالرقم المعروض هو الرقم المحصّل.
 class CartController extends ChangeNotifier {
   CartController({required this.number, required double taxRate})
-      : _taxRate = taxRate;
+      : _taxRate = taxRate; // ignore: prefer_initializing_formals
 
 
   /// رقم الفاتورة في التبويبات — بيتعرض للكاشير عشان يفرّق بينها.
