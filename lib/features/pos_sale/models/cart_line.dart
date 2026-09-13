@@ -1,4 +1,4 @@
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/product.dart';
 
 /// سطر واحد في السلة.
 class CartLine {

@@ -19,11 +19,14 @@ class ApiResponse {
   int get pages => (meta?['pagination']?['pages'] as int?) ?? 1;
   bool get hasNext => (meta?['pagination']?['hasNext'] as bool?) ?? false;
 
-  List<Map<String, dynamic>> get list =>
-      (data as List<dynamic>? ?? <dynamic>[])
-          .cast<Map<String, dynamic>>();
+  /// الشكل الغلط بيرجّع فاضي بدل ما يرمي خطأ نوع خام،
+  /// عشان الشاشة تعرض رسالة مفهومة مش انهيار.
+  List<Map<String, dynamic>> get list => data is List<dynamic>
+      ? (data as List<dynamic>).whereType<Map<String, dynamic>>().toList()
+      : <Map<String, dynamic>>[];
 
-  Map<String, dynamic> get object => (data as Map<String, dynamic>?) ?? <String, dynamic>{};
+  Map<String, dynamic> get object =>
+      data is Map<String, dynamic> ? data as Map<String, dynamic> : <String, dynamic>{};
 }
 
 /// بيتنادى لما السيرفر يقول إن الجلسة انتهت، عشان التطبيق يوديه لشاشة الدخول.

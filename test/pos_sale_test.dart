@@ -1,173 +1,203 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_system/core/models/customer.dart';
+import 'package:pos_system/core/models/product.dart';
 import 'package:pos_system/features/pos_sale/controllers/cart_controller.dart';
-import 'package:pos_system/features/pos_sale/controllers/sales_session_controller.dart';
 import 'package:pos_system/features/pos_sale/models/cart_discount.dart';
-import 'package:pos_system/features/pos_sale/models/held_invoice.dart';
-import 'package:pos_system/mock_data/mock_data.dart';
 
+/// سلوك السلة: الكميات، الخصومات، وحدود المخزون.
+/// الحسابات نفسها متغطّية في invoice_math_test.
 void main() {
+  Product product({
+    String id = 'p1',
+    double price = 100,
+    int stock = 50,
+    bool trackStock = true,
+    bool taxable = true,
+  }) =>
+      Product(
+        id: id,
+        name: 'منتج $id',
+        sku: id.toUpperCase(),
+        price: price,
+        cost: price / 2,
+        stock: stock,
+        minStock: 5,
+        unit: 'قطعة',
+        colorIndex: 0,
+        trackStock: trackStock,
+        isTaxable: taxable,
+      );
+
+  CartController cart({double taxRate = 0}) =>
+      CartController(number: 1, taxRate: taxRate);
+
+  group('إضافة الأصناف', () {
+    test('نفس المنتج بيتجمّع في سطر واحد', () {
+      final CartController c = cart()
+        ..addProduct(product())
+        ..addProduct(product());
+
+      expect(c.lines.length, 1);
+      expect(c.lines.first.quantity, 2);
+      expect(c.itemsCount, 2);
+    });
+
+    test('المنتج النافد مبينزلش السلة', () {
+      final CartController c = cart();
+
+      expect(c.addProduct(product(stock: 0)), isFalse);
+      expect(c.isEmpty, isTrue);
+    });
+
+    test('مبنزوّدش فوق الرصيد المتاح', () {
+      final CartController c = cart()..addProduct(product(stock: 2));
+
+      expect(c.addProduct(product(stock: 2)), isTrue);
+      // الرصيد خلص عند 2
+      expect(c.addProduct(product(stock: 2)), isFalse);
+      expect(c.lines.first.quantity, 2);
+    });
+
+    test('المنتج الخدمي مالوش حد أقصى', () {
+      final CartController c = cart();
+      final Product bag = product(id: 'bag', stock: 0, trackStock: false);
+
+      expect(c.addProduct(bag), isTrue);
+      expect(c.addProduct(bag), isTrue);
+      expect(c.lines.first.quantity, 2);
+    });
+  });
+
+  group('الكميات', () {
+    test('إنقاص الكمية لصفر بيشيل السطر', () {
+      final CartController c = cart()..addProduct(product());
+
+      c.changeQuantity(c.lines.first, -1);
+
+      expect(c.isEmpty, isTrue);
+    });
+
+    test('الزيادة فوق الرصيد بترجع false', () {
+      final CartController c = cart()..addProduct(product(stock: 1));
+
+      expect(c.changeQuantity(c.lines.first, 5), isFalse);
+      expect(c.lines.first.quantity, 1);
+    });
+  });
+
   group('الخصم', () {
     test('خصم بمبلغ ثابت بيتخصم زي ما هو', () {
-      final CartController cart = CartController(number: 1)
-        ..addProduct(MockData.products.first)
+      final CartController c = cart()
+        ..addProduct(product())
         ..setDiscount(const CartDiscount(type: DiscountType.amount, value: 40));
 
-      expect(cart.effectiveDiscount, 40);
-      expect(cart.discount.shortLabel, '');
+      expect(c.effectiveDiscount, 40);
+      expect(c.discount.shortLabel, '');
     });
 
     test('خصم بنسبة بيتحسب من المجموع الفرعي', () {
-      final CartController cart = CartController(number: 1)
-        ..addProduct(MockData.products.first)
+      final CartController c = cart()
+        ..addProduct(product())
         ..setDiscount(const CartDiscount(type: DiscountType.percent, value: 10));
 
-      expect(cart.effectiveDiscount, closeTo(cart.subtotal * 0.1, 0.001));
-      expect(cart.discount.shortLabel, ' (10%)');
+      expect(c.effectiveDiscount, 10);
+      expect(c.discount.shortLabel, ' (10%)');
     });
 
     test('خصم النسبة بيتحدّث لما السلة تكبر', () {
-      final CartController cart = CartController(number: 1)
-        ..addProduct(MockData.products.first)
+      final CartController c = cart()
+        ..addProduct(product())
         ..setDiscount(const CartDiscount(type: DiscountType.percent, value: 10));
 
-      final double before = cart.effectiveDiscount;
-      cart.addProduct(MockData.products[1]);
+      final double before = c.effectiveDiscount;
+      c.addProduct(product(id: 'p2'));
 
-      expect(cart.effectiveDiscount, greaterThan(before));
+      expect(c.effectiveDiscount, greaterThan(before));
     });
 
     test('الخصم مبيعديش المجموع الفرعي', () {
-      final CartController cart = CartController(number: 1)
-        ..addProduct(MockData.products.first)
-        ..setDiscount(
-          const CartDiscount(type: DiscountType.amount, value: 999999),
-        );
+      final CartController c = cart()
+        ..addProduct(product(price: 50))
+        ..setDiscount(const CartDiscount(type: DiscountType.amount, value: 500));
 
-      expect(cart.effectiveDiscount, cart.subtotal);
-      expect(cart.total, 0);
+      expect(c.effectiveDiscount, 50);
+      expect(c.total, 0);
     });
   });
 
-  group('الفواتير المتعددة', () {
-    test('بتبدأ بفاتورة واحدة مش بتتقفل', () {
-      final SalesSessionController session = SalesSessionController();
+  group('الضريبة', () {
+    test('بتتحسب بالنسبة الجاية من الإعدادات', () {
+      final CartController c = cart(taxRate: 0.14)..addProduct(product());
 
-      expect(session.carts.length, 1);
-      expect(session.canCloseTabs, isFalse);
+      expect(c.tax, 14);
+      expect(c.total, 114);
     });
 
-    test('فتح فاتورة جديدة بيخليها النشطة', () {
-      final SalesSessionController session = SalesSessionController()
-        ..openNew();
+    test('الأصناف المعفاة مش داخلة في الضريبة', () {
+      final CartController c = cart(taxRate: 0.14)
+        ..addProduct(product(taxable: false));
 
-      expect(session.carts.length, 2);
-      expect(session.activeIndex, 1);
-      expect(session.canCloseTabs, isTrue);
+      expect(c.tax, 0);
+      expect(c.total, 100);
     });
 
-    test('كل فاتورة أصنافها مستقلة', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session.openNew();
+    test('تغيير النسبة بيعيد الحساب', () {
+      final CartController c = cart()..addProduct(product());
+      expect(c.total, 100);
 
-      expect(session.active.isEmpty, isTrue);
-      expect(session.carts.first.itemsCount, 1);
-    });
-
-    test('التبديل بين التبويبات بيرجّع نفس السلة', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session
-        ..openNew()
-        ..switchTo(0);
-
-      expect(session.active.itemsCount, 1);
-    });
-
-    test('قفل تبويب بيظبّط الفاتورة النشطة', () {
-      final SalesSessionController session = SalesSessionController()
-        ..openNew()
-        ..closeAt(1);
-
-      expect(session.carts.length, 1);
-      expect(session.activeIndex, 0);
+      c.setTaxRate(0.14);
+      expect(c.total, 114);
     });
   });
 
-  group('الفواتير المعلّقة', () {
-    test('التعليق بيحفظ الفاتورة ويفضّي التبويب', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session.holdActive();
-
-      expect(session.heldCount, 1);
-      expect(session.active.isEmpty, isTrue);
-      expect(session.held.first.itemsCount, 1);
+  group('العميل', () {
+    test('السلة بتبدأ بعميل عابر', () {
+      expect(cart().customer.isWalkIn, isTrue);
     });
 
-    test('مبيعلّقش فاتورة فاضية', () {
-      final SalesSessionController session = SalesSessionController()
-        ..holdActive();
+    test('التفضية بترجّع العميل العابر', () {
+      final CartController c = cart()
+        ..addProduct(product())
+        ..setCustomer(const Customer(id: 'c1', name: 'محمد', phone: '0100'));
 
-      expect(session.heldCount, 0);
-    });
+      c.clear();
 
-    test('الاسترجاع بيرجّع الأصناف والخصم ويشيلها من المعلّقة', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active
-        ..addProduct(MockData.products.first)
-        ..setDiscount(const CartDiscount(type: DiscountType.amount, value: 25));
-      session.holdActive();
-
-      final HeldInvoice invoice = session.held.first;
-      session.restore(invoice);
-
-      expect(session.heldCount, 0);
-      expect(session.active.itemsCount, 1);
-      expect(session.active.discount.value, 25);
-    });
-
-    test('الاسترجاع بيفتح تبويب جديد لو الحالي فيه أصناف', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session.holdActive();
-
-      // التبويب رجع فاضي، فبنحطّ فيه صنف تاني قبل الاسترجاع
-      session.active.addProduct(MockData.products[1]);
-      session.restore(session.held.first);
-
-      expect(session.carts.length, 2);
-      expect(session.activeIndex, 1);
-    });
-
-    test('حذف فاتورة معلّقة بيشيلها', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session
-        ..holdActive()
-        ..deleteHeld(session.held.first);
-
-      expect(session.heldCount, 0);
+      expect(c.customer.isWalkIn, isTrue);
+      expect(c.isEmpty, isTrue);
     });
   });
 
-  group('إتمام الدفع', () {
-    test('بيفضّي الفاتورة لو هي الوحيدة', () {
-      final SalesSessionController session = SalesSessionController();
-      session.active.addProduct(MockData.products.first);
-      session.completeActive();
+  group('التحويل لطلب السيرفر', () {
+    test('السطور بتتبعت بالمعرّف والكمية بس', () {
+      final CartController c = cart()
+        ..addProduct(product())
+        ..addProduct(product());
 
-      expect(session.carts.length, 1);
-      expect(session.active.isEmpty, isTrue);
+      final List<Map<String, dynamic>> json =
+          c.toInvoiceLines().map((dynamic l) => l.toJson() as Map<String, dynamic>).toList();
+
+      expect(json, hasLength(1));
+      expect(json.first['product'], 'p1');
+      expect(json.first['quantity'], 2);
+      // السعر مش بيتبعت — السيرفر بيحدده عشان محدش يزوّره.
+      expect(json.first.containsKey('unitPrice'), isFalse);
     });
 
-    test('بيقفل تبويبها لو فيه غيرها', () {
-      final SalesSessionController session = SalesSessionController()
-        ..openNew();
-      session.active.addProduct(MockData.products.first);
-      session.completeActive();
+    test('مفيش خصم يعني مفيش حقل خصم', () {
+      final CartController c = cart()..addProduct(product());
 
-      expect(session.carts.length, 1);
+      expect(c.toDiscountInput(), isNull);
+    });
+
+    test('الخصم بيتبعت بنوعه وقيمته', () {
+      final CartController c = cart()
+        ..addProduct(product())
+        ..setDiscount(const CartDiscount(type: DiscountType.percent, value: 15));
+
+      expect(c.toDiscountInput()!.toJson(), <String, dynamic>{
+        'type': 'percentage',
+        'value': 15.0,
+      });
     });
   });
 }

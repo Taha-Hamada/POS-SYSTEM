@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/api/api_client.dart';
+import '../../../core/session/session_controller.dart';
+import '../../../core/widgets/async_state_views.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/sales_session_controller.dart';
+import '../data/pos_repository.dart';
 import '../widgets/cart_panel.dart';
 import '../widgets/products_panel.dart';
 
@@ -17,31 +21,64 @@ class PosSaleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? branchId = context.read<SessionController>().user?.branchId;
+
     return ChangeNotifierProvider<SalesSessionController>(
-      create: (_) => SalesSessionController(),
-      child: Consumer<SalesSessionController>(
-        builder: (
-          BuildContext context,
-          SalesSessionController session,
-          Widget? child,
-        ) {
-          return ChangeNotifierProvider<CartController>.value(
-            value: session.active,
-            child: child!,
-          );
-        },
-        child: const Padding(
-          padding: EdgeInsets.all(AppSpacing.xxl),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // المنتجات — الجزء الأكبر (يمين في RTL)
-              Expanded(flex: 2, child: ProductsPanel()),
-              SizedBox(width: AppSpacing.xl),
-              // السلة — الجزء الأصغر (يسار في RTL)
-              Expanded(child: CartPanel()),
-            ],
-          ),
+      create: (BuildContext context) => SalesSessionController(
+        PosRepository(context.read<ApiClient>()),
+        branchId: branchId,
+      )..load(),
+      child: const _PosSaleBody(),
+    );
+  }
+}
+
+class _PosSaleBody extends StatelessWidget {
+  const _PosSaleBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final SalesSessionController session =
+        context.watch<SalesSessionController>();
+
+    if (session.isFirstLoad) {
+      return const LoadingView(message: 'بنجهّز الكاشير…');
+    }
+
+    if (session.hasFailed) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: ErrorView(
+          message: session.errorMessage!,
+          onRetry: session.retry,
+        ),
+      );
+    }
+
+    if (!session.hasCatalog) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xxl),
+        child: EmptyView(
+          title: 'مفيش منتجات للبيع',
+          description: 'ضيف منتجات من شاشة المنتجات الأول.',
+          icon: Icons.inventory_2_outlined,
+        ),
+      );
+    }
+
+    return ChangeNotifierProvider<CartController>.value(
+      value: session.active,
+      child: const Padding(
+        padding: EdgeInsets.all(AppSpacing.xxl),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            // المنتجات — الجزء الأكبر (يمين في RTL)
+            Expanded(flex: 2, child: ProductsPanel()),
+            SizedBox(width: AppSpacing.xl),
+            // السلة — الجزء الأصغر (يسار في RTL)
+            Expanded(child: CartPanel()),
+          ],
         ),
       ),
     );

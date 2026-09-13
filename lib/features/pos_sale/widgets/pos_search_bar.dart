@@ -14,6 +14,7 @@ class PosSearchBar extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     required this.onScan,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
@@ -22,6 +23,9 @@ class PosSearchBar extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final VoidCallback onScan;
+
+  /// قارئ الباركود بيكتب الكود وبيبعت Enter، فده مدخل المسح الحقيقي.
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +40,7 @@ class PosSearchBar extends StatelessWidget {
               focusNode: focusNode,
               autofocus: true,
               onChanged: onChanged,
+              onSubmitted: onSubmitted,
               style: AppText.body.copyWith(fontSize: 15.5),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(

@@ -60,25 +60,17 @@ void main() {
     ) async {
       await _pumpDesktop(
         tester,
-        MaterialApp(
-          theme: AppTheme.light,
-          home: const Directionality(
-            textDirection: TextDirection.rtl,
-            child: Scaffold(body: PosSaleScreen()),
-          ),
-        ),
+        await wrapScreen(const PosSaleScreen()),
       );
 
       expect(find.text('السلة فارغة'), findsOneWidget);
 
-      final Product product = MockData.products.first;
-      await tester.tap(find.text(product.name).first);
+      await tester.tap(find.text('بيبسي كانز').first);
       await tester.pumpAndSettle();
 
       expect(find.text('السلة فارغة'), findsNothing);
-      // الإجمالي = السعر + 14% ضريبة
-      final double expectedTotal = product.price * (1 + MockData.taxRate);
-      expect(find.text(expectedTotal.toStringAsFixed(2)), findsOneWidget);
+      // سعر المنتج 10 + ضريبة 14%
+      expect(find.text('11.40'), findsOneWidget);
     });
 
     testWidgets('حوار الدفع يفتح ويعرض أنيميشن النجاح بعد التأكيد', (
@@ -86,16 +78,10 @@ void main() {
     ) async {
       await _pumpDesktop(
         tester,
-        MaterialApp(
-          theme: AppTheme.light,
-          home: const Directionality(
-            textDirection: TextDirection.rtl,
-            child: Scaffold(body: PosSaleScreen()),
-          ),
-        ),
+        await wrapScreen(const PosSaleScreen()),
       );
 
-      await tester.tap(find.text(MockData.products.first.name).first);
+      await tester.tap(find.text('بيبسي كانز').first);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('الدفع'));
@@ -130,16 +116,10 @@ void main() {
     ) async {
       await _pumpDesktop(
         tester,
-        MaterialApp(
-          theme: AppTheme.light,
-          home: const Directionality(
-            textDirection: TextDirection.rtl,
-            child: Scaffold(body: PosSaleScreen()),
-          ),
-        ),
+        await wrapScreen(const PosSaleScreen()),
       );
 
-      await tester.tap(find.text(MockData.products.first.name).first);
+      await tester.tap(find.text('بيبسي كانز').first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('الدفع'));
       await tester.pumpAndSettle();

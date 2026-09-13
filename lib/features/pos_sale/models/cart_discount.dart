@@ -34,6 +34,8 @@ class CartDiscount {
 
   bool get isEmpty => value <= 0;
 
+  bool get isPercentage => type == DiscountType.percent;
+
   /// القيمة بالجنيه بعد تطبيقها على [subtotal].
   double amountFor(double subtotal) => switch (type) {
         DiscountType.amount => value,

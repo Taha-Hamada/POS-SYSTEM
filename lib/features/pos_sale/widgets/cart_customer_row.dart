@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/cart_controller.dart';
+import '../controllers/sales_session_controller.dart';
 import 'customer_picker_dialog.dart';
 
 /// صف العميل المختار أعلى السلة مع زر التغيير.
@@ -14,14 +15,17 @@ class CartCustomerRow extends StatelessWidget {
 
   Future<void> _pickCustomer(BuildContext context) async {
     final CartController cart = context.read<CartController>();
-    final Customer? picked = await showCustomerPicker(context);
+    final Customer? picked = await showCustomerPicker(
+      context,
+      session: context.read<SalesSessionController>(),
+    );
     if (picked != null) cart.setCustomer(picked);
   }
 
   @override
   Widget build(BuildContext context) {
     final Customer customer = context.watch<CartController>().customer;
-    final bool isWalkIn = customer.id == MockData.walkInCustomer.id;
+    final bool isWalkIn = customer.isWalkIn;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(

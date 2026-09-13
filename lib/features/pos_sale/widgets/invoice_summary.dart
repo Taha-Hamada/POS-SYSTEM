@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/cart_controller.dart';
@@ -42,7 +41,7 @@ class InvoiceSummary extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm + 2),
           InvoiceSummaryRow(
-            label: 'الضريبة (${(MockData.taxRate * 100).toStringAsFixed(0)}%)',
+            label: 'الضريبة (${(cart.taxRate * 100).toStringAsFixed(0)}%)',
             value: Fmt.money(cart.tax),
           ),
           const Padding(

@@ -2,44 +2,68 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
+import '../../../core/models/product.dart';
+import '../../../core/utils/invoice_math.dart';
+import '../data/pos_repository.dart';
 import '../models/cart_discount.dart';
 import '../models/cart_line.dart';
-import '../models/held_invoice.dart';
 
 /// حالة السلة كاملة: الأصناف، الكميات، العميل، الخصم، وحسابات الفاتورة.
+///
+/// الأرقام هنا معاينة للكاشير؛ السيرفر بيعيد حسابها وقت الاعتماد.
+/// الاتنين بيستخدموا نفس الخطوات، فالرقم المعروض هو الرقم المحصّل.
 class CartController extends ChangeNotifier {
-  CartController({required this.number});
+  CartController({required this.number, required double taxRate})
+      : _taxRate = taxRate;
+
 
   /// رقم الفاتورة في التبويبات — بيتعرض للكاشير عشان يفرّق بينها.
   final int number;
 
+  double _taxRate;
+
   final List<CartLine> _lines = <CartLine>[];
-  Customer _customer = MockData.walkInCustomer;
+  Customer _customer = const Customer.walkIn();
   CartDiscount _discount = const CartDiscount.none();
 
-  UnmodifiableListView<CartLine> get lines => UnmodifiableListView<CartLine>(
-        _lines,
-      );
+  UnmodifiableListView<CartLine> get lines =>
+      UnmodifiableListView<CartLine>(_lines);
 
   Customer get customer => _customer;
   CartDiscount get discount => _discount;
+  double get taxRate => _taxRate;
   bool get isEmpty => _lines.isEmpty;
   bool get isNotEmpty => _lines.isNotEmpty;
 
+  /// الإعدادات بتتحمّل بعد ما التبويب يتفتح أحيانًا، فبنحدّث النسبة وقتها.
+  void setTaxRate(double rate) {
+    if (_taxRate == rate) return;
+    _taxRate = rate;
+    notifyListeners();
+  }
+
   // ── حسابات الفاتورة ──────────────────────────────────────────────────────
-  double get subtotal =>
+  InvoiceTotals get totals => calculateTotals(
+        lines: <PricedLine>[
+          for (final CartLine l in _lines)
+            PricedLine(
+              unitPrice: l.product.price,
+              quantity: l.quantity,
+              isTaxable: l.product.isTaxable,
+            ),
+        ],
+        taxRate: _taxRate,
+        invoiceDiscount: _discount.amountFor(_grossSubtotal),
+      );
+
+  double get _grossSubtotal =>
       _lines.fold<double>(0, (double sum, CartLine l) => sum + l.total);
 
-  /// الخصم بالجنيه — مهما كان نوعه، ومش بيعدّي المجموع الفرعي.
-  double get effectiveDiscount =>
-      _discount.amountFor(subtotal).clamp(0, subtotal);
-
-  double get taxableAmount => subtotal - effectiveDiscount;
-
-  double get tax => taxableAmount * MockData.taxRate;
-
-  double get total => taxableAmount + tax;
+  double get subtotal => totals.subtotal;
+  double get effectiveDiscount => totals.invoiceDiscount;
+  double get tax => totals.taxAmount;
+  double get total => totals.total;
 
   int get itemsCount =>
       _lines.fold<int>(0, (int sum, CartLine l) => sum + l.quantity);
@@ -51,23 +75,37 @@ class CartController extends ChangeNotifier {
 
     final int index =
         _lines.indexWhere((CartLine l) => l.product.id == product.id);
+
     if (index == -1) {
       _lines.insert(0, CartLine(product: product));
     } else {
+      // مبنزوّدش فوق المتاح في المخزن، عشان السيرفر ميرفضش الفاتورة كلها بعدين.
+      if (_exceedsStock(_lines[index], 1)) return false;
       _lines[index].quantity++;
     }
+
     notifyListeners();
     return true;
   }
 
-  void changeQuantity(CartLine line, int delta) {
+  /// بيرجّع false لو الزيادة هتعدّي الرصيد المتاح.
+  bool changeQuantity(CartLine line, int delta) {
+    if (delta > 0 && _exceedsStock(line, delta)) return false;
+
     final int next = line.quantity + delta;
     if (next <= 0) {
       _lines.remove(line);
     } else {
       line.quantity = next;
     }
+
     notifyListeners();
+    return true;
+  }
+
+  bool _exceedsStock(CartLine line, int delta) {
+    if (!line.product.trackStock) return false;
+    return line.quantity + delta > line.product.available;
   }
 
   void removeLine(CartLine line) {
@@ -77,6 +115,7 @@ class CartController extends ChangeNotifier {
 
   void clear() {
     _lines.clear();
+    _customer = const Customer.walkIn();
     _discount = const CartDiscount.none();
     notifyListeners();
   }
@@ -91,30 +130,41 @@ class CartController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// نسخة من السلة عشان تتحفظ في الفواتير المعلّقة.
-  HeldInvoice snapshot(int id) {
-    return HeldInvoice(
-      id: id,
-      lines: <CartLine>[
-        for (final CartLine l in _lines)
-          CartLine(product: l.product, quantity: l.quantity),
-      ],
-      customer: _customer,
-      discount: _discount,
-      heldAt: DateTime.now(),
-    );
-  }
-
-  /// بيملا السلة من فاتورة معلّقة اترجّعت.
-  void restoreFrom(HeldInvoice invoice) {
+  /// بيملا السلة من فاتورة معلّقة اترجّعت من السيرفر.
+  ///
+  /// المنتجات بتتاخد من الكتالوج المحمّل عشان نعرف رصيدها الحالي؛
+  /// أي صنف اتشال من الكتالوج بيتجاهل بدل ما يكسر الاسترجاع.
+  void restoreFrom(
+    List<({Product product, int quantity})> restored, {
+    Customer? customer,
+    CartDiscount? discount,
+  }) {
     _lines
       ..clear()
       ..addAll(<CartLine>[
-        for (final CartLine l in invoice.lines)
-          CartLine(product: l.product, quantity: l.quantity),
+        for (final ({Product product, int quantity}) item in restored)
+          CartLine(product: item.product, quantity: item.quantity),
       ]);
-    _customer = invoice.customer;
-    _discount = invoice.discount;
+
+    if (customer != null) _customer = customer;
+    if (discount != null) _discount = discount;
+
     notifyListeners();
+  }
+
+  /// سطور الفاتورة بالشكل اللي السيرفر بيستقبله.
+  List<InvoiceLineInput> toInvoiceLines() => <InvoiceLineInput>[
+        for (final CartLine l in _lines)
+          InvoiceLineInput(productId: l.product.id, quantity: l.quantity),
+      ];
+
+  /// الخصم بالشكل اللي السيرفر بيستقبله، أو null لو مفيش خصم.
+  DiscountInput? toDiscountInput() {
+    if (_discount.isEmpty) return null;
+
+    return DiscountInput(
+      type: _discount.isPercentage ? 'percentage' : 'fixed',
+      value: _discount.value,
+    );
   }
 }

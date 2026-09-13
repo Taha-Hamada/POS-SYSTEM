@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/category.dart';
+import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
+import '../controllers/sales_session_controller.dart';
 import 'product_category_tab_label.dart';
 
 /// شريط تبويبات فئات المنتجات.
@@ -12,6 +15,9 @@ class ProductCategoryTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SalesSessionController session =
+        context.watch<SalesSessionController>();
+
     return Container(
       height: 54,
       padding: const EdgeInsets.all(6),
@@ -46,16 +52,18 @@ class ProductCategoryTabs extends StatelessWidget {
             child: ProductCategoryTabLabel(
               icon: Icons.apps_rounded,
               label: 'الكل',
-              count: MockData.products.length,
+              count: session.products.length,
             ),
           ),
-          for (final ProductCategory c in MockData.categories)
+          for (final Category c in session.categories)
             Tab(
               height: 42,
               child: ProductCategoryTabLabel(
                 icon: c.icon,
                 label: c.name,
-                count: MockData.productsByCategory(c.id).length,
+                count: session.products
+                    .where((Product p) => p.categoryId == c.id)
+                    .length,
               ),
             ),
         ],

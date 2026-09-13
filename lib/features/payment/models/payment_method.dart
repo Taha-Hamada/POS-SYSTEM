@@ -6,6 +6,14 @@ import '../../../theme/app_theme.dart';
 enum PaymentMethod { cash, card, wallet, credit }
 
 extension PaymentMethodInfo on PaymentMethod {
+  /// الاسم اللي الباك اند بيفهمه.
+  String get apiValue => switch (this) {
+        PaymentMethod.cash => 'cash',
+        PaymentMethod.card => 'card',
+        PaymentMethod.wallet => 'wallet',
+        PaymentMethod.credit => 'credit',
+      };
+
   String get label => switch (this) {
         PaymentMethod.cash => 'كاش',
         PaymentMethod.card => 'بطاقة',

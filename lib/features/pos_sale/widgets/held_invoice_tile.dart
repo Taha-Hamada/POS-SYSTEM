@@ -52,7 +52,7 @@ class HeldInvoiceTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  '${invoice.customer.name} • '
+                  '${invoice.customerName ?? invoice.label} • '
                   '${Fmt.count(invoice.itemsCount)} صنف',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
