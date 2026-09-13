@@ -10,6 +10,7 @@ import '../../features/employees_permissions/screens/employees_list_screen.dart'
 import '../../features/employees_permissions/screens/roles_permissions_screen.dart';
 import '../../features/expenses/screens/expenses_screen.dart';
 import '../../features/inventory/screens/inventory_screen.dart';
+import '../../features/login/screens/login_screen.dart';
 import '../../features/loyalty/screens/loyalty_screen.dart';
 import '../../features/pos_sale/screens/pos_sale_screen.dart';
 import '../../features/products_list/screens/products_list_screen.dart';
@@ -24,15 +25,32 @@ import '../../features/suppliers/screens/supplier_profile_screen.dart';
 import '../../features/suppliers/screens/suppliers_list_screen.dart';
 import '../../features/welcome/screens/welcome_screen.dart';
 import '../../widgets/app_shell.dart';
+import '../session/session_controller.dart';
 import '../widgets/placeholder_screen.dart';
 
 /// كل الشاشات جوه [AppShell] من غير أنيميشن انتقال.
 Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
 
+const String loginPath = '/login';
+
 /// راوتر التطبيق — كل عناصر القائمة الجانبية ليها شاشة حقيقية،
 /// والـPlaceholder اتساب كـfallback للمسارات غير المعروفة بس.
-final GoRouter appRouter = GoRouter(
+///
+/// الراوتر بياخد [SessionController] عشان يحرس المسارات: من غير جلسة
+/// كل حاجة بتوديك لشاشة الدخول، ومع جلسة شاشة الدخول بتوديك للرئيسية.
+GoRouter createRouter(SessionController session) => GoRouter(
   initialLocation: '/',
+  refreshListenable: session,
+  redirect: (BuildContext context, GoRouterState state) {
+    // لسه بنقرأ التوكن المحفوظ — مانوجّهش لحد ما نعرف.
+    if (session.status == SessionStatus.checking) return null;
+
+    final bool goingToLogin = state.matchedLocation == loginPath;
+
+    if (!session.isAuthenticated) return goingToLogin ? null : loginPath;
+
+    return goingToLogin ? '/' : null;
+  },
   errorBuilder: (BuildContext context, GoRouterState state) => AppShell(
     child: PlaceholderScreen(
       title: 'الصفحة غير موجودة',
@@ -42,6 +60,11 @@ final GoRouter appRouter = GoRouter(
     ),
   ),
   routes: <RouteBase>[
+    // شاشة الدخول بره الـShell عشان متظهرش القائمة الجانبية قبل الدخول.
+    GoRoute(
+      path: loginPath,
+      pageBuilder: (_, _) => _page(const LoginScreen()),
+    ),
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) =>
           AppShell(child: child),
@@ -157,4 +180,4 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
   ],
-);
+    );
