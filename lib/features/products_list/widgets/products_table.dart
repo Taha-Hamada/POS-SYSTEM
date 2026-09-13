@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/app_data_table.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/products_list_controller.dart';

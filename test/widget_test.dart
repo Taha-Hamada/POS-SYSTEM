@@ -6,6 +6,9 @@ import 'package:pos_system/core/widgets/numpad.dart';
 import 'package:pos_system/features/payment/screens/payment_dialog.dart';
 import 'package:pos_system/features/pos_sale/screens/pos_sale_screen.dart';
 import 'package:pos_system/theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_backend.dart';
 
 /// مقاس شاشة سطح المكتب اللي النظام متصمم عليه
 const Size _desktop = Size(1440, 900);
@@ -15,23 +18,32 @@ Future<void> _pumpDesktop(WidgetTester tester, Widget app) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(app);
-  await tester.pump();
+  // التطبيق بيبدأ على شاشة انتظار لحد ما يقرا الجلسة المحفوظة،
+  // فبنستنى لحد ما يستقر على الشاشة الحقيقية.
+  await tester.pumpAndSettle();
 }
 
 /// يفتح التطبيق كامل وينتقل لشاشة من القائمة الجانبية
 Future<void> _openScreen(WidgetTester tester, String navLabel) async {
-  await _pumpDesktop(tester, const PosSystemApp());
+  await _pumpDesktop(tester, PosSystemApp(api: FakeBackend().client()));
   // أول نتيجة هي عنصر القائمة الجانبية (الـSidebar أول عنصر في الـRow)
   await tester.tap(find.text(navLabel).first);
   await tester.pumpAndSettle();
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pos.access_token': 'fake-access',
+      'pos.refresh_token': 'fake-refresh',
+    });
+  });
+
   group('الهيكل العام', () {
     testWidgets('يفتح التطبيق على شاشة الترحيب باتجاه RTL', (
       WidgetTester tester,
     ) async {
-      await _pumpDesktop(tester, const PosSystemApp());
+      await _pumpDesktop(tester, PosSystemApp(api: FakeBackend().client()));
 
       expect(find.text('أهلاً بك في POS System'), findsOneWidget);
 
@@ -164,15 +176,15 @@ void main() {
       await _openScreen(tester, 'المنتجات');
 
       expect(find.text('SKU'), findsOneWidget);
-      expect(find.text(MockData.products.first.name), findsOneWidget);
+      // أسماء المنتجات جاية من الباك اند المزيّف.
+      expect(find.text('بيبسي كانز'), findsOneWidget);
 
       await tester.tap(find.text('غير نشطة'));
       await tester.pumpAndSettle();
 
-      for (final Product p in MockData.inactiveProducts) {
-        expect(find.text(p.name), findsOneWidget);
-      }
-      expect(find.text('غير نشط'), findsNWidgets(3));
+      expect(find.text('شيبسي جبنة'), findsOneWidget);
+      expect(find.text('بيبسي كانز'), findsNothing);
+      expect(find.text('غير نشط'), findsOneWidget);
     });
 
     testWidgets('الفرز بالضغط على عمود الكمية شغال', (

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/primary_button.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
 
 /// بيطلب تأكيد حذف منتج — بيرجّع true لو المستخدم أكّد.

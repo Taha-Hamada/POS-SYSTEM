@@ -15,7 +15,11 @@ void main() {
 }
 
 class PosSystemApp extends StatefulWidget {
-  const PosSystemApp({super.key});
+  const PosSystemApp({super.key, this.api});
+
+  /// بيتحقن في الاختبارات بعميل بيرد بردود جاهزة،
+  /// عشان اختبارات الواجهة تشتغل من غير سيرفر شغال.
+  final ApiClient? api;
 
   @override
   State<PosSystemApp> createState() => _PosSystemAppState();
@@ -30,7 +34,7 @@ class _PosSystemAppState extends State<PosSystemApp> {
   void initState() {
     super.initState();
 
-    _api = ApiClient();
+    _api = widget.api ?? ApiClient();
     _session = SessionController(_api);
     _router = createRouter(_session);
 

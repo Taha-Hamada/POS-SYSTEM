@@ -3,10 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/main.dart';
 import 'package:pos_system/core/widgets/placeholder_screen.dart';
 import 'package:pos_system/widgets/app_shell.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_backend.dart';
 
 const Size _desktop = Size(1600, 950);
 
 void main() {
+  setUp(() {
+    // الشاشات بقت بتقرأ من الـ API، فبنشغّلها على باك اند مزيّف
+    // وبجلسة محفوظة عشان التطبيق يعدّي شاشة الدخول.
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pos.access_token': 'fake-access',
+      'pos.refresh_token': 'fake-refresh',
+    });
+  });
+
   testWidgets('كل عنصر في القائمة الجانبية بيفتح شاشته الحقيقية', (
     WidgetTester tester,
   ) async {
@@ -14,7 +26,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(const PosSystemApp());
+    await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
     await tester.pumpAndSettle();
 
     expect(kNavItems.length, 15);
@@ -49,7 +61,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(const PosSystemApp());
+    await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
     await tester.pumpAndSettle();
 
     // المنتجات ← إضافة منتج ← رجوع
@@ -76,7 +88,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(const PosSystemApp());
+    await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
     await tester.pumpAndSettle();
 
     final Finder reports = find.text('التقارير').first;

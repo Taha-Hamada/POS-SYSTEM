@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/category.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/products_list_controller.dart';
+import '../models/products_filter.dart';
 
 /// قائمة اختيار الفئة — مع عدد المنتجات جنب كل فئة.
 class ProductsCategoryDropdown extends StatelessWidget {
@@ -25,14 +26,14 @@ class ProductsCategoryDropdown extends StatelessWidget {
           value: null,
           label: 'كل الفئات',
           icon: Icons.apps_rounded,
-          trailing: Fmt.count(MockData.products.length),
+          trailing: Fmt.count(products.countFor(ProductsFilter.all)),
         ),
-        for (final ProductCategory c in MockData.categories)
+        for (final Category c in products.categories)
           AppDropdownItem<String?>(
             value: c.id,
             label: c.name,
             icon: c.icon,
-            trailing: Fmt.count(MockData.productsByCategory(c.id).length),
+            trailing: Fmt.count(c.productsCount),
           ),
       ],
     );

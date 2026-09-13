@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/primary_button.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/products_list_controller.dart';
+import '../models/products_filter.dart';
 import 'products_category_dropdown.dart';
 import 'products_search_field.dart';
 
@@ -19,6 +19,9 @@ class ProductsListHeader extends StatelessWidget {
     final int visibleCount =
         context.select((ProductsListController p) => p.visibleCount);
 
+    final int totalCount =
+        context.select((ProductsListController p) => p.countFor(ProductsFilter.all));
+
     return Row(
       children: <Widget>[
         Expanded(
@@ -30,7 +33,7 @@ class ProductsListHeader extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 'عرض ${Fmt.count(visibleCount)} من إجمالي '
-                '${Fmt.count(MockData.products.length)} منتج',
+                '${Fmt.count(totalCount)} منتج',
                 style: AppText.caption,
               ),
             ],

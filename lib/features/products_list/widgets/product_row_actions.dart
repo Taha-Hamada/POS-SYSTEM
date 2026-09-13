@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_snack_bar.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/product.dart';
 import 'delete_product_dialog.dart';
 import 'product_row_action.dart';
 

@@ -11,6 +11,7 @@ import '../../features/employees_permissions/screens/roles_permissions_screen.da
 import '../../features/expenses/screens/expenses_screen.dart';
 import '../../features/inventory/screens/inventory_screen.dart';
 import '../../features/login/screens/login_screen.dart';
+import '../../features/login/screens/splash_screen.dart';
 import '../../features/loyalty/screens/loyalty_screen.dart';
 import '../../features/pos_sale/screens/pos_sale_screen.dart';
 import '../../features/products_list/screens/products_list_screen.dart';
@@ -32,6 +33,7 @@ import '../widgets/placeholder_screen.dart';
 Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
 
 const String loginPath = '/login';
+const String splashPath = '/splash';
 
 /// راوتر التطبيق — كل عناصر القائمة الجانبية ليها شاشة حقيقية،
 /// والـPlaceholder اتساب كـfallback للمسارات غير المعروفة بس.
@@ -42,14 +44,20 @@ GoRouter createRouter(SessionController session) => GoRouter(
   initialLocation: '/',
   refreshListenable: session,
   redirect: (BuildContext context, GoRouterState state) {
-    // لسه بنقرأ التوكن المحفوظ — مانوجّهش لحد ما نعرف.
-    if (session.status == SessionStatus.checking) return null;
+    final String location = state.matchedLocation;
 
-    final bool goingToLogin = state.matchedLocation == loginPath;
+    // لسه بنقرأ التوكن المحفوظ. بنستنى على شاشة انتظار بدل ما نعرض
+    // الشاشة المحمية لحظة وبعدين نقفز لشاشة الدخول.
+    if (session.status == SessionStatus.checking) {
+      return location == splashPath ? null : splashPath;
+    }
 
-    if (!session.isAuthenticated) return goingToLogin ? null : loginPath;
+    if (!session.isAuthenticated) {
+      return location == loginPath ? null : loginPath;
+    }
 
-    return goingToLogin ? '/' : null;
+    // الجلسة جاهزة: شاشتَي الدخول والانتظار مالهمش لازمة.
+    return location == loginPath || location == splashPath ? '/' : null;
   },
   errorBuilder: (BuildContext context, GoRouterState state) => AppShell(
     child: PlaceholderScreen(
@@ -61,6 +69,10 @@ GoRouter createRouter(SessionController session) => GoRouter(
   ),
   routes: <RouteBase>[
     // شاشة الدخول بره الـShell عشان متظهرش القائمة الجانبية قبل الدخول.
+    GoRoute(
+      path: splashPath,
+      pageBuilder: (_, _) => _page(const SplashScreen()),
+    ),
     GoRoute(
       path: loginPath,
       pageBuilder: (_, _) => _page(const LoginScreen()),

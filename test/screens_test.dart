@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_backend.dart';
 import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/features/purchase_orders/screens/receive_goods_dialog.dart';
 
@@ -10,8 +13,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = _desktop;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(const PosSystemApp());
-  await tester.pump();
+  await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
+  // التطبيق بيبدأ على شاشة انتظار لحد ما يقرا الجلسة المحفوظة.
+  await tester.pumpAndSettle();
 }
 
 /// يفتح شاشة من القائمة الجانبية (أول نتيجة هي عنصر الـSidebar)
@@ -25,6 +29,15 @@ Future<void> _openScreen(WidgetTester tester, String navLabel) async {
 }
 
 void main() {
+  setUp(() {
+    // الشاشات بقت بتقرا من الـ API، فبنشغّلها على باك اند مزيّف
+    // وبجلسة محفوظة عشان التطبيق يعدّي شاشة الدخول.
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pos.access_token': 'fake-access',
+      'pos.refresh_token': 'fake-refresh',
+    });
+  });
+
   group('المشتريات', () {
     testWidgets('جدول أوامر الشراء بيظهر بالحالات الأربعة', (
       WidgetTester tester,
