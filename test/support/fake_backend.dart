@@ -71,7 +71,7 @@ class FakeBackend {
         'isActive': isActive,
       };
 
-  /// أوامر الشراء — واحد مؤكد جاهز للاستلام وواحد مكتمل.
+  /// أوامر الشراء — واحد من كل حالة عشان الجدول يغطّيها كلها.
   late final List<Map<String, dynamic>> purchaseOrders = <Map<String, dynamic>>[
     _order(
       id: 'po1',
@@ -94,6 +94,29 @@ class FakeBackend {
           product: products[0],
           quantity: 4,
           received: 4,
+        ),
+      ],
+    ),
+    _order(
+      id: 'po3',
+      number: 'PO-00003',
+      supplierId: 'sp1',
+      status: 'draft',
+      lines: <Map<String, dynamic>>[
+        _orderLine(id: 'pol4', product: products[1], quantity: 8),
+      ],
+    ),
+    _order(
+      id: 'po4',
+      number: 'PO-00004',
+      supplierId: 'sp2',
+      status: 'partially_received',
+      lines: <Map<String, dynamic>>[
+        _orderLine(
+          id: 'pol5',
+          product: products[0],
+          quantity: 12,
+          received: 5,
         ),
       ],
     ),
@@ -619,6 +642,42 @@ class FakeBackend {
       }
 
       return _ok(supplier);
+    }
+
+    if (path.endsWith('/purchase-orders/summary')) {
+      final Map<String, Map<String, num>> byStatus = <String, Map<String, num>>{
+        for (final String s in <String>[
+          'draft',
+          'confirmed',
+          'partially_received',
+          'completed',
+          'cancelled',
+        ])
+          s: <String, num>{'count': 0, 'total': 0},
+      };
+
+      for (final Map<String, dynamic> o in purchaseOrders) {
+        final Map<String, num> row = byStatus[o['status']]!;
+        row['count'] = row['count']! + 1;
+        row['total'] = row['total']! + (o['total'] as num);
+      }
+
+      final Map<String, num> awaiting = <String, num>{
+        'count': byStatus['confirmed']!['count']! +
+            byStatus['partially_received']!['count']!,
+        'total': byStatus['confirmed']!['total']! +
+            byStatus['partially_received']!['total']!,
+      };
+
+      return _ok(<String, dynamic>{
+        'byStatus': byStatus,
+        'awaiting': awaiting,
+        'count': purchaseOrders.length,
+        'total': purchaseOrders.fold<double>(
+          0,
+          (double sum, Map<String, dynamic> o) => sum + (o['total'] as num),
+        ),
+      });
     }
 
     if (path.endsWith('/purchase-orders') && request.method == 'GET') {

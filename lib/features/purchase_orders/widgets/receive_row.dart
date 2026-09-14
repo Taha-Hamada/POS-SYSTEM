@@ -39,15 +39,12 @@ class ReceiveRow extends StatelessWidget {
         children: <Widget>[
           Expanded(
             flex: 4,
-            child: ReceiveProductCell(
-              product: line.orderLine.product,
-              unitCost: line.orderLine.unitCost,
-            ),
+            child: ReceiveProductCell(line: line.orderLine),
           ),
           SizedBox(
             width: 90,
             child: Text(
-              Fmt.count(line.ordered),
+              Fmt.count(line.ordered.round()),
               textAlign: TextAlign.center,
               style: AppText.amountSm.copyWith(fontSize: 13.5),
             ),
@@ -57,7 +54,7 @@ class ReceiveRow extends StatelessWidget {
             child: Text(
               line.previouslyReceived == 0
                   ? '—'
-                  : Fmt.count(line.previouslyReceived),
+                  : Fmt.count(line.previouslyReceived.round()),
               textAlign: TextAlign.center,
               style: AppText.body.copyWith(
                 fontSize: 13,
@@ -71,7 +68,7 @@ class ReceiveRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: ReceiveQuantityField(
                 value: line.receivingNow,
-                onChanged: (int v) => receive.setReceivingNow(line, v),
+                onChanged: (double v) => receive.setReceivingNow(line, v),
               ),
             ),
           ),

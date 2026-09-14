@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/purchase_order.dart';
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/purchase_orders_controller.dart';
 
-/// البطاقات الإحصائية الأربعة فوق جدول الأوامر.
+/// البطاقات الإحصائية فوق جدول الأوامر.
+///
+/// الأعداد والقيم محسوبة على السيرفر على كل الأوامر، مش على الصفحة المعروضة،
+/// ومفيش نسب تغيّر لأن الملخّص مبيرجّعش فترة سابقة.
 class PurchaseOrdersStatCards extends StatelessWidget {
   const PurchaseOrdersStatCards({super.key});
 
@@ -24,19 +27,15 @@ class PurchaseOrdersStatCards extends StatelessWidget {
             value: Fmt.count(orders.awaitingCount),
             icon: Icons.local_shipping_outlined,
             iconColor: AppColors.info,
-            changeLabel: 'متابعة يومية',
-            changePercent: 8.3,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: StatCard(
             title: 'قيمة الأوامر المعلّقة',
-            value: Fmt.moneyRounded(orders.pendingValue),
+            value: Fmt.moneyRounded(orders.awaitingValue),
             icon: Icons.account_balance_wallet_outlined,
             iconColor: AppColors.accent,
-            changeLabel: 'مقارنة بالشهر الماضي',
-            changePercent: 14.2,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -49,8 +48,6 @@ class PurchaseOrdersStatCards extends StatelessWidget {
             icon: Icons.edit_note_rounded,
             iconColor: AppColors.warning,
             higherIsBetter: false,
-            changeLabel: 'تحتاج مراجعة',
-            changePercent: -12.0,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -62,8 +59,6 @@ class PurchaseOrdersStatCards extends StatelessWidget {
             ),
             icon: Icons.task_alt_rounded,
             iconColor: AppColors.success,
-            changeLabel: 'خلال 30 يوم',
-            changePercent: 22.5,
           ),
         ),
       ],

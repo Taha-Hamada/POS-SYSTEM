@@ -7,7 +7,7 @@ import '../../../utils/formatters.dart';
 class ReceiveRemainingBadge extends StatelessWidget {
   const ReceiveRemainingBadge({super.key, required this.remaining});
 
-  final int remaining;
+  final double remaining;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class ReceiveRemainingBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
-        complete ? 'مكتمل' : Fmt.count(remaining),
+        complete ? 'مكتمل' : Fmt.count(remaining.round()),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,

@@ -61,11 +61,11 @@ class _DraftLineRowState extends State<DraftLineRow> {
           children: <Widget>[
             Expanded(
               flex: 4,
-              child: DraftLineProductCell(product: line.product),
+              child: DraftLineProductCell(line: line),
             ),
             Expanded(
               flex: 2,
-              child: DraftLineStockCell(product: line.product),
+              child: DraftLineStockCell(line: line),
             ),
             SizedBox(
               width: 120,

@@ -25,7 +25,7 @@ class PurchaseOrdersFilterBar extends StatelessWidget {
         const Spacer(),
         SearchField(
           controller: orders.searchController,
-          hint: 'ابحث برقم الأمر أو المورد…',
+          hint: 'ابحث برقم الأمر…',
           onChanged: orders.setQuery,
         ),
         const SizedBox(width: AppSpacing.md),

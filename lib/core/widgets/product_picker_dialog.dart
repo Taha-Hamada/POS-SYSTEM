@@ -1,25 +1,33 @@
 import 'package:flutter/material.dart';
 
-import '../../mock_data/mock_data.dart';
+import '../models/product.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import 'status_badge.dart';
 
-/// حوار بحث واختيار منتج — بيتستخدم في تحويل المخزون وأوامر الشراء.
+/// حوار بحث واختيار منتج — بيتستخدم في أوامر الشراء.
+///
+/// الكتالوج بيتبعت جاهز من الشاشة بدل ما الحوار يطلبه، عشان مايتحملش تاني مع
+/// كل فتح والشاشة أصلًا محمّلاه.
 Future<Product?> showProductPicker(
   BuildContext context, {
+  required List<Product> catalog,
   Set<String> excludedIds = const <String>{},
 }) {
   return showDialog<Product>(
     context: context,
     builder: (BuildContext context) =>
-        _ProductPickerDialog(excludedIds: excludedIds),
+        _ProductPickerDialog(catalog: catalog, excludedIds: excludedIds),
   );
 }
 
 class _ProductPickerDialog extends StatefulWidget {
-  const _ProductPickerDialog({required this.excludedIds});
+  const _ProductPickerDialog({
+    required this.catalog,
+    required this.excludedIds,
+  });
 
+  final List<Product> catalog;
   final Set<String> excludedIds;
 
   @override
@@ -31,9 +39,16 @@ class _ProductPickerDialogState extends State<_ProductPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Product> results = MockData.searchProducts(_query)
-        .where((Product p) => !widget.excludedIds.contains(p.id))
-        .toList(growable: false);
+    final String query = _query.trim().toLowerCase();
+
+    final List<Product> results = widget.catalog.where((Product p) {
+      if (widget.excludedIds.contains(p.id)) return false;
+      if (query.isEmpty) return true;
+
+      return p.name.toLowerCase().contains(query) ||
+          p.sku.toLowerCase().contains(query) ||
+          (p.barcode ?? '').contains(query);
+    }).toList(growable: false);
 
     return Dialog(
       child: SizedBox(

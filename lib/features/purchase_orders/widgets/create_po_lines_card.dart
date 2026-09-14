@@ -32,7 +32,7 @@ class CreatePoLinesCard extends StatelessWidget {
                 : ListView.builder(
                     itemCount: lines.length,
                     itemBuilder: (BuildContext context, int i) => DraftLineRow(
-                      key: ValueKey<String>(lines[i].product.id),
+                      key: ValueKey<String>(lines[i].productId),
                       line: lines[i],
                       onRemove: () => draft.removeLineAt(i),
                     ),

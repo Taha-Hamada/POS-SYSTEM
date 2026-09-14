@@ -56,8 +56,8 @@ void main() {
     ) async {
       await _openScreen(tester, 'المشتريات');
 
-      // PO-1057 أمر مؤكد
-      await tester.tap(find.text('PO-1057'));
+      // PO-00001 أمر مؤكد جاهز للاستلام
+      await tester.tap(find.text('PO-00001'));
       await tester.pumpAndSettle();
 
       expect(find.text('استلام البضاعة'), findsOneWidget);
@@ -97,12 +97,10 @@ void main() {
       await tester.tap(find.text('إضافة كتالوج المورد'));
       await tester.pumpAndSettle();
 
-      // كتالوج المورد الأول = بقالة + ألبان
-      final int expectedLines =
-          MockData.productsBySupplier(MockData.suppliers.first.id).length;
-      expect(expectedLines, greaterThan(0));
+      // الكتالوج بيتحسب من أوامر المورد، مش من حقل على المنتج.
       expect(find.text('لم تتم إضافة أصناف بعد'), findsNothing);
       expect(find.text('إنشاء واعتماد الأمر'), findsOneWidget);
+      expect(find.text('مصاريف الشحن'), findsOneWidget);
     });
   });
 

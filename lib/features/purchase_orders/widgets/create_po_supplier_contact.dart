@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/supplier.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/create_purchase_order_controller.dart';
 
@@ -11,7 +11,7 @@ class CreatePoSupplierContact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Supplier supplier =
+    final Supplier? supplier =
         context.watch<CreatePurchaseOrderController>().supplier;
 
     return Container(
@@ -32,7 +32,9 @@ class CreatePoSupplierContact extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              supplier.contactPerson,
+              supplier == null || supplier.contactPerson.isEmpty
+                  ? 'مفيش مسؤول تواصل مسجّل'
+                  : supplier.contactPerson,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppText.body.copyWith(fontSize: 12.5),
@@ -46,7 +48,7 @@ class CreatePoSupplierContact extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            supplier.phone,
+            supplier?.phone ?? '—',
             style: AppText.caption.copyWith(fontSize: 12),
           ),
         ],

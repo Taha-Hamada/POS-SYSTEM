@@ -4,6 +4,17 @@ import '../../../core/models/purchase_order.dart';
 /// صفحة من أوامر الشراء مع عددها الكلي على السيرفر.
 typedef PurchaseOrdersPage = ({List<PurchaseOrder> items, int total});
 
+/// عدد وقيمة مجموعة من الأوامر.
+typedef StatusTotals = ({int count, double total});
+
+/// إجماليات الأوامر مقسّمة بالحالة.
+typedef PurchaseOrdersSummary = ({
+  Map<PurchaseOrderStatus, StatusTotals> byStatus,
+  StatusTotals awaiting,
+  int count,
+  double total,
+});
+
 /// سطر رايح للسيرفر في إنشاء أمر أو تعديله.
 typedef PurchaseLineInput = ({
   String productId,
@@ -55,6 +66,36 @@ class PurchasesRepository {
     return (
       items: response.list.map(PurchaseOrder.fromJson).toList(),
       total: response.total,
+    );
+  }
+
+  /// عدد وقيمة الأوامر في كل حالة — محسوبة على السيرفر على كل الأوامر.
+  Future<PurchaseOrdersSummary> fetchSummary({
+    String? branchId,
+    String? supplierId,
+  }) async {
+    final ApiResponse response = await _api.get(
+      '/purchase-orders/summary',
+      query: <String, dynamic>{'branch': ?branchId, 'supplier': ?supplierId},
+    );
+
+    final Map<String, dynamic> data = response.object;
+    final Map<String, dynamic> byStatus =
+        data['byStatus'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+    StatusTotals totals(Map<String, dynamic>? row) => (
+          count: (row?['count'] as num?)?.toInt() ?? 0,
+          total: (row?['total'] as num?)?.toDouble() ?? 0,
+        );
+
+    return (
+      byStatus: <PurchaseOrderStatus, StatusTotals>{
+        for (final PurchaseOrderStatus s in PurchaseOrderStatus.values)
+          s: totals(byStatus[s.apiValue] as Map<String, dynamic>?),
+      },
+      awaiting: totals(data['awaiting'] as Map<String, dynamic>?),
+      count: (data['count'] as num?)?.toInt() ?? 0,
+      total: (data['total'] as num?)?.toDouble() ?? 0,
     );
   }
 

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
+import '../models/draft_order_line.dart';
 
-/// خلية المنتج في صف الأمر: أيقونة + الاسم والـSKU والوحدة.
+/// خلية المنتج في صف الأمر: الاسم والـSKU والوحدة.
 class DraftLineProductCell extends StatelessWidget {
-  const DraftLineProductCell({super.key, required this.product});
+  const DraftLineProductCell({super.key, required this.line});
 
-  final Product product;
+  final DraftOrderLine line;
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +17,13 @@ class DraftLineProductCell extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: product.accentColor.withValues(alpha: 0.12),
+            color: AppColors.accent.withValues(alpha: 0.12),
             borderRadius: AppRadius.smAll,
           ),
-          child: Icon(
-            product.categoryIcon,
+          child: const Icon(
+            Icons.inventory_2_outlined,
             size: 17,
-            color: product.accentColor,
+            color: AppColors.accent,
           ),
         ),
         const SizedBox(width: AppSpacing.md),
@@ -33,13 +33,13 @@ class DraftLineProductCell extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                product.name,
+                line.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.bodyMedium.copyWith(fontSize: 13),
               ),
               Text(
-                '${product.sku} • ${product.unit}',
+                '${line.sku} • ${line.unit}',
                 style: AppText.caption.copyWith(fontSize: 11),
               ),
             ],

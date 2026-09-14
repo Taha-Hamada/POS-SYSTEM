@@ -34,8 +34,8 @@ class ReceiveProgressBar extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                '${Fmt.count(receive.receivedTotal)} من '
-                '${Fmt.count(receive.orderedTotal)} وحدة',
+                '${Fmt.count(receive.receivedTotal.round())} من '
+                '${Fmt.count(receive.orderedTotal.round())} وحدة',
                 style: AppText.caption.copyWith(fontSize: 12),
               ),
               const Spacer(),

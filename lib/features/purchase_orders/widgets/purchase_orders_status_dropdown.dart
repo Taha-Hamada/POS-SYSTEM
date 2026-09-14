@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/purchase_order.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/purchase_orders_controller.dart';
 
 /// فلتر حالة الأمر فوق الجدول.
+///
+/// العدّاد جنب كل حالة هو العدد الحقيقي على السيرفر مش في الصفحة المعروضة.
 class PurchaseOrdersStatusDropdown extends StatelessWidget {
   const PurchaseOrdersStatusDropdown({super.key});
 

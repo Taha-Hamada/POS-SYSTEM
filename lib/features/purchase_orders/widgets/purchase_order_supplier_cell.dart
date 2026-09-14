@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/purchase_order.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
@@ -30,9 +30,10 @@ class PurchaseOrderSupplierCell extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
+          // القايمة بترجع من غير السطور، فبنعرض الوحدات اللي السيرفر بيحسبها.
           child: TableCells.twoLine(
-            order.supplier.name,
-            '${order.lines.length} صنف • ${Fmt.count(order.totalQuantity)} وحدة',
+            order.supplierName,
+            '${Fmt.count(order.totalQuantity.round())} وحدة مطلوبة',
           ),
         ),
       ],

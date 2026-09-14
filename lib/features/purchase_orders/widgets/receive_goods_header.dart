@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/purchase_order.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/receive_goods_controller.dart';
@@ -56,7 +56,7 @@ class ReceiveGoodsHeader extends StatelessWidget {
                     Text('استلام البضاعة', style: AppText.sectionTitle),
                     const SizedBox(width: AppSpacing.sm),
                     StatusBadge(
-                      label: order.id,
+                      label: order.number,
                       tone: StatusTone.neutral,
                       showDot: false,
                       compact: true,
@@ -65,8 +65,8 @@ class ReceiveGoodsHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${order.supplier.name} • تاريخ الأمر '
-                  '${Fmt.date(order.date)}',
+                  '${order.supplierName} • تاريخ الأمر '
+                  '${Fmt.date(order.orderDate)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption,

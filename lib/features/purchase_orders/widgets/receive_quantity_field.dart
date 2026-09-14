@@ -11,8 +11,8 @@ class ReceiveQuantityField extends StatefulWidget {
     required this.onChanged,
   });
 
-  final int value;
-  final ValueChanged<int> onChanged;
+  final double value;
+  final ValueChanged<double> onChanged;
 
   @override
   State<ReceiveQuantityField> createState() => _ReceiveQuantityFieldState();
@@ -20,15 +20,19 @@ class ReceiveQuantityField extends StatefulWidget {
 
 class _ReceiveQuantityFieldState extends State<ReceiveQuantityField> {
   late final TextEditingController _controller =
-      TextEditingController(text: '${widget.value}');
+      TextEditingController(text: _text(widget.value));
 
   @override
   void didUpdateWidget(ReceiveQuantityField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // بيتزامن مع «استلام الكل» و«تصفير»
-    final String expected = '${widget.value}';
+    final String expected = _text(widget.value);
     if (_controller.text != expected) _controller.text = expected;
   }
+
+  /// الكميات بتتكتب صحيحة لما تكون صحيحة، عشان تبان 5 مش 5.0.
+  static String _text(double value) =>
+      value == value.roundToDouble() ? '${value.round()}' : '$value';
 
   @override
   void dispose() {
@@ -47,7 +51,7 @@ class _ReceiveQuantityFieldState extends State<ReceiveQuantityField> {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.digitsOnly,
         ],
-        onChanged: (String v) => widget.onChanged(int.tryParse(v) ?? 0),
+        onChanged: (String v) => widget.onChanged(double.tryParse(v) ?? 0),
         style: AppText.amountSm.copyWith(fontSize: 14),
         decoration: InputDecoration(
           isDense: true,

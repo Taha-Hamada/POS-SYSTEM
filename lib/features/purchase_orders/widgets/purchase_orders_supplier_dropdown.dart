@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/supplier.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../controllers/purchase_orders_controller.dart';
 
 /// فلتر المورد فوق جدول الأوامر.
@@ -25,7 +25,7 @@ class PurchaseOrdersSupplierDropdown extends StatelessWidget {
           label: 'كل الموردين',
           icon: Icons.apps_rounded,
         ),
-        for (final Supplier s in MockData.suppliers)
+        for (final Supplier s in orders.suppliers)
           AppDropdownItem<String?>(
             value: s.id,
             label: s.name,

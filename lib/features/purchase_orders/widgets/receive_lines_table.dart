@@ -29,7 +29,7 @@ class ReceiveLinesTable extends StatelessWidget {
               shrinkWrap: true,
               itemCount: lines.length,
               itemBuilder: (BuildContext context, int i) => ReceiveRow(
-                key: ValueKey<String>(lines[i].orderLine.productId),
+                key: ValueKey<String>(lines[i].orderLine.id),
                 line: lines[i],
                 isLast: i == lines.length - 1,
               ),

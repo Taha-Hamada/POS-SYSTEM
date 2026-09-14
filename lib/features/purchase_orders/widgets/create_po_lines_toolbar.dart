@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/product.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/product_picker_dialog.dart';
 import '../../../core/widgets/secondary_button.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/create_purchase_order_controller.dart';
@@ -16,8 +17,10 @@ Future<void> pickProductForOrder(BuildContext context) async {
 
   final Product? product = await showProductPicker(
     context,
+    catalog: draft.catalog,
     excludedIds: draft.pickedProductIds,
   );
+
   if (product == null) return;
 
   draft.addProduct(product);
@@ -26,6 +29,28 @@ Future<void> pickProductForOrder(BuildContext context) async {
 /// شريط عنوان جدول الأصناف مع أزرار الإضافة.
 class CreatePoLinesToolbar extends StatelessWidget {
   const CreatePoLinesToolbar({super.key});
+
+  /// بيضيف الأصناف اللي المورد ده وردها قبل كده، بآخر سعر اتدفع فيه.
+  Future<void> _addCatalog(BuildContext context) async {
+    final CreatePurchaseOrderController draft =
+        context.read<CreatePurchaseOrderController>();
+
+    final ({int added, String? error}) result = await draft.addSupplierCatalog();
+    if (!context.mounted) return;
+
+    if (result.error != null) {
+      showPlainSnackBar(context, result.error!);
+      return;
+    }
+
+    if (result.added == 0) {
+      showPlainSnackBar(
+        context,
+        'مفيش أصناف جديدة اتطلبت من المورد ده قبل كده',
+        width: 460,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +82,7 @@ class CreatePoLinesToolbar extends StatelessWidget {
             label: 'إضافة كتالوج المورد',
             icon: Icons.library_add_outlined,
             size: AppButtonSize.small,
-            onPressed: draft.addSupplierCatalog,
+            onPressed: () => _addCatalog(context),
           ),
           const SizedBox(width: AppSpacing.sm),
           PrimaryButton(

@@ -1,17 +1,20 @@
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/purchase_order.dart';
 
 /// صف استلام — بيحمل الكمية اللي بتتستلم دلوقتي.
 class ReceiveLine {
-  ReceiveLine({required this.orderLine, int? receivingNow})
+  ReceiveLine({required this.orderLine, double? receivingNow})
       : receivingNow = receivingNow ?? orderLine.remaining;
 
   final PurchaseOrderLine orderLine;
-  int receivingNow;
+  double receivingNow;
 
-  int get ordered => orderLine.quantity;
-  int get previouslyReceived => orderLine.receivedQuantity;
-  int get totalAfter => previouslyReceived + receivingNow;
-  int get remainingAfter => ordered - totalAfter;
+  double get ordered => orderLine.quantity;
+  double get previouslyReceived => orderLine.receivedQuantity;
+  double get totalAfter => previouslyReceived + receivingNow;
+  double get remainingAfter => ordered - totalAfter;
 
   double get receivingValue => receivingNow * orderLine.unitCost;
+
+  /// الصفوف اللي مفيش فيها كمية مبتتبعتش — السيرفر بيرفض الكمية صفر.
+  bool get isPending => receivingNow > 0;
 }

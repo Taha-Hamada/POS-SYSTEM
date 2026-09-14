@@ -1,14 +1,23 @@
-import '../../../mock_data/mock_data.dart';
-
 /// صف في أمر الشراء الجديد.
 class DraftOrderLine {
   DraftOrderLine({
-    required this.product,
+    required this.productId,
+    required this.name,
+    required this.sku,
     required this.quantity,
     required this.unitCost,
+    this.unit = '',
+    this.stock = 0,
   });
 
-  final Product product;
+  final String productId;
+  final String name;
+  final String sku;
+  final String unit;
+
+  /// رصيد الصنف وقت ما اتضاف للأمر — بيساعد اللي بيطلب يقرر الكمية.
+  final int stock;
+
   int quantity;
   double unitCost;
 

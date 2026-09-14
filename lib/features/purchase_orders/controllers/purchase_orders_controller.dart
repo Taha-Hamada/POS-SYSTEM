@@ -1,107 +1,196 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../../core/models/purchase_order.dart';
+import '../../../core/models/supplier.dart';
+import '../../suppliers/data/suppliers_repository.dart';
+import '../data/purchases_repository.dart';
 import '../models/purchase_orders_sort_column.dart';
 
 /// حالة شاشة أوامر الشراء: البحث، المورد، الحالة، والفرز.
-class PurchaseOrdersController extends ChangeNotifier {
+///
+/// الفلترة والفرز على السيرفر، والعدادات فوق الجدول جاية من مسار الملخّص
+/// عشان تبقى على كل الأوامر مش على الصفحة المعروضة.
+class PurchaseOrdersController extends ChangeNotifier with LoadState {
+  PurchaseOrdersController(this._repository, this._suppliers);
+
+  final PurchasesRepository _repository;
+  final SuppliersRepository _suppliers;
+
   final TextEditingController searchController = TextEditingController();
+
+  List<PurchaseOrder> _rows = <PurchaseOrder>[];
+  List<Supplier> _supplierList = <Supplier>[];
+  int _total = 0;
+
+  PurchaseOrdersSummary _summary = (
+    byStatus: <PurchaseOrderStatus, StatusTotals>{},
+    awaiting: (count: 0, total: 0),
+    count: 0,
+    total: 0,
+  );
 
   String _query = '';
   String? _supplierId;
   PurchaseOrderStatus? _status;
-  int _sortIndex = 2;
+  int _sortIndex = PurchaseOrdersSortColumn.date.index;
   bool _sortAscending = false;
 
-  /// نتيجة الفلترة والفرز — بتتحسب مرة واحدة لحد ما حاجة تتغيّر.
-  List<PurchaseOrder>? _cachedRows;
+  Timer? _searchDebounce;
 
   String? get supplierId => _supplierId;
   PurchaseOrderStatus? get status => _status;
   int get sortIndex => _sortIndex;
   bool get sortAscending => _sortAscending;
 
-  List<PurchaseOrder> get rows => _cachedRows ??= _computeRows();
+  List<PurchaseOrder> get rows => _rows;
+  List<Supplier> get suppliers => _supplierList;
 
-  int get visibleCount => rows.length;
+  /// العدد الكلي المطابق للفلتر، مش عدد الصفوف المعروضة.
+  int get visibleCount => _total;
 
   double get visibleValue =>
-      rows.fold<double>(0, (double s, PurchaseOrder o) => s + o.total);
+      _rows.fold<double>(0, (double s, PurchaseOrder o) => s + o.total);
+
+  bool get isEmpty => !isLoading && !hasFailed && _rows.isEmpty;
 
   // ── إحصائيات أعلى الشاشة ─────────────────────────────────────────────────
-  int countByStatus(PurchaseOrderStatus status) => MockData.purchaseOrders
-      .where((PurchaseOrder o) => o.status == status)
-      .length;
+  int countByStatus(PurchaseOrderStatus status) =>
+      _summary.byStatus[status]?.count ?? 0;
 
-  int get awaitingCount =>
-      countByStatus(PurchaseOrderStatus.confirmed) +
-      countByStatus(PurchaseOrderStatus.partiallyReceived);
+  double valueByStatus(PurchaseOrderStatus status) =>
+      _summary.byStatus[status]?.total ?? 0;
 
-  double get pendingValue => MockData.purchaseOrders
-      .where((PurchaseOrder o) => o.isReceivable)
-      .fold<double>(0, (double s, PurchaseOrder o) => s + o.total);
+  /// المؤكد والمستلم جزئيًا — اللي لسه مستنيين بضاعة.
+  int get awaitingCount => _summary.awaiting.count;
+  double get awaitingValue => _summary.awaiting.total;
+
+  // ── التحميل ──────────────────────────────────────────────────────────────
+  Future<void> load() async {
+    await runLoad(() async {
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        _repository.fetchPage(
+          search: _query.trim().isEmpty ? null : _query.trim(),
+          supplierId: _supplierId,
+          status: _status,
+          sort: _sortKey,
+        ),
+        _repository.fetchSummary(supplierId: _supplierId),
+        if (_supplierList.isEmpty)
+          _suppliers.fetchPage(limit: 100)
+        else
+          Future<SuppliersPage>.value(
+            (items: _supplierList, total: _supplierList.length),
+          ),
+      ]);
+
+      final PurchaseOrdersPage page = results[0] as PurchaseOrdersPage;
+      _rows = page.items;
+      _total = page.total;
+      _summary = results[1] as PurchaseOrdersSummary;
+      _supplierList = (results[2] as SuppliersPage).items;
+    });
+  }
+
+  Future<void> retry() => load();
+
+  /// مفتاح الفرز اللي السيرفر بيفهمه.
+  ///
+  /// عمود المورد مش هنا: السيرفر بيفرز بمعرّف المورد مش باسمه، فبيتفرز محليًا.
+  String get _sortKey {
+    final String prefix = _sortAscending ? '' : '-';
+
+    return switch (PurchaseOrdersSortColumn.values[_sortIndex]) {
+      PurchaseOrdersSortColumn.id => '${prefix}number',
+      PurchaseOrdersSortColumn.status => '${prefix}status',
+      PurchaseOrdersSortColumn.total => '${prefix}total',
+      _ => '${prefix}orderDate',
+    };
+  }
 
   // ── الفلترة والفرز ───────────────────────────────────────────────────────
-  List<PurchaseOrder> _computeRows() {
-    final String q = _query.trim().toLowerCase();
-
-    final List<PurchaseOrder> list =
-        MockData.purchaseOrders.where((PurchaseOrder o) {
-      if (_supplierId != null && o.supplierId != _supplierId) return false;
-      if (_status != null && o.status != _status) return false;
-      if (q.isEmpty) return true;
-      return o.id.toLowerCase().contains(q) ||
-          o.supplier.name.toLowerCase().contains(q);
-    }).toList();
-
-    final PurchaseOrdersSortColumn column =
-        PurchaseOrdersSortColumn.values[_sortIndex];
-
-    list.sort((PurchaseOrder a, PurchaseOrder b) {
-      final int result = switch (column) {
-        PurchaseOrdersSortColumn.id => a.id.compareTo(b.id),
-        PurchaseOrdersSortColumn.supplier =>
-          a.supplier.name.compareTo(b.supplier.name),
-        PurchaseOrdersSortColumn.date => a.date.compareTo(b.date),
-        PurchaseOrdersSortColumn.status =>
-          a.status.index.compareTo(b.status.index),
-        PurchaseOrdersSortColumn.total => a.total.compareTo(b.total),
-      };
-      return _sortAscending ? result : -result;
-    });
-
-    return list;
-  }
-
-  // ── إجراءات ──────────────────────────────────────────────────────────────
   void setQuery(String value) {
     _query = value;
-    _refresh();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), load);
   }
 
-  void setSupplier(String? id) {
+  Future<void> setSupplier(String? id) async {
+    if (_supplierId == id) return;
     _supplierId = id;
-    _refresh();
+    notifyListeners();
+    await load();
   }
 
-  void setStatus(PurchaseOrderStatus? status) {
+  Future<void> setStatus(PurchaseOrderStatus? status) async {
+    if (_status == status) return;
     _status = status;
-    _refresh();
+    notifyListeners();
+    await load();
   }
 
-  void sortBy(int columnIndex, bool ascending) {
+  Future<void> sortBy(int columnIndex, bool ascending) async {
     _sortIndex = columnIndex;
     _sortAscending = ascending;
-    _refresh();
+
+    if (PurchaseOrdersSortColumn.values[_sortIndex] ==
+        PurchaseOrdersSortColumn.supplier) {
+      _rows = List<PurchaseOrder>.from(_rows)
+        ..sort((PurchaseOrder a, PurchaseOrder b) {
+          final int result = a.supplierName.compareTo(b.supplierName);
+          return _sortAscending ? result : -result;
+        });
+
+      notifyListeners();
+      return;
+    }
+
+    notifyListeners();
+    await load();
   }
 
-  void _refresh() {
-    _cachedRows = null;
-    notifyListeners();
+  // ── الكتابة ──────────────────────────────────────────────────────────────
+  /// بيجيب الأمر كامل بسطوره — القايمة بترجع من غيرها.
+  Future<PurchaseOrder?> fetchFullOrder(String id) async {
+    PurchaseOrder? order;
+
+    final ApiException? failure = await runAction(() async {
+      order = await _repository.fetchOne(id);
+    });
+
+    return failure == null ? order : null;
   }
+
+  /// تأكيد الأمر بيقفل باب التعديل ويخليه جاهز للاستلام.
+  Future<String?> confirm(PurchaseOrder order) async {
+    final ApiException? failure = await runAction(() async {
+      await _repository.confirm(order.id);
+    });
+
+    if (failure == null) await load();
+
+    return failure?.message;
+  }
+
+  /// الإلغاء بيترفض لو دخل من الأمر بضاعة.
+  Future<String?> cancel(PurchaseOrder order, {required String reason}) async {
+    final ApiException? failure = await runAction(() async {
+      await _repository.cancel(order.id, reason: reason);
+    });
+
+    if (failure == null) await load();
+
+    return failure?.message;
+  }
+
+  Future<void> refreshAfterReceipt() => load();
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     searchController.dispose();
     super.dispose();
   }
