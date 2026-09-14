@@ -37,7 +37,7 @@ class TransferBranchesRow extends StatelessWidget {
             Expanded(
               child: TransferBranchField(
                 label: 'الفرع المُستقبِل',
-                value: transfer.toBranchId,
+                value: transfer.toBranchId ?? transfer.fromBranchId,
                 icon: Icons.download_rounded,
                 color: AppColors.success,
                 onChanged: transfer.setToBranch,

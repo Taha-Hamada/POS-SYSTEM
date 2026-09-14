@@ -1,45 +1,78 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../inventory/data/inventory_repository.dart';
+import '../../inventory/models/stock_record.dart';
 import '../models/stocktake_line.dart';
 
+/// نتيجة اعتماد الجرد.
+typedef StocktakeResult = ({int applied, int failed});
+
 /// حالة شاشة الجرد: الفرع، البحث، والكميات الفعلية المُدخلة.
-class StocktakeController extends ChangeNotifier {
+///
+/// الأرصدة بتتجاب من السيرفر، والاعتماد بيبعت الفروق بس — الصف اللي معدود
+/// ومطابق مبيتبعتش، عشان سجل الحركات مايتلوّثش بحركات بصفر.
+class StocktakeController extends ChangeNotifier with LoadState {
+  StocktakeController(this._repository, {required String branchId})
+      : _branchId = branchId; // ignore: prefer_initializing_formals
+
+  final InventoryRepository _repository;
+
   final TextEditingController searchController = TextEditingController();
 
-  String _branchId = MockData.branches.first.id;
+  String _branchId;
   String _query = '';
-  late List<StocktakeLine> _lines = _buildLines();
+  List<StocktakeLine> _lines = <StocktakeLine>[];
+  List<BranchOption> _branches = <BranchOption>[];
 
   String get branchId => _branchId;
   String get query => _query;
   List<StocktakeLine> get lines => _lines;
+  List<BranchOption> get branches => _branches;
 
-  Branch get branch => MockData.branchById(_branchId)!;
+  String get branchName => _branches
+      .where((BranchOption b) => b.id == _branchId)
+      .map((BranchOption b) => b.name)
+      .firstOrNull ??
+      '';
 
-  List<StocktakeLine> _buildLines() {
-    return <StocktakeLine>[
-      for (final Product p in MockData.products)
-        StocktakeLine(
-          product: p,
-          systemQuantity: MockData.onHandAt(p.id, _branchId),
-        ),
-    ];
+  bool get canSwitchBranch => _branches.length > 1;
+  bool get isEmpty => !isLoading && !hasFailed && _lines.isEmpty;
+
+  // ── التحميل ──────────────────────────────────────────────────────────────
+  Future<void> load() async {
+    await runLoad(() async {
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        _repository.fetchStock(branchId: _branchId, limit: 100),
+        if (_branches.isEmpty)
+          _repository.fetchBranches()
+        else
+          Future<List<BranchOption>>.value(_branches),
+      ]);
+
+      final StockPage page = results[0] as StockPage;
+      _lines = page.items
+          .map((StockRecord r) => StocktakeLine(record: r))
+          .toList();
+      _branches = results[1] as List<BranchOption>;
+    });
   }
+
+  Future<void> retry() => load();
 
   List<StocktakeLine> get visibleLines {
     final String q = _query.trim().toLowerCase();
     if (q.isEmpty) return _lines;
+
     return _lines
         .where((StocktakeLine l) =>
-            l.product.name.toLowerCase().contains(q) ||
-            l.product.sku.toLowerCase().contains(q) ||
-            l.product.barcode.contains(q))
+            l.name.toLowerCase().contains(q) ||
+            l.sku.toLowerCase().contains(q))
         .toList(growable: false);
   }
 
-  int get countedCount =>
-      _lines.where((StocktakeLine l) => l.isCounted).length;
+  int get countedCount => _lines.where((StocktakeLine l) => l.isCounted).length;
 
   int get shortageCount =>
       _lines.where((StocktakeLine l) => l.isCounted && l.difference < 0).length;
@@ -53,11 +86,17 @@ class StocktakeController extends ChangeNotifier {
 
   bool get hasCounted => countedCount > 0;
 
+  /// الصفوف اللي هتتبعت فعلًا — اللي فيها فرق بس.
+  List<StocktakeLine> get pendingLines =>
+      _lines.where((StocktakeLine l) => l.needsSubmit).toList();
+
   // ── إجراءات ──────────────────────────────────────────────────────────────
-  void changeBranch(String id) {
+  Future<void> changeBranch(String id) async {
+    if (id == _branchId) return;
     _branchId = id;
-    _lines = _buildLines();
+    _lines = <StocktakeLine>[];
     notifyListeners();
+    await load();
   }
 
   void setQuery(String value) {
@@ -82,6 +121,35 @@ class StocktakeController extends ChangeNotifier {
       l.actualQuantity = null;
     }
     notifyListeners();
+  }
+
+  /// بيعتمد الجرد: بيبعت كل صف فيه فرق لوحده.
+  ///
+  /// الصف اللي يفشل مبيوقفش الباقي، عشان جرد 50 صنف ما يضيعش بسبب صنف واحد.
+  Future<StocktakeResult> submit({String? note}) async {
+    final List<StocktakeLine> pending = pendingLines;
+    int applied = 0;
+    int failed = 0;
+
+    await runAction(() async {
+      for (final StocktakeLine line in pending) {
+        try {
+          await _repository.stocktake(
+            productId: line.productId,
+            branchId: _branchId,
+            countedQuantity: line.actualQuantity!,
+            note: note,
+          );
+          applied += 1;
+        } on ApiException {
+          failed += 1;
+        }
+      }
+    });
+
+    await load();
+
+    return (applied: applied, failed: failed);
   }
 
   @override

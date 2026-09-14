@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_client.dart';
+import '../data/inventory_repository.dart';
+import '../models/stock_record.dart';
+import 'stock_movements_dialog.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/inventory_controller.dart';
 import 'inventory_table_footer.dart';
@@ -48,16 +50,13 @@ class InventoryTable extends StatelessWidget {
 
   List<Widget> _cells(StockRecord r) {
     return <Widget>[
-      StockProductCell(product: r.product),
-      StockBranchCell(branch: r.branch),
+      StockProductCell(record: r),
+      StockBranchCell(name: r.branchName),
       TableCells.count(r.onHand),
       StockReservedCell(reserved: r.reserved),
       StockAvailableCell(available: r.available),
-      StatusBadge.stock(
-        stock: r.available,
-        minStock: (r.product.minStock * 0.5).round(),
-        compact: true,
-      ),
+      // الحالة على الرصيد الفعلي وحد الطلب المحسوب على السيرفر.
+      StatusBadge.stock(stock: r.onHand, minStock: r.minStock, compact: true),
       StockLastMovementCell(date: r.lastMovement),
     ];
   }
@@ -81,9 +80,10 @@ class InventoryTable extends StatelessWidget {
             highlightColor: r.available <= 0
                 ? AppColors.dangerSoft.withValues(alpha: 0.5)
                 : null,
-            onTap: () => showPlainSnackBar(
+            onTap: () => showStockMovementsDialog(
               context,
-              'عرض حركات «${r.product.name}»',
+              repository: InventoryRepository(context.read<ApiClient>()),
+              record: r,
             ),
             cells: _cells(r),
           ),

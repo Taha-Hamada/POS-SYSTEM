@@ -36,7 +36,7 @@ class StocktakeTable extends StatelessWidget {
                     itemCount: lines.length,
                     itemBuilder: (BuildContext context, int i) => StocktakeRow(
                       key: ValueKey<String>(
-                        '${stocktake.branchId}_${lines[i].product.id}',
+                        '${stocktake.branchId}_${lines[i].productId}',
                       ),
                       line: lines[i],
                     ),

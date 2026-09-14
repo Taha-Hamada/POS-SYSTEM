@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+
 import '../../../theme/app_theme.dart';
+import '../../inventory/models/stock_record.dart';
 
 /// خلية المنتج في صف الجرد: أيقونة الفئة + الاسم والـSKU.
 class StocktakeProductCell extends StatelessWidget {
-  const StocktakeProductCell({super.key, required this.product});
+  const StocktakeProductCell({super.key, required this.record});
 
-  final Product product;
+  final StockRecord record;
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +18,13 @@ class StocktakeProductCell extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: product.accentColor.withValues(alpha: 0.12),
+            color: AppColors.accent.withValues(alpha: 0.12),
             borderRadius: AppRadius.smAll,
           ),
           child: Icon(
-            product.categoryIcon,
+            record.categoryIcon,
             size: 17,
-            color: product.accentColor,
+            color: AppColors.accent,
           ),
         ),
         const SizedBox(width: AppSpacing.md),
@@ -33,13 +34,13 @@ class StocktakeProductCell extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                product.name,
+                record.productName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.bodyMedium.copyWith(fontSize: 13),
               ),
               Text(
-                product.sku,
+                record.sku,
                 style: AppText.caption.copyWith(fontSize: 11),
               ),
             ],

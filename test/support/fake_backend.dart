@@ -97,6 +97,53 @@ class FakeBackend {
   }
 
   /// مبيعات كل فرع — الأرقام ثابتة عشان الاختبار يعرف يتوقعها.
+  static final List<Map<String, dynamic>> _branches = <Map<String, dynamic>>[
+    <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي', 'code': 'MAIN'},
+    <String, dynamic>{'id': 'b2', 'name': 'فرع المعادي', 'code': 'MAAD'},
+  ];
+
+  /// سجلات مخزون مبنية من المنتجات، مع فلترة الحالة زي السيرفر.
+  List<Map<String, dynamic>> _stockFor(String? status) {
+    final List<Map<String, dynamic>> all = <Map<String, dynamic>>[
+      for (final Map<String, dynamic> p in products)
+        <String, dynamic>{
+          '_id': 'st-${p['id']}',
+          'quantity': p['stock'],
+          'reserved': 0,
+          'effectiveMinStock': p['minStock'],
+          'available': p['stock'],
+          'updatedAt': DateTime.now().toIso8601String(),
+          'product': <String, dynamic>{
+            '_id': p['id'],
+            'name': p['name'],
+            'sku': p['sku'],
+            'unit': p['unit'],
+            'cost': p['cost'],
+            'price': p['price'],
+            'minStock': p['minStock'],
+            'category': <String, dynamic>{
+              'name': 'مشروبات',
+              'icon': 'local_drink',
+              'color': '#3B82F6',
+            },
+          },
+          'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+        },
+    ];
+
+    int qty(Map<String, dynamic> r) => (r['quantity'] as num).toInt();
+    int min(Map<String, dynamic> r) => (r['effectiveMinStock'] as num).toInt();
+
+    return switch (status) {
+      'out' => all.where((Map<String, dynamic> r) => qty(r) <= 0).toList(),
+      'low' => all
+          .where((Map<String, dynamic> r) => qty(r) > 0 && qty(r) <= min(r))
+          .toList(),
+      'ok' => all.where((Map<String, dynamic> r) => qty(r) > min(r)).toList(),
+      _ => all,
+    };
+  }
+
   static const Map<String, double> _branchSales = <String, double>{
     'b1': 60000,
     'b2': 40000,
@@ -273,6 +320,32 @@ class FakeBackend {
 
     if (path.endsWith('/categories')) {
       return _page(categories);
+    }
+
+    if (path.endsWith('/inventory/stock')) {
+      final String? status = request.url.queryParameters['status'];
+      return _page(_stockFor(status));
+    }
+
+    if (path.endsWith('/inventory/summary')) {
+      return _ok(<String, dynamic>{
+        'items': products.length,
+        'units': 200,
+        'value': 5000,
+        'retailValue': 9000,
+        'outOfStock': 1,
+        'lowStock': 1,
+        'nearExpiry': 0,
+      });
+    }
+
+    if (path.endsWith('/inventory/movements')) {
+      return _page(<Map<String, dynamic>>[]);
+    }
+
+    // ‏‎/reports/branches بينتهي بـ‎/branches كمان، فبنستثنيه هنا.
+    if (path.endsWith('/branches') && !path.contains('/reports/')) {
+      return _page(_branches);
     }
 
     if (path.endsWith('/customers/receivables')) {

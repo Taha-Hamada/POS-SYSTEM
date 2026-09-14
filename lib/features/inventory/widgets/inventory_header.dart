@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../stock_transfer_stocktake/screens/stock_transfer_dialog.dart';
+import '../controllers/inventory_controller.dart';
 
 /// هيدر شاشة المخزون: العنوان وأزرار التحويل والجرد.
 class InventoryHeader extends StatelessWidget {
   const InventoryHeader({super.key});
 
   Future<void> _openTransferDialog(BuildContext context) async {
-    final bool? done = await showStockTransferDialog(context);
+    final InventoryController inventory =
+        context.read<InventoryController>();
+
+    final bool? done = await showStockTransferDialog(
+      context,
+      fromBranchId: inventory.branchId,
+    );
     if (done != true || !context.mounted) return;
 
-    showPlainSnackBar(context, 'تم تنفيذ أمر تحويل المخزون (تجريبي)');
+    // التحويل غيّر أرصدة الفرع، فالجدول لازم يتحدّث.
+    await inventory.load();
   }
 
   @override

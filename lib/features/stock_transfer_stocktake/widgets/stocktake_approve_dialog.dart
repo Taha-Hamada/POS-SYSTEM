@@ -37,7 +37,7 @@ class StocktakeApproveDialog extends StatelessWidget {
           children: <Widget>[
             Text(
               'سيتم ترحيل الفروقات وتعديل أرصدة المخزون في '
-              '${stocktake.branch.name}.',
+              '${stocktake.branchName}.',
               style: AppText.body,
             ),
             const SizedBox(height: AppSpacing.lg),

@@ -80,7 +80,8 @@ void main() {
       return;
     }
 
-    expect(data.series.last.sales, data.today.sales,
+    // مقارنة تقريبية: المجموع في السلسلة بيتقرّب على حدة عن مجموع اليوم.
+    expect(data.series.last.sales, closeTo(data.today.sales, 0.01),
         reason: 'تقسيم الأيام لازم يبقى بتوقيت السيرفر');
   });
 

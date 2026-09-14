@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/widgets/staggered_reveal.dart';
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
+import '../controllers/inventory_controller.dart';
 
 /// صف البطاقات الإحصائية الأربعة فوق الجدول.
 class InventoryStatCards extends StatefulWidget {
@@ -30,39 +32,38 @@ class _InventoryStatCardsState extends State<InventoryStatCards>
 
   @override
   Widget build(BuildContext context) {
+    final InventoryController inventory =
+        context.watch<InventoryController>();
+
     final List<Widget> cards = <Widget>[
       StatCard(
         title: 'إجمالي قيمة المخزون',
-        value: Fmt.moneyRounded(MockData.inventoryValue),
+        value: Fmt.moneyRounded(inventory.totalValue),
         icon: Icons.account_balance_wallet_outlined,
         iconColor: AppColors.accent,
-        changePercent: 6.4,
       ),
       StatCard(
         title: 'منتجات منخفضة المخزون',
-        value: Fmt.count(MockData.lowStockProducts.length),
+        value: Fmt.count(inventory.lowCount),
         icon: Icons.trending_down_rounded,
         iconColor: AppColors.warning,
-        changePercent: 12.5,
         higherIsBetter: false,
         changeLabel: 'مقارنة بالأسبوع الماضي',
       ),
       StatCard(
         title: 'منتجات نافدة',
-        value: Fmt.count(MockData.outOfStockProducts.length),
+        value: Fmt.count(inventory.outCount),
         icon: Icons.remove_shopping_cart_outlined,
         iconColor: AppColors.danger,
-        changePercent: -25.0,
         higherIsBetter: false,
         changeLabel: 'مقارنة بالأسبوع الماضي',
       ),
       StatCard(
         title: 'قاربت على انتهاء الصلاحية',
-        value: Fmt.count(MockData.nearExpiryProducts.length),
+        value: Fmt.count(inventory.nearExpiryCount),
         icon: Icons.event_busy_outlined,
         iconColor: AppColors.info,
         changeLabel: 'خلال الـ30 يوم القادمة',
-        changePercent: 3.2,
         higherIsBetter: false,
       ),
     ];

@@ -107,7 +107,7 @@ void main() {
   });
 
   group('المخزون', () {
-    testWidgets('حوار تحويل المخزون بيعرض Stepper بثلاث مراحل', (
+    testWidgets('حوار تحويل المخزون بيعرض الفرعين', (
       WidgetTester tester,
     ) async {
       await _openScreen(tester, 'المخزون');
@@ -115,12 +115,11 @@ void main() {
       await tester.tap(find.text('تحويل مخزون'));
       await tester.pumpAndSettle();
 
-      expect(find.text('مُعلّق'), findsOneWidget);
-      expect(find.text('في الطريق'), findsOneWidget);
-      expect(find.text('تم الاستلام'), findsOneWidget);
+      // مفيش مراحل: السيرفر بينفّذ التحويل فورًا.
       expect(find.text('الفرع المُرسِل'), findsOneWidget);
       expect(find.text('الفرع المُستقبِل'), findsOneWidget);
       expect(find.text('لم تتم إضافة أصناف بعد'), findsOneWidget);
+      expect(find.text('تنفيذ التحويل'), findsOneWidget);
     });
 
     testWidgets('شاشة الجرد بتحسب الفرق وتلوّنه', (WidgetTester tester) async {
@@ -135,14 +134,8 @@ void main() {
 
       // إدخال كمية فعلية أقل من النظام → عجز
       // (الحقل رقم 0 هو البحث، فأول صف في الجدول رقمه 1)
-      final int system = MockData.onHandAt(
-        MockData.products.first.id,
-        MockData.branches.first.id,
-      );
-      await tester.enterText(
-        find.byType(TextField).at(1),
-        '${system - 5}',
-      );
+      // أول صنف في الباك اند المزيّف رصيده 80.
+      await tester.enterText(find.byType(TextField).at(1), '75');
       await tester.pumpAndSettle();
 
       expect(find.text('-5'), findsOneWidget);

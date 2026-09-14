@@ -4,16 +4,33 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../controllers/stock_transfer_controller.dart';
-import '../models/transfer_status.dart';
 
-/// فوتر الحوار: اتجاه التحويل وأزرار الإلغاء والتقدّم للمرحلة اللي بعدها.
+/// فوتر الحوار: اتجاه التحويل وأزرار الإلغاء والتنفيذ.
+///
+/// التحويل بيتنفذ فورًا على السيرفر، فمفيش مراحل — زرار واحد بيخلّص الأمر.
 class TransferFooter extends StatelessWidget {
   const TransferFooter({super.key});
 
-  void _advance(BuildContext context) {
-    final bool finished = context.read<StockTransferController>().advance();
-    if (finished) Navigator.of(context).pop(true);
+  Future<void> _submit(BuildContext context) async {
+    final StockTransferController transfer =
+        context.read<StockTransferController>();
+
+    final TransferResult result = await transfer.submit();
+    if (!context.mounted) return;
+
+    if (result.failed > 0) {
+      showAppSnackBar(
+        context,
+        result.error ?? 'فشل تحويل ${result.failed} صنف',
+        isError: true,
+      );
+      return;
+    }
+
+    showAppSnackBar(context, 'اتحوّل ${result.moved} صنف');
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -36,15 +53,15 @@ class TransferFooter extends StatelessWidget {
           Expanded(
             child: Row(
               children: <Widget>[
-                Icon(
-                  transfer.status.icon,
+                const Icon(
+                  Icons.swap_horiz_rounded,
                   size: 16,
                   color: AppColors.textSecondary,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(
-                    '${transfer.from.name}  ←  ${transfer.to.name}',
+                    '${transfer.fromName}  ←  ${transfer.toName}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppText.caption.copyWith(fontSize: 12),
@@ -61,12 +78,10 @@ class TransferFooter extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           PrimaryButton(
-            label: transfer.status.actionLabel,
-            icon: transfer.status == TransferStatus.received
-                ? Icons.check_rounded
-                : Icons.send_rounded,
+            label: 'تنفيذ التحويل',
+            icon: Icons.send_rounded,
             size: AppButtonSize.large,
-            onPressed: transfer.canSubmit ? () => _advance(context) : null,
+            onPressed: transfer.canSubmit ? () => _submit(context) : null,
           ),
         ],
       ),

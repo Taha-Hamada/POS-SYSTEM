@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
@@ -11,7 +11,7 @@ class StockLastMovementCell extends StatelessWidget {
   final DateTime date;
 
   String get _relativeDays {
-    final int days = MockData.today.difference(date).inDays;
+    final int days = DateTime.now().difference(date).inDays;
     return switch (days) {
       <= 0 => 'اليوم',
       1 => 'أمس',

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/main.dart';
-import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/core/widgets/numpad.dart';
 import 'package:pos_system/features/payment/screens/payment_dialog.dart';
 import 'package:pos_system/features/pos_sale/screens/pos_sale_screen.dart';
@@ -237,25 +236,18 @@ void main() {
       expect(find.text('المتاحة'), findsOneWidget);
     });
 
-    testWidgets('فلتر الفرع بيقلّل عدد السجلات', (WidgetTester tester) async {
+    testWidgets('فلتر الحالة بيقلّل عدد السجلات', (WidgetTester tester) async {
       await _openScreen(tester, 'المخزون');
 
-      // كل الفروع = عدد المنتجات × عدد الفروع
-      expect(
-        find.text('(${MockData.stockRecords.length} سجل)'),
-        findsOneWidget,
-      );
+      // الباك اند المزيّف فيه 4 أصناف، واحد بس تحت حد الطلب.
+      expect(find.text('(4 سجل)'), findsOneWidget);
 
-      await tester.tap(find.text('كل الفروع والمخازن'));
+      await tester.tap(find.text('كل الأصناف'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(MockData.branches[1].name).last);
+      await tester.tap(find.text('تحت حد الطلب').last);
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('(${MockData.products.length} سجل)'),
-        findsOneWidget,
-      );
-      expect(find.text('كل الفروع والمخازن'), findsNothing);
+      expect(find.text('(1 سجل)'), findsOneWidget);
     });
   });
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
-import 'transfer_stepper.dart';
 
 /// هيدر حوار التحويل: العنوان وزرار الإغلاق وشريط المراحل.
 class TransferHeader extends StatelessWidget {
@@ -64,7 +63,6 @@ class TransferHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
-          const TransferStepper(),
         ],
       ),
     );

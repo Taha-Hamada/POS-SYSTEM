@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
-import '../../../utils/formatters.dart';
+import '../data/inventory_repository.dart';
 import '../controllers/inventory_controller.dart';
 
 /// فلتر الفرع أو المخزن.
@@ -19,19 +18,13 @@ class InventoryBranchDropdown extends StatelessWidget {
       width: 240,
       icon: Icons.store_outlined,
       onChanged: inventory.setBranch,
+      // مفيش «كل الفروع» لأن المخزون بيتحسب لفرع واحد على السيرفر.
       items: <AppDropdownItem<String?>>[
-        AppDropdownItem<String?>(
-          value: null,
-          label: 'كل الفروع والمخازن',
-          icon: Icons.apps_rounded,
-          trailing: Fmt.count(MockData.stockRecords.length),
-        ),
-        for (final Branch b in MockData.branches)
+        for (final BranchOption b in inventory.branches)
           AppDropdownItem<String?>(
             value: b.id,
             label: b.name,
-            icon: b.isMain ? Icons.star_rounded : Icons.store_outlined,
-            trailing: Fmt.count(MockData.stockByBranch(b.id).length),
+            icon: Icons.store_outlined,
           ),
       ],
     );

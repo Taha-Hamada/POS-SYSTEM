@@ -46,12 +46,12 @@ class _StocktakeRowState extends State<StocktakeRow> {
           children: <Widget>[
             Expanded(
               flex: 4,
-              child: StocktakeProductCell(product: line.product),
+              child: StocktakeProductCell(record: line.record),
             ),
             Expanded(
               flex: 2,
               child: Text(
-                line.product.categoryName,
+                line.record.categoryName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppText.body.copyWith(

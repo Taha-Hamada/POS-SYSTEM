@@ -1,16 +1,28 @@
-import '../../../mock_data/mock_data.dart';
+import '../../inventory/models/stock_record.dart';
 
 /// صف جرد: الكمية بالنظام + الكمية الفعلية المُدخلة.
 class StocktakeLine {
-  StocktakeLine({required this.product, required this.systemQuantity});
+  StocktakeLine({required this.record});
 
-  final Product product;
-  final int systemQuantity;
+  /// رصيد الصنف في الفرع زي ما السيرفر بيقوله.
+  final StockRecord record;
 
   /// null = لسه ماتجردش
   int? actualQuantity;
 
+  String get productId => record.productId;
+  String get name => record.productName;
+  String get sku => record.sku;
+  String get unit => record.unit;
+
+  int get systemQuantity => record.onHand;
+
   bool get isCounted => actualQuantity != null;
+
   int get difference => (actualQuantity ?? systemQuantity) - systemQuantity;
-  double get valueDifference => difference * product.cost;
+
+  double get valueDifference => difference * record.cost;
+
+  /// الصف محتاج يتبعت للسيرفر بس لو اتجرد وفيه فرق فعلي.
+  bool get needsSubmit => isCounted && difference != 0;
 }

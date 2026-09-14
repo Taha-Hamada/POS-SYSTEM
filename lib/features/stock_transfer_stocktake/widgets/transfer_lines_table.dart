@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/product_picker_dialog.dart';
 import '../../../core/widgets/secondary_button.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
+import '../../inventory/models/stock_record.dart';
 import '../controllers/stock_transfer_controller.dart';
 import '../models/transfer_line.dart';
+import 'transfer_product_picker.dart';
 import 'transfer_line_row.dart';
 import 'transfer_lines_empty.dart';
 import 'transfer_lines_header.dart';
@@ -22,13 +22,14 @@ class TransferLinesTable extends StatelessWidget {
     final StockTransferController transfer =
         context.read<StockTransferController>();
 
-    final Product? product = await showProductPicker(
+    final StockRecord? picked = await showTransferProductPicker(
       context,
+      stock: transfer.availableStock,
       excludedIds: transfer.pickedProductIds,
     );
-    if (product == null) return;
+    if (picked == null) return;
 
-    transfer.addProduct(product);
+    transfer.addProduct(picked);
   }
 
   @override
@@ -54,7 +55,7 @@ class TransferLinesTable extends StatelessWidget {
               size: AppButtonSize.small,
               tone: SecondaryButtonTone.accent,
               onPressed:
-                  transfer.isEditable ? () => _addProduct(context) : null,
+                  !transfer.isLoading ? () => _addProduct(context) : null,
             ),
           ],
         ),
