@@ -31,6 +31,145 @@ class FakeBackend {
     _customer(id: 'cu2', name: 'هدى إبراهيم', phone: '01003334444'),
   ];
 
+  /// الموردين — مورد عليه مستحقات وواحد صافي.
+  final List<Map<String, dynamic>> suppliers = <Map<String, dynamic>>[
+    _supplier(
+      id: 'sp1',
+      name: 'شركة النور للتوريدات',
+      phone: '01011112222',
+      balanceDue: 4500,
+      totalPurchases: 30000,
+      ordersCount: 6,
+    ),
+    _supplier(id: 'sp2', name: 'مخبز الحياة', phone: '01033334444'),
+  ];
+
+  static Map<String, dynamic> _supplier({
+    required String id,
+    required String name,
+    required String phone,
+    String contactPerson = 'مسؤول التواصل',
+    String email = '',
+    double balanceDue = 0,
+    double totalPurchases = 0,
+    int ordersCount = 0,
+    bool isActive = true,
+  }) =>
+      <String, dynamic>{
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'contactPerson': contactPerson,
+        'email': email,
+        'address': '',
+        'taxNumber': '',
+        'balanceDue': balanceDue,
+        'paymentTermDays': 30,
+        'totalPurchases': totalPurchases,
+        'ordersCount': ordersCount,
+        'note': '',
+        'isActive': isActive,
+      };
+
+  /// أوامر الشراء — واحد مؤكد جاهز للاستلام وواحد مكتمل.
+  late final List<Map<String, dynamic>> purchaseOrders = <Map<String, dynamic>>[
+    _order(
+      id: 'po1',
+      number: 'PO-00001',
+      supplierId: 'sp1',
+      status: 'confirmed',
+      lines: <Map<String, dynamic>>[
+        _orderLine(id: 'pol1', product: products[0], quantity: 10),
+        _orderLine(id: 'pol2', product: products[1], quantity: 6),
+      ],
+    ),
+    _order(
+      id: 'po2',
+      number: 'PO-00002',
+      supplierId: 'sp2',
+      status: 'completed',
+      lines: <Map<String, dynamic>>[
+        _orderLine(
+          id: 'pol3',
+          product: products[0],
+          quantity: 4,
+          received: 4,
+        ),
+      ],
+    ),
+  ];
+
+  static Map<String, dynamic> _orderLine({
+    required String id,
+    required Map<String, dynamic> product,
+    required double quantity,
+    double received = 0,
+  }) {
+    final double unitCost = (product['cost'] as num).toDouble();
+
+    return <String, dynamic>{
+      'id': id,
+      'product': product['id'],
+      'name': product['name'],
+      'sku': product['sku'],
+      'quantity': quantity,
+      'receivedQuantity': received,
+      'unitCost': unitCost,
+      'lineTotal': unitCost * quantity,
+    };
+  }
+
+  Map<String, dynamic> _order({
+    required String id,
+    required String number,
+    required String supplierId,
+    required String status,
+    required List<Map<String, dynamic>> lines,
+    double shippingCost = 0,
+  }) {
+    final Map<String, dynamic> supplier = suppliers
+        .firstWhere((Map<String, dynamic> s) => s['id'] == supplierId);
+
+    final double subtotal = lines.fold<double>(
+      0,
+      (double sum, Map<String, dynamic> l) => sum + (l['lineTotal'] as double),
+    );
+    final double ordered = lines.fold<double>(
+      0,
+      (double sum, Map<String, dynamic> l) => sum + (l['quantity'] as double),
+    );
+    final double received = lines.fold<double>(
+      0,
+      (double sum, Map<String, dynamic> l) =>
+          sum + (l['receivedQuantity'] as double),
+    );
+
+    return <String, dynamic>{
+      'id': id,
+      'number': number,
+      'supplier': <String, dynamic>{
+        'id': supplier['id'],
+        'name': supplier['name'],
+        'phone': supplier['phone'],
+        'contactPerson': supplier['contactPerson'],
+      },
+      'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+      'status': status,
+      'orderDate': DateTime.now().toIso8601String(),
+      'expectedDate':
+          DateTime.now().add(const Duration(days: 5)).toIso8601String(),
+      'lines': lines,
+      'subtotal': subtotal,
+      'shippingCost': shippingCost,
+      'total': subtotal + shippingCost,
+      'receivedValue': 0,
+      'note': '',
+      'createdBy': <String, dynamic>{'id': 'u1', 'name': 'مستخدم الاختبار'},
+      'totalQuantity': ordered,
+      'receivedQuantity': received,
+    };
+  }
+
   /// المصروفات المسجّلة — الاختبارات بتضيف عليها والشاشة بتقراها.
   final List<Map<String, dynamic>> expenses = <Map<String, dynamic>>[
     _expense(id: 'ex1', number: 'EXP-00001', category: 'كهرباء', amount: 1200),
@@ -392,6 +531,152 @@ class FakeBackend {
       return _page(_branches);
     }
 
+    if (path.endsWith('/suppliers/payables')) {
+      final double total = suppliers.fold<double>(
+        0,
+        (double sum, Map<String, dynamic> s) =>
+            sum + (s['balanceDue'] as num).toDouble(),
+      );
+
+      return _ok(<String, dynamic>{
+        'total': total,
+        'count': suppliers
+            .where((Map<String, dynamic> s) => (s['balanceDue'] as num) > 0)
+            .length,
+      });
+    }
+
+    if (path.contains('/suppliers/') && path.endsWith('/products')) {
+      final String id = path.split('/suppliers/').last.split('/').first;
+
+      return _ok(<Map<String, dynamic>>[
+        for (final Map<String, dynamic> line in _linesOfSupplier(id))
+          _suppliedProduct(line),
+      ]);
+    }
+
+    if (path.contains('/suppliers/') && path.endsWith('/payments')) {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final String id = path.split('/suppliers/').last.split('/').first;
+
+      final Map<String, dynamic> supplier =
+          suppliers.firstWhere((Map<String, dynamic> s) => s['id'] == id);
+      supplier['balanceDue'] = (supplier['balanceDue'] as num).toDouble() -
+          (body['amount'] as num).toDouble();
+
+      return _ok(supplier);
+    }
+
+    if (path.endsWith('/suppliers') && request.method == 'GET') {
+      final Map<String, String> query = request.url.queryParameters;
+
+      return _page(
+        suppliers.where((Map<String, dynamic> s) {
+          if (query['hasDue'] == 'true' && (s['balanceDue'] as num) <= 0) {
+            return false;
+          }
+          if (query['isActive'] != null &&
+              (s['isActive'] as bool) != (query['isActive'] == 'true')) {
+            return false;
+          }
+          final String? search = query['search'];
+          if (search == null) return true;
+
+          return '${s['name']}${s['phone']}${s['contactPerson']}'
+              .contains(search);
+        }).toList(),
+      );
+    }
+
+    if (path.endsWith('/suppliers') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+
+      _supplierCounter += 1;
+      final Map<String, dynamic> created = _supplier(
+        id: 'sp-new-$_supplierCounter',
+        name: body['name'] as String,
+        phone: body['phone'] as String,
+        contactPerson: body['contactPerson'] as String? ?? '',
+      );
+
+      suppliers.add(created);
+      return _ok(created);
+    }
+
+    if (path.contains('/suppliers/')) {
+      final String id = path.split('/suppliers/').last.split('/').first;
+      final Map<String, dynamic>? supplier = suppliers
+          .where((Map<String, dynamic> s) => s['id'] == id)
+          .firstOrNull;
+
+      if (supplier == null) return _notFound('المورد غير موجود');
+
+      // التفعيل والتعطيل والتعديل بيدمجوا الجسم في المورد.
+      if (request.method == 'PATCH') {
+        supplier.addAll(jsonDecode(request.body) as Map<String, dynamic>);
+      }
+
+      return _ok(supplier);
+    }
+
+    if (path.endsWith('/purchase-orders') && request.method == 'GET') {
+      final String? supplierId = request.url.queryParameters['supplier'];
+      final String? status = request.url.queryParameters['status'];
+
+      return _page(
+        purchaseOrders.where((Map<String, dynamic> o) {
+          if (status != null && o['status'] != status) return false;
+          if (supplierId == null) return true;
+
+          return (o['supplier'] as Map<String, dynamic>)['id'] == supplierId;
+        }).toList(),
+      );
+    }
+
+    if (path.endsWith('/purchase-orders') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+
+      _orderCounter += 1;
+      final Map<String, dynamic> created = _order(
+        id: 'po-new-$_orderCounter',
+        number: 'PO-${(100 + _orderCounter).toString().padLeft(5, '0')}',
+        supplierId: body['supplier'] as String,
+        status: 'draft',
+        shippingCost: (body['shippingCost'] as num?)?.toDouble() ?? 0,
+        lines: <Map<String, dynamic>>[
+          for (int i = 0; i < (body['lines'] as List<dynamic>).length; i += 1)
+            _orderLineFrom(
+              (body['lines'] as List<dynamic>)[i] as Map<String, dynamic>,
+              'pol-new-$_orderCounter-$i',
+            ),
+        ],
+      );
+
+      purchaseOrders.insert(0, created);
+      return _ok(created);
+    }
+
+    if (path.contains('/purchase-orders/')) {
+      final String id = path.split('/purchase-orders/').last.split('/').first;
+      final Map<String, dynamic> order = purchaseOrders
+          .firstWhere((Map<String, dynamic> o) => o['id'] == id);
+
+      if (path.endsWith('/confirm')) order['status'] = 'confirmed';
+
+      if (path.endsWith('/cancel')) {
+        order['status'] = 'cancelled';
+        order['cancelReason'] =
+            (jsonDecode(request.body) as Map<String, dynamic>)['reason'];
+      }
+
+      if (path.endsWith('/receive')) _applyReceipt(order, request);
+
+      return _ok(order);
+    }
+
     if (path.endsWith('/expenses/summary')) {
       final List<Map<String, dynamic>> matching = _filteredExpenses(request);
       final Map<String, double> byCategory = <String, double>{};
@@ -724,6 +1009,89 @@ class FakeBackend {
 
   int _invoiceCounter = 0;
   int _expenseCounter = 0;
+  int _supplierCounter = 0;
+  int _orderCounter = 0;
+
+  /// سطور كل أوامر المورد — الأصناف الموردة بتتحسب منها زي السيرفر.
+  List<Map<String, dynamic>> _linesOfSupplier(String supplierId) =>
+      <Map<String, dynamic>>[
+        for (final Map<String, dynamic> order in purchaseOrders)
+          if ((order['supplier'] as Map<String, dynamic>)['id'] == supplierId)
+            ...(order['lines'] as List<dynamic>).cast<Map<String, dynamic>>(),
+      ];
+
+  Map<String, dynamic> _suppliedProduct(Map<String, dynamic> line) {
+    final Map<String, dynamic> product = products.firstWhere(
+      (Map<String, dynamic> p) => p['id'] == line['product'],
+      orElse: () => products.first,
+    );
+
+    return <String, dynamic>{
+      'id': product['id'],
+      'name': product['name'],
+      'sku': product['sku'],
+      'unit': product['unit'],
+      'price': product['price'],
+      'cost': product['cost'],
+      'colorIndex': product['colorIndex'] ?? 0,
+      'minStock': product['minStock'] ?? 0,
+      'trackStock': true,
+      'category': product['category'],
+      'stock': product['stock'],
+      'lastUnitCost': line['unitCost'],
+      'lastOrderDate': DateTime.now().toIso8601String(),
+      'orderedQuantity': line['quantity'],
+      'receivedQuantity': line['receivedQuantity'],
+      'ordersCount': 1,
+    };
+  }
+
+  Map<String, dynamic> _orderLineFrom(Map<String, dynamic> requested, String id) {
+    final Map<String, dynamic> product = products.firstWhere(
+      (Map<String, dynamic> p) => p['id'] == requested['product'],
+      orElse: () => products.first,
+    );
+
+    return _orderLine(
+      id: id,
+      product: product,
+      quantity: (requested['quantity'] as num).toDouble(),
+    );
+  }
+
+  /// بيسجّل الاستلام على السطور ويحدّث حالة الأمر زي السيرفر.
+  void _applyReceipt(Map<String, dynamic> order, http.Request request) {
+    final Map<String, dynamic> body =
+        jsonDecode(request.body) as Map<String, dynamic>;
+    final List<Map<String, dynamic>> lines =
+        (order['lines'] as List<dynamic>).cast<Map<String, dynamic>>();
+
+    double receivedValue = (order['receivedValue'] as num).toDouble();
+
+    for (final dynamic raw in body['lines'] as List<dynamic>) {
+      final Map<String, dynamic> requested = raw as Map<String, dynamic>;
+      final Map<String, dynamic> line = lines
+          .firstWhere((Map<String, dynamic> l) => l['id'] == requested['orderLine']);
+
+      final double quantity = (requested['quantity'] as num).toDouble();
+      line['receivedQuantity'] =
+          (line['receivedQuantity'] as num).toDouble() + quantity;
+      receivedValue += quantity * (line['unitCost'] as num).toDouble();
+    }
+
+    final double ordered = lines.fold<double>(
+      0,
+      (double sum, Map<String, dynamic> l) => sum + (l['quantity'] as num),
+    );
+    final double received = lines.fold<double>(
+      0,
+      (double sum, Map<String, dynamic> l) => sum + (l['receivedQuantity'] as num),
+    );
+
+    order['receivedValue'] = receivedValue;
+    order['receivedQuantity'] = received;
+    order['status'] = received >= ordered ? 'completed' : 'partially_received';
+  }
 
   /// بيطبّق فلاتر المصروفات زي السيرفر: البند والفرع والحالة والبحث.
   List<Map<String, dynamic>> _filteredExpenses(http.Request request) {
@@ -750,6 +1118,16 @@ class FakeBackend {
   static http.Response _ok2(Object? data) => http.Response(
         jsonEncode(<String, dynamic>{'success': true, 'message': null, 'data': data}),
         200,
+        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
+      );
+
+  static http.Response _notFound(String message) => http.Response(
+        jsonEncode(<String, dynamic>{
+          'success': false,
+          'message': message,
+          'error': <String, dynamic>{'code': 'NOT_FOUND'},
+        }),
+        404,
         headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
       );
 

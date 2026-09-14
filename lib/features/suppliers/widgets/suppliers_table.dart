@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/supplier.dart';
 import '../../../core/widgets/app_data_table.dart';
+import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/hover_row_button.dart';
 import '../../../core/widgets/phone_cell.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/suppliers_list_controller.dart';
 import 'supplier_due_cell.dart';
@@ -37,7 +38,7 @@ class SuppliersTable extends StatelessWidget {
     return <Widget>[
       SupplierNameCell(supplier: s),
       Text(
-        s.contactPerson,
+        s.contactPerson.isEmpty ? '—' : s.contactPerson,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: AppText.body.copyWith(fontSize: 13),
@@ -61,6 +62,17 @@ class SuppliersTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final SuppliersListController suppliers =
         context.watch<SuppliersListController>();
+
+    if (suppliers.isFirstLoad) {
+      return const LoadingView(message: 'بنجيب الموردين…');
+    }
+
+    if (suppliers.hasFailed) {
+      return ErrorView(
+        message: suppliers.errorMessage!,
+        onRetry: suppliers.retry,
+      );
+    }
 
     return AppDataTable(
       minWidth: 1060,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/supplier.dart';
 import '../../../theme/app_theme.dart';
 
 /// خلية المورد: أفاتار دائري + الاسم والإيميل.
@@ -29,7 +29,10 @@ class SupplierNameCell extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
-          child: TableCells.twoLine(supplier.name, supplier.email),
+          child: TableCells.twoLine(
+            supplier.name,
+            supplier.email.isEmpty ? supplier.phone : supplier.email,
+          ),
         ),
       ],
     );

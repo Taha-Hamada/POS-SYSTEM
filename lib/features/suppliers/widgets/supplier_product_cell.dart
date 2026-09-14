@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
+import '../models/supplied_product.dart';
 
-/// خلية المنتج في جدول المنتجات الموردة.
+/// خلية الصنف في جدول الأصناف الموردة.
 class SupplierProductCell extends StatelessWidget {
   const SupplierProductCell({super.key, required this.product});
 
-  final Product product;
+  final SuppliedProduct product;
 
   @override
   Widget build(BuildContext context) {

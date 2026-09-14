@@ -1,99 +1,145 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../../core/models/supplier.dart';
+import '../data/suppliers_repository.dart';
 import '../models/supplier_filter.dart';
 import '../models/suppliers_sort_column.dart';
 
 /// حالة شاشة الموردين: البحث، الفلتر، والفرز.
-class SuppliersListController extends ChangeNotifier {
+///
+/// البحث والفلترة والفرز على السيرفر، وإجمالي المستحقات جاي من مسار
+/// `payables` عشان يبقى على كل الموردين مش على الصفحة المعروضة.
+class SuppliersListController extends ChangeNotifier with LoadState {
+  SuppliersListController(this._repository);
+
+  final SuppliersRepository _repository;
+
   final TextEditingController searchController = TextEditingController();
+
+  List<Supplier> _rows = <Supplier>[];
+  int _total = 0;
+  PayablesSummary _payables = (total: 0, count: 0);
+  int _activeCount = 0;
 
   String _query = '';
   SupplierFilter _filter = SupplierFilter.all;
-  int _sortIndex = 0;
+  int _sortIndex = SuppliersSortColumn.name.index;
   bool _sortAscending = true;
 
-  List<Supplier>? _cachedRows;
+  Timer? _searchDebounce;
 
   SupplierFilter get filter => _filter;
   int get sortIndex => _sortIndex;
   bool get sortAscending => _sortAscending;
 
-  List<Supplier> get rows => _cachedRows ??= _computeRows();
+  List<Supplier> get rows => _rows;
 
-  int get visibleCount => rows.length;
+  /// العدد الكلي المطابق للفلتر، مش عدد الصفوف المعروضة.
+  int get visibleCount => _total;
 
   double get visibleDue =>
-      rows.fold<double>(0, (double s, Supplier x) => s + x.balanceDue);
+      _rows.fold<double>(0, (double s, Supplier x) => s + x.balanceDue);
 
-  // ── إحصائيات ─────────────────────────────────────────────────────────────
-  double get totalDue => MockData.suppliers
-      .fold<double>(0, (double s, Supplier x) => s + x.balanceDue);
+  /// إجمالي المستحق على كل الموردين — محسوب على السيرفر.
+  double get totalDue => _payables.total;
+  int get dueSuppliersCount => _payables.count;
+  int get activeCount => _activeCount;
 
-  int get activeCount =>
-      MockData.suppliers.where((Supplier s) => s.isActive).length;
+  bool get isEmpty => !isLoading && !hasFailed && _rows.isEmpty;
 
-  double get totalPurchases => MockData.suppliers
-      .fold<double>(0, (double s, Supplier x) => s + x.totalPurchases);
+  // ── التحميل ──────────────────────────────────────────────────────────────
+  Future<void> load() async {
+    await runLoad(() async {
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        _repository.fetchPage(
+          search: _query.trim().isEmpty ? null : _query.trim(),
+          isActive: _activeFilter,
+          hasDue: _filter == SupplierFilter.due,
+          sort: _sortKey,
+        ),
+        _repository.fetchPayables(),
+        // عدّاد النشطين على كل الموردين مش على الفلتر الحالي.
+        _repository.fetchPage(isActive: true, limit: 1),
+      ]);
 
-  // ── الفلترة والفرز ───────────────────────────────────────────────────────
-  List<Supplier> _computeRows() {
-    final String q = _query.trim().toLowerCase();
-
-    final List<Supplier> list = MockData.suppliers.where((Supplier s) {
-      final bool matchesFilter = switch (_filter) {
-        SupplierFilter.all => true,
-        SupplierFilter.active => s.isActive,
-        SupplierFilter.inactive => !s.isActive,
-        SupplierFilter.due => s.balanceDue > 0,
-      };
-      if (!matchesFilter) return false;
-      if (q.isEmpty) return true;
-      return s.name.toLowerCase().contains(q) ||
-          s.contactPerson.toLowerCase().contains(q) ||
-          s.phone.contains(q);
-    }).toList();
-
-    final SuppliersSortColumn column = SuppliersSortColumn.values[_sortIndex];
-    list.sort((Supplier a, Supplier b) {
-      final int result = switch (column) {
-        SuppliersSortColumn.name => a.name.compareTo(b.name),
-        SuppliersSortColumn.contact =>
-          a.contactPerson.compareTo(b.contactPerson),
-        SuppliersSortColumn.phone => a.phone.compareTo(b.phone),
-        SuppliersSortColumn.balance => a.balanceDue.compareTo(b.balanceDue),
-        SuppliersSortColumn.orders => a.ordersCount.compareTo(b.ordersCount),
-      };
-      return _sortAscending ? result : -result;
+      final SuppliersPage page = results[0] as SuppliersPage;
+      _rows = page.items;
+      _total = page.total;
+      _payables = results[1] as PayablesSummary;
+      _activeCount = (results[2] as SuppliersPage).total;
     });
+  }
 
-    return list;
+  Future<void> retry() => load();
+
+  bool? get _activeFilter => switch (_filter) {
+        SupplierFilter.active => true,
+        SupplierFilter.inactive => false,
+        _ => null,
+      };
+
+  /// مفتاح الفرز اللي السيرفر بيفهمه.
+  String get _sortKey {
+    final String prefix = _sortAscending ? '' : '-';
+
+    return switch (SuppliersSortColumn.values[_sortIndex]) {
+      SuppliersSortColumn.contact => '${prefix}contactPerson',
+      SuppliersSortColumn.phone => '${prefix}phone',
+      SuppliersSortColumn.balance => '${prefix}balanceDue',
+      SuppliersSortColumn.orders => '${prefix}ordersCount',
+      _ => '${prefix}name',
+    };
   }
 
   // ── إجراءات ──────────────────────────────────────────────────────────────
   void setQuery(String value) {
     _query = value;
-    _refresh();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), load);
   }
 
-  void setFilter(SupplierFilter filter) {
+  Future<void> setFilter(SupplierFilter filter) async {
+    if (_filter == filter) return;
     _filter = filter;
-    _refresh();
+    notifyListeners();
+    await load();
   }
 
-  void sortBy(int columnIndex, bool ascending) {
+  Future<void> sortBy(int columnIndex, bool ascending) async {
     _sortIndex = columnIndex;
     _sortAscending = ascending;
-    _refresh();
+    notifyListeners();
+    await load();
   }
 
-  void _refresh() {
-    _cachedRows = null;
+  /// بيضيف المورد للقايمة بعد ما السيرفر يقبله.
+  Future<void> addCreated(Supplier supplier) async {
+    _rows = <Supplier>[supplier, ..._rows];
     notifyListeners();
+    await load();
+  }
+
+  /// تفعيل أو تعطيل مورد. بترجّع رسالة الخطأ لو فشلت.
+  Future<String?> setActiveState(
+    Supplier supplier, {
+    required bool isActive,
+  }) async {
+    final ApiException? failure = await runAction(() async {
+      await _repository.setActiveState(supplier.id, isActive: isActive);
+    });
+
+    if (failure == null) await load();
+
+    return failure?.message;
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     searchController.dispose();
     super.dispose();
   }

@@ -188,13 +188,14 @@ void main() {
       await _openScreen(tester, 'الموردين');
 
       expect(find.text('قائمة الموردين'), findsOneWidget);
+      expect(find.text('شركة النور للتوريدات'), findsWidgets);
 
-      await tester.tap(find.text(MockData.suppliers.first.name).first);
+      await tester.tap(find.text('شركة النور للتوريدات').first);
       await tester.pumpAndSettle();
 
       expect(find.text('ملف المورد'), findsOneWidget);
       expect(find.text('الرصيد المستحق للمورد'), findsOneWidget);
-      expect(find.text('المنتجات الموردة'), findsWidgets);
+      expect(find.text('الأصناف الموردة'), findsWidgets);
 
       await tester.tap(find.text('كشف الحساب والمدفوعات').last);
       await tester.pumpAndSettle();
