@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
-
-/// لون ثابت لكل فئة مصروف — بيتوزّع بالترتيب على الـpalette.
+/// لون ثابت لكل بند مصروف.
+///
+/// البنود نص حر على السيرفر، فمفيش قايمة نقرا منها ترتيب البند؛ اللون بيتحسب
+/// من النص نفسه عشان نفس البند يطلع بنفس اللون في كل مكان.
 Color expenseCategoryColor(String category) {
   const List<Color> palette = <Color>[
     Color(0xFF6366F1),
@@ -15,6 +16,8 @@ Color expenseCategoryColor(String category) {
     Color(0xFF64748B),
   ];
 
-  final int index = MockData.expenseCategories.indexOf(category);
-  return palette[(index < 0 ? 0 : index) % palette.length];
+  final int hash = category.codeUnits
+      .fold<int>(0, (int sum, int unit) => (sum * 31 + unit) & 0x7FFFFFFF);
+
+  return palette[hash % palette.length];
 }

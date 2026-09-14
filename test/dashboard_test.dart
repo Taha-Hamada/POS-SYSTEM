@@ -89,25 +89,33 @@ void main() {
     testWidgets('الجدول والفلترة وإضافة مصروف', (WidgetTester tester) async {
       await _openScreen(tester, 'المصروفات');
 
-      expect(find.text('صافي النقدية الحالي'), findsOneWidget);
-      expect(find.text('إجمالي مصروفات الشهر'), findsOneWidget);
+      expect(find.text('إجمالي المصروفات المطابقة'), findsOneWidget);
+      expect(find.text('بانتظار الاعتماد'), findsWidgets);
       expect(find.text('سجل المصروفات'), findsOneWidget);
-      expect(find.text('معلّق'), findsWidgets);
+      expect(find.text('كهرباء'), findsWidgets);
 
       await tester.tap(find.text('إضافة مصروف'));
       await tester.pumpAndSettle();
 
       expect(find.text('مصروف جديد'), findsOneWidget);
-      expect(find.text('المرفق'), findsOneWidget);
 
-      // المبلغ إلزامي عشان الزر يشتغل
-      await tester.enterText(find.byType(TextField).at(1), '750');
+      // شريط البحث ورا الحوار برضو TextField، فبنحصر البحث جوه الحوار.
+      final Finder dialogFields = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      );
+
+      // البند والمبلغ إلزاميين عشان الزر يشتغل — السيرفر بيرفض غير كده.
+      await tester.enterText(dialogFields.at(0), 'نثريات');
+      await tester.enterText(dialogFields.at(1), '750');
       await tester.pumpAndSettle();
+
       await tester.tap(find.text('حفظ المصروف'));
       await tester.pumpAndSettle();
 
       expect(find.text('مصروف جديد'), findsNothing);
-      expect(find.textContaining('750.00'), findsWidgets);
+      expect(find.text('نثريات'), findsWidgets);
+      expect(find.textContaining('750'), findsWidgets);
     });
   });
 

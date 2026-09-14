@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../controllers/expenses_controller.dart';
 
-/// فلتر فئة المصروف.
+/// فلتر بند المصروف.
+///
+/// البنود نص حر على السيرفر، فالقائمة هي البنود اللي اتسجّلت فعلًا مش قايمة
+/// ثابتة في الكود.
 class ExpensesCategoryDropdown extends StatelessWidget {
   const ExpensesCategoryDropdown({super.key});
 
@@ -21,10 +23,10 @@ class ExpensesCategoryDropdown extends StatelessWidget {
       items: <AppDropdownItem<String?>>[
         const AppDropdownItem<String?>(
           value: null,
-          label: 'كل الفئات',
+          label: 'كل البنود',
           icon: Icons.apps_rounded,
         ),
-        for (final String c in MockData.expenseCategories)
+        for (final String c in expenses.categoryNames)
           AppDropdownItem<String?>(value: c, label: c),
       ],
     );

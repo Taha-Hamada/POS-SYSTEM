@@ -31,6 +31,50 @@ class FakeBackend {
     _customer(id: 'cu2', name: 'هدى إبراهيم', phone: '01003334444'),
   ];
 
+  /// المصروفات المسجّلة — الاختبارات بتضيف عليها والشاشة بتقراها.
+  final List<Map<String, dynamic>> expenses = <Map<String, dynamic>>[
+    _expense(id: 'ex1', number: 'EXP-00001', category: 'كهرباء', amount: 1200),
+    _expense(
+      id: 'ex2',
+      number: 'EXP-00002',
+      category: 'إيجار',
+      amount: 8000,
+      status: 'approved',
+    ),
+    _expense(
+      id: 'ex3',
+      number: 'EXP-00003',
+      category: 'صيانة',
+      amount: 450,
+      branchId: 'b2',
+      branchName: 'فرع المعادي',
+    ),
+  ];
+
+  static Map<String, dynamic> _expense({
+    required String id,
+    required String number,
+    required String category,
+    required double amount,
+    String status = 'pending',
+    String branchId = 'b1',
+    String branchName = 'الفرع الرئيسي',
+    String method = 'cash',
+    String note = 'ملاحظة الاختبار',
+  }) =>
+      <String, dynamic>{
+        'id': id,
+        'number': number,
+        'category': category,
+        'amount': amount,
+        'status': status,
+        'paymentMethod': method,
+        'date': DateTime.now().toIso8601String(),
+        'branch': <String, dynamic>{'id': branchId, 'name': branchName},
+        'note': note,
+        'createdBy': <String, dynamic>{'id': 'u2', 'name': 'موظف الاختبار'},
+      };
+
   /// الوردية المفتوحة، أو null لو الكاشير مقفول.
   Map<String, dynamic>? currentShift;
 
@@ -348,6 +392,74 @@ class FakeBackend {
       return _page(_branches);
     }
 
+    if (path.endsWith('/expenses/summary')) {
+      final List<Map<String, dynamic>> matching = _filteredExpenses(request);
+      final Map<String, double> byCategory = <String, double>{};
+
+      for (final Map<String, dynamic> e in matching) {
+        final String category = e['category'] as String;
+        byCategory[category] =
+            (byCategory[category] ?? 0) + (e['amount'] as num).toDouble();
+      }
+
+      final double total =
+          byCategory.values.fold<double>(0, (double s, double v) => s + v);
+
+      return _ok(<String, dynamic>{
+        'total': total,
+        'categories': <Map<String, dynamic>>[
+          for (final MapEntry<String, double> entry in byCategory.entries)
+            <String, dynamic>{
+              'category': entry.key,
+              'total': entry.value,
+              'count': 1,
+              'share': total == 0 ? 0 : (entry.value / total) * 100,
+            },
+        ],
+      });
+    }
+
+    if (path.endsWith('/expenses') && request.method == 'GET') {
+      return _page(_filteredExpenses(request));
+    }
+
+    if (path.endsWith('/expenses') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+
+      _expenseCounter += 1;
+      final Map<String, dynamic> created = _expense(
+        id: 'ex-new-$_expenseCounter',
+        number: 'EXP-${(100 + _expenseCounter).toString().padLeft(5, '0')}',
+        category: body['category'] as String,
+        amount: (body['amount'] as num).toDouble(),
+        method: body['paymentMethod'] as String? ?? 'cash',
+        note: body['note'] as String? ?? '',
+      );
+
+      expenses.insert(0, created);
+      return _ok(created);
+    }
+
+    if (path.contains('/expenses/') && path.endsWith('/review')) {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final String id = path.split('/expenses/').last.split('/').first;
+
+      final Map<String, dynamic> expense =
+          expenses.firstWhere((Map<String, dynamic> e) => e['id'] == id);
+      expense['status'] =
+          (body['approve'] as bool) ? 'approved' : 'rejected';
+
+      return _ok(expense);
+    }
+
+    if (path.contains('/expenses/') && request.method == 'DELETE') {
+      final String id = path.split('/expenses/').last;
+      expenses.removeWhere((Map<String, dynamic> e) => e['id'] == id);
+      return _ok(<String, dynamic>{'id': id, 'deleted': true});
+    }
+
     if (path.endsWith('/customers/receivables')) {
       return _ok(<String, dynamic>{'total': 500, 'count': 1});
     }
@@ -611,6 +723,28 @@ class FakeBackend {
   }
 
   int _invoiceCounter = 0;
+  int _expenseCounter = 0;
+
+  /// بيطبّق فلاتر المصروفات زي السيرفر: البند والفرع والحالة والبحث.
+  List<Map<String, dynamic>> _filteredExpenses(http.Request request) {
+    final Map<String, String> query = request.url.queryParameters;
+    final String? category = query['category'];
+    final String? branch = query['branch'];
+    final String? status = query['status'];
+    final String? search = query['search'];
+
+    return expenses.where((Map<String, dynamic> e) {
+      if (category != null && e['category'] != category) return false;
+      if (status != null && e['status'] != status) return false;
+      if (branch != null &&
+          (e['branch'] as Map<String, dynamic>)['id'] != branch) {
+        return false;
+      }
+      if (search == null) return true;
+
+      return '${e['number']}${e['note']}${e['category']}'.contains(search);
+    }).toList();
+  }
 
   /// زي [_ok] بس بيسمح بقيمة فاضية، للمسارات اللي ردها ممكن يكون null.
   static http.Response _ok2(Object? data) => http.Response(

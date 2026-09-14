@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/core/api/api_client.dart';
+import 'package:pos_system/core/models/branch.dart';
 import 'package:pos_system/core/api/api_config.dart';
 import 'package:pos_system/core/api/api_exception.dart';
 import 'package:pos_system/core/session/session_controller.dart';
@@ -330,7 +331,7 @@ void main() {
       }
 
       final String destination = transfer.branches
-          .firstWhere((BranchOption b) => b.id != branchId)
+          .firstWhere((Branch b) => b.id != branchId)
           .id;
 
       final StockRecord source = transfer.availableStock

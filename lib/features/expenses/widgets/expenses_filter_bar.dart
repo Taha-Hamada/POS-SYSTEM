@@ -25,7 +25,7 @@ class ExpensesFilterBar extends StatelessWidget {
         const Spacer(),
         SearchField(
           controller: expenses.searchController,
-          hint: 'ابحث بالرقم أو الملاحظة…',
+          hint: 'ابحث بالرقم أو الملاحظة أو البند…',
           width: 240,
           onChanged: expenses.setQuery,
         ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/expense.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../controllers/expenses_controller.dart';
 
 /// فلتر حالة المصروف.
@@ -15,7 +15,7 @@ class ExpensesStatusDropdown extends StatelessWidget {
 
     return AppDropdown<ExpenseStatus?>(
       value: expenses.status,
-      width: 160,
+      width: 170,
       icon: Icons.flag_outlined,
       onChanged: expenses.setStatus,
       items: <AppDropdownItem<ExpenseStatus?>>[

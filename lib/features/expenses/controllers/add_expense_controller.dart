@@ -1,52 +1,100 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../../core/models/branch.dart';
+import '../../../core/models/expense.dart';
+import '../../../core/models/payment_method.dart';
+import '../data/expenses_repository.dart';
 
 /// حالة نموذج إضافة مصروف.
-class AddExpenseController extends ChangeNotifier {
+class AddExpenseController extends ChangeNotifier with LoadState {
+  AddExpenseController(
+    this._repository, {
+    required List<Branch> branches,
+    required this.knownCategories,
+    String? branchId,
+  })  : _branches = branches,
+        _branchId = branchId ?? (branches.isEmpty ? null : branches.first.id);
+
+  final ExpensesRepository _repository;
+  final List<Branch> _branches;
+
+  /// البنود اللي اتسجّلت قبل كده — بتظهر كاقتراحات، والمستخدم حر يكتب جديد.
+  final List<String> knownCategories;
+
+  final TextEditingController categoryController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
 
-  String _category = MockData.expenseCategories.first;
-  String _branchId = MockData.branches.first.id;
+  String? _branchId;
+  PaymentMethod _method = PaymentMethod.cash;
 
-  String get category => _category;
-  String get branchId => _branchId;
+  List<Branch> get branches => _branches;
+
+  String? get branchId => _branchId;
+  PaymentMethod get method => _method;
+  String get category => categoryController.text.trim();
 
   double get amount => double.tryParse(amountController.text.trim()) ?? 0;
 
-  bool get isValid => amount > 0;
+  bool get canSwitchBranch => _branches.length > 1;
 
-  void setCategory(String category) {
-    _category = category;
+  /// السيرفر بيطلب بند من حرفين على الأقل ومبلغ أكبر من صفر.
+  bool get isValid =>
+      amount > 0 && category.length >= 2 && _branchId != null && !isLoading;
+
+  String? saveError;
+
+  // ── إجراءات ──────────────────────────────────────────────────────────────
+  void setCategory(String value) {
+    categoryController.text = value;
     notifyListeners();
   }
 
-  void setBranch(String id) {
+  void setBranch(String? id) {
+    if (id == null) return;
     _branchId = id;
     notifyListeners();
   }
 
-  void amountChanged([String? _]) => notifyListeners();
+  void setMethod(PaymentMethod method) {
+    _method = method;
+    notifyListeners();
+  }
 
-  /// بيبني المصروف الجديد بالقيم المُدخلة.
-  Expense build() {
-    final String note = noteController.text.trim();
+  void fieldChanged([String? _]) => notifyListeners();
 
-    return Expense(
-      id: 'EXP-${242 + DateTime.now().millisecond % 100}',
-      date: MockData.today,
-      category: _category,
-      branchId: _branchId,
-      amount: amount,
-      status: ExpenseStatus.pending,
-      note: note.isEmpty ? 'بدون ملاحظة' : note,
-      createdBy: MockData.currentUser.name,
-    );
+  /// بيسجّل المصروف على السيرفر. بيرجّعه لو نجح، و`null` لو فشل.
+  Future<Expense?> submit() async {
+    saveError = null;
+
+    Expense? created;
+
+    final ApiException? failure = await runAction(() async {
+      created = await _repository.create(
+        category: category,
+        amount: amount,
+        paymentMethod: _method,
+        branchId: _branchId,
+        note: noteController.text.trim(),
+      );
+    });
+
+    if (failure != null) {
+      saveError = failure.fieldErrors['amount'] ??
+          failure.fieldErrors['category'] ??
+          failure.message;
+      notifyListeners();
+      return null;
+    }
+
+    return created;
   }
 
   @override
   void dispose() {
+    categoryController.dispose();
     amountController.dispose();
     noteController.dispose();
     super.dispose();
