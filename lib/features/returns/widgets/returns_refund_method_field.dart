@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
 import '../../../core/widgets/labeled_field.dart';
-import '../../../mock_data/mock_data.dart';
+
 import '../controllers/returns_controller.dart';
 
 /// اختيار طريقة الاسترداد.
@@ -23,8 +23,9 @@ class ReturnsRefundMethodField extends StatelessWidget {
         icon: Icons.account_balance_wallet_outlined,
         onChanged: returns.setRefundMethod,
         items: <AppDropdownItem<String>>[
-          for (final String m in MockData.refundMethods)
-            AppDropdownItem<String>(value: m, label: m),
+          // المفتاح هو الاسم اللي السيرفر بيفهمه، والقيمة هي المعروضة.
+          for (final MapEntry<String, String> m in kRefundMethods.entries)
+            AppDropdownItem<String>(value: m.key, label: m.value),
         ],
       ),
     );

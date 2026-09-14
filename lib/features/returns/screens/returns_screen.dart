@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/api/api_client.dart';
+import '../../../core/session/settings_controller.dart';
+import '../data/returns_repository.dart';
+
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
@@ -17,7 +21,10 @@ class ReturnsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ReturnsController>(
-      create: (_) => ReturnsController(),
+      create: (_) => ReturnsController(
+        ReturnsRepository(context.read<ApiClient>()),
+        taxRate: context.read<SettingsController>().taxRate,
+      ),
       child: Consumer<ReturnsController>(
         builder: (
           BuildContext context,

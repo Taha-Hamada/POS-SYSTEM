@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:pos_system/features/returns/controllers/returns_controller.dart';
+
 import 'support/fake_backend.dart';
 import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/features/cashier_shift/screens/open_shift_dialog.dart';
@@ -136,12 +138,12 @@ void main() {
 
       expect(find.text('ابدأ بالبحث عن الفاتورة'), findsOneWidget);
 
-      await tester.tap(find.text('أحدث فاتورة'));
+      // البحث بقى بيروح للسيرفر برقم الفاتورة المطبوع.
+      await tester.enterText(find.byType(TextField).first, 'INV-000001');
+      await tester.tap(find.text('بحث'));
       await tester.pumpAndSettle();
 
-      // رقم الفاتورة بيظهر في حقل البحث وفي رأس الفاتورة
-      final SaleInvoice invoice = MockData.salesInvoices.first;
-      expect(find.text(invoice.id), findsWidgets);
+      expect(find.text('INV-000001'), findsWidgets);
       expect(find.text('سبب الإرجاع'), findsOneWidget);
       expect(find.text('طريقة الاسترداد'), findsOneWidget);
 
@@ -152,7 +154,7 @@ void main() {
 
       await tester.tap(find.text('اختر السبب…'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(MockData.returnReasons.first).last);
+      await tester.tap(find.text(kReturnReasons.first).last);
       await tester.pumpAndSettle();
 
       expect(find.text('لازم تختار سبب الإرجاع قبل التأكيد'), findsNothing);

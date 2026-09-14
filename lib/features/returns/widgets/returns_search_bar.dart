@@ -52,12 +52,12 @@ class ReturnsSearchBar extends StatelessWidget {
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.md),
                   child: SecondaryButton(
-                    label: 'أحدث فاتورة',
+                    label: 'بحث',
                     size: AppButtonSize.small,
-                    onPressed: returns.loadRecentInvoice,
+                    onPressed: returns.search,
                   ),
                 ),
-                suffixIconConstraints: const BoxConstraints(minWidth: 140),
+                suffixIconConstraints: const BoxConstraints(minWidth: 110),
               ),
             ),
           ),

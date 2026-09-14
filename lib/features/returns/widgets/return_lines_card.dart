@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../models/returnable_invoice.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/returns_controller.dart';
 import '../models/return_line.dart';
@@ -16,7 +16,7 @@ class ReturnLinesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ReturnsController returns = context.watch<ReturnsController>();
-    final SaleInvoice invoice = returns.invoice!;
+    final ReturnableInvoice invoice = returns.invoice!;
     final List<ReturnLine> lines = returns.lines;
 
     return Container(
@@ -30,8 +30,9 @@ class ReturnLinesCard extends StatelessWidget {
             child: ListView.builder(
               itemCount: lines.length,
               itemBuilder: (BuildContext context, int i) => ReturnRow(
-                key: ValueKey<String>(lines[i].invoiceLine.productId),
+                key: ValueKey<String>(lines[i].source.invoiceLineId),
                 line: lines[i],
+                index: i,
                 isLast: i == lines.length - 1,
               ),
             ),

@@ -14,10 +14,15 @@ class ReturnRow extends StatefulWidget {
   const ReturnRow({
     super.key,
     required this.line,
+    required this.index,
     required this.isLast,
   });
 
   final ReturnLine line;
+
+  /// ترتيب السطر في الجدول — بيتمرّر لخلية الصنف عشان لونها.
+  final int index;
+
   final bool isLast;
 
   @override
@@ -65,7 +70,10 @@ class _ReturnRowState extends State<ReturnRow> {
                       returns.setLineSelected(line, v ?? false),
                 ),
               ),
-              Expanded(flex: 4, child: ReturnProductCell(line: line)),
+              Expanded(
+                flex: 4,
+                child: ReturnProductCell(line: line, index: widget.index),
+              ),
               SizedBox(
                 width: 110,
                 child: Text(

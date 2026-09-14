@@ -1,20 +1,48 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../data/returns_repository.dart';
 import '../models/return_line.dart';
+import '../models/returnable_invoice.dart';
+
+/// أسباب الإرجاع المتاحة.
+const List<String> kReturnReasons = <String>[
+  'الصنف تالف',
+  'الصنف مش مطابق للطلب',
+  'العميل غيّر رأيه',
+  'خطأ في الفاتورة',
+  'قرب انتهاء الصلاحية',
+  'سبب آخر',
+];
+
+/// طرق ردّ الفلوس، ومعاها الاسم اللي السيرفر بيفهمه.
+const Map<String, String> kRefundMethods = <String, String>{
+  'cash': 'كاش',
+  'card': 'بطاقة',
+  'wallet': 'محفظة',
+  'credit': 'على حساب العميل',
+};
 
 /// حالة شاشة المرتجعات: الفاتورة المختارة والأصناف المحددة للإرجاع.
-class ReturnsController extends ChangeNotifier {
+class ReturnsController extends ChangeNotifier with LoadState {
+  ReturnsController(this._repository, {required this.taxRate});
+
+  final ReturnsRepository _repository;
+
+  /// نسبة الضريبة من إعدادات المتجر — بتستخدم في معاينة المبلغ بس.
+  final double taxRate;
+
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocus = FocusNode();
 
-  SaleInvoice? _invoice;
+  ReturnableInvoice? _invoice;
   List<ReturnLine> _lines = <ReturnLine>[];
   String? _reason;
-  String _refundMethod = MockData.refundMethods.first;
+  String _refundMethod = 'cash';
   String? _error;
 
-  SaleInvoice? get invoice => _invoice;
+  ReturnableInvoice? get invoice => _invoice;
   List<ReturnLine> get lines => _lines;
   String? get reason => _reason;
   String get refundMethod => _refundMethod;
@@ -25,8 +53,9 @@ class ReturnsController extends ChangeNotifier {
   List<ReturnLine> get selectedLines =>
       _lines.where((ReturnLine l) => l.selected).toList(growable: false);
 
-  /// قيمة الـCheckbox في رأس الجدول (tristate).
-  bool get allSelected => _lines.every((ReturnLine l) => l.selected);
+  /// قيمة الـCheckbox في رأس الجدول.
+  bool get allSelected =>
+      _lines.isNotEmpty && _lines.every((ReturnLine l) => l.selected);
 
   // ── حسابات الاسترداد ─────────────────────────────────────────────────────
   double get refundSubtotal => selectedLines.fold<double>(
@@ -34,7 +63,7 @@ class ReturnsController extends ChangeNotifier {
         (double s, ReturnLine l) => s + l.refundAmount,
       );
 
-  double get refundTax => refundSubtotal * MockData.taxRate;
+  double get refundTax => refundSubtotal * taxRate;
 
   double get refundTotal => refundSubtotal + refundTax;
 
@@ -43,37 +72,51 @@ class ReturnsController extends ChangeNotifier {
         (int s, ReturnLine l) => s + l.returnQuantity,
       );
 
-  bool get canSubmit => selectedLines.isNotEmpty && _reason != null;
+  bool get canSubmit =>
+      selectedLines.isNotEmpty &&
+      _reason != null &&
+      !isLoading &&
+      selectedLines.every((ReturnLine l) => l.returnQuantity > 0);
 
   /// التنبيه اللي بيظهر تحت قائمة الأسباب.
   bool get needsReason => selectedLines.isNotEmpty && _reason == null;
 
-  // ── إجراءات ──────────────────────────────────────────────────────────────
-  void search([String? value]) {
+  // ── البحث ────────────────────────────────────────────────────────────────
+  Future<void> search([String? value]) async {
     final String query = (value ?? searchController.text).trim();
     if (query.isEmpty) return;
 
-    final SaleInvoice? found = MockData.invoiceById(query);
-    if (found == null) {
-      _error = 'لا توجد فاتورة بالرقم «$query» — جرّب رقمًا آخر';
+    _error = null;
+    notifyListeners();
+
+    final ApiException? failure = await runAction(() async {
+      final ReturnableInvoice found = await _repository.findByNumber(query);
+      _adopt(found);
+    });
+
+    if (failure != null) {
       _invoice = null;
       _lines = <ReturnLine>[];
-    } else {
-      _error = null;
-      _invoice = found;
-      _lines = <ReturnLine>[
-        for (final InvoiceLine l in found.lines) ReturnLine(invoiceLine: l),
-      ];
-      _reason = null;
+      _error = failure.isNotFound
+          ? 'مفيش فاتورة بالرقم «$query» — جرّب رقم تاني'
+          : failure.message;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  /// بيجيب أحدث فاتورة كمثال سريع للتجربة.
-  void loadRecentInvoice() {
-    final SaleInvoice invoice = MockData.salesInvoices.first;
-    searchController.text = invoice.id;
-    search(invoice.id);
+  void _adopt(ReturnableInvoice found) {
+    _invoice = found;
+    _reason = null;
+    _lines = <ReturnLine>[
+      for (final ReturnableLine line in found.lines) ReturnLine(source: line),
+    ];
+
+    if (found.isFullyReturned) {
+      _error = 'الفاتورة ${found.number} اترجّعت بالكامل قبل كده';
+    } else if (!found.isWithinWindow) {
+      _error = 'الفاتورة عدّى عليها ${found.ageDays} يوم — '
+          'مهلة الإرجاع ${found.windowDays} يوم';
+    }
   }
 
   void clear() {
@@ -86,6 +129,7 @@ class ReturnsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── إجراءات ──────────────────────────────────────────────────────────────
   void setReason(String? reason) {
     _reason = reason;
     notifyListeners();
@@ -110,9 +154,63 @@ class ReturnsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// مينفعش نرجّع أكتر من الكمية المباعة.
+  void setLineRestock(ReturnLine line, bool restock) {
+    line.restock = restock;
+    notifyListeners();
+  }
+
+  /// مينفعش نرجّع أكتر من المتبقي في السطر.
   void setReturnQuantity(ReturnLine line, int quantity) {
     line.returnQuantity = quantity.clamp(0, line.maxQuantity);
+    notifyListeners();
+  }
+
+  // ── التسجيل ──────────────────────────────────────────────────────────────
+  /// بيسجّل المرتجع على السيرفر. بيرجّع المرتجع لو نجح، و`null` لو فشل.
+  Future<CompletedReturn?> submit() async {
+    final ReturnableInvoice? current = _invoice;
+    if (current == null || !canSubmit) return null;
+
+    CompletedReturn? created;
+
+    final ApiException? failure = await runAction(() async {
+      created = await _repository.submit(
+        invoiceId: current.id,
+        refundMethod: _refundMethod,
+        reason: _reason,
+        lines: <ReturnLineInput>[
+          for (final ReturnLine l in selectedLines)
+            ReturnLineInput(
+              invoiceLineId: l.source.invoiceLineId,
+              quantity: l.returnQuantity,
+              restock: l.restock,
+            ),
+        ],
+      );
+    });
+
+    if (failure != null) {
+      _error = failure.message;
+      notifyListeners();
+      return null;
+    }
+
+    // بنعيد قراءة الفاتورة عشان الكميات المتبقية تتحدّث،
+    // فالكاشير يقدر يرجّع الباقي من غير ما يدوّر عليها تاني.
+    await _reloadInvoice(current.id);
+
+    return created;
+  }
+
+  Future<void> _reloadInvoice(String invoiceId) async {
+    try {
+      _adopt(await _repository.fetchReturnable(invoiceId));
+    } on ApiException {
+      // الفاتورة اترجّعت بالكامل غالبًا؛ بنفضّي الشاشة.
+      _invoice = null;
+      _lines = <ReturnLine>[];
+    }
+
     notifyListeners();
   }
 

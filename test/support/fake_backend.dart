@@ -275,6 +275,52 @@ class FakeBackend {
       return _ok(_dashboard(days: days, branchId: branch));
     }
 
+    // البحث برقم الفاتورة ثم أصنافها المتاح إرجاعها.
+    if (path.contains('/invoices/number/')) {
+      return _ok(<String, dynamic>{'id': 'inv-1', 'number': 'INV-000001'});
+    }
+
+    if (path.contains('/returns/returnable/')) {
+      return _ok(<String, dynamic>{
+        'invoice': <String, dynamic>{
+          'id': 'inv-1',
+          'number': 'INV-000001',
+          'total': 114,
+          'status': 'completed',
+          'createdAt': DateTime.now().toIso8601String(),
+          'customer': null,
+        },
+        'ageDays': 2,
+        'isWithinWindow': true,
+        'windowDays': 30,
+        'lines': <Map<String, dynamic>>[
+          for (final Map<String, dynamic> p in products.take(2))
+            <String, dynamic>{
+              'invoiceLine': 'line-${p['id']}',
+              'product': p['id'],
+              'name': p['name'],
+              'sku': p['sku'],
+              'unit': p['unit'],
+              'soldQuantity': 3,
+              'returnedQuantity': 0,
+              'remainingQuantity': 3,
+              'unitPrice': p['price'],
+              'lineTotal': (p['price'] as num) * 3,
+            },
+        ],
+      });
+    }
+
+    if (path.endsWith('/returns') && request.method == 'POST') {
+      return _ok(<String, dynamic>{
+        'id': 'ret-1',
+        'number': 'RET-000001',
+        'total': 34.2,
+        'taxAmount': 4.2,
+        'refundMethod': 'cash',
+      });
+    }
+
     if (path.endsWith('/reports/sales-series')) {
       final int days =
           int.tryParse(request.url.queryParameters['days'] ?? '30') ?? 30;

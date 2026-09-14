@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
-import '../../../theme/app_theme.dart';
 import '../controllers/returns_controller.dart';
+import '../../../theme/app_theme.dart';
 
 /// اختيار سبب الإرجاع — إلزامي قبل التأكيد.
 class ReturnsReasonField extends StatelessWidget {
@@ -44,7 +43,7 @@ class ReturnsReasonField extends StatelessWidget {
           hint: 'اختر السبب…',
           onChanged: returns.setReason,
           items: <AppDropdownItem<String?>>[
-            for (final String r in MockData.returnReasons)
+            for (final String r in kReturnReasons)
               AppDropdownItem<String?>(value: r, label: r),
           ],
         ),

@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../../mock_data/mock_data.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/returns_controller.dart';
+import '../models/returnable_invoice.dart';
 import '../models/return_accent.dart';
 import 'returns_summary_row.dart';
 
@@ -14,16 +15,25 @@ import 'returns_summary_row.dart';
 class ReturnsSummary extends StatelessWidget {
   const ReturnsSummary({super.key});
 
-  void _submit(BuildContext context) {
+  Future<void> _submit(BuildContext context) async {
     final ReturnsController returns = context.read<ReturnsController>();
+
+    final CompletedReturn? created = await returns.submit();
+    if (!context.mounted) return;
+
+    if (created == null) {
+      // السبب متعرض في شريط الخطأ فوق، فبنكتفي بتنبيه مختصر.
+      showAppSnackBar(context, returns.error ?? 'مقدرناش نسجّل المرتجع',
+          isError: true);
+      return;
+    }
 
     showPlainSnackBar(
       context,
-      'تم تسجيل مرتجع بقيمة ${Fmt.money(returns.refundTotal)} '
-      'عن الفاتورة ${returns.invoice!.id} (${returns.refundMethod})',
+      'اتسجّل المرتجع ${created.number} بقيمة ${Fmt.money(created.total)} '
+      '(${kRefundMethods[created.refundMethod] ?? created.refundMethod})',
       width: 520,
     );
-    returns.clear();
   }
 
   @override
@@ -53,7 +63,7 @@ class ReturnsSummary extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           ReturnsSummaryRow(
             label: 'ضريبة مستردة '
-                '(${(MockData.taxRate * 100).toStringAsFixed(0)}%)',
+                '(${(returns.taxRate * 100).toStringAsFixed(0)}%)',
             value: Fmt.money(returns.refundTax),
           ),
           const Padding(

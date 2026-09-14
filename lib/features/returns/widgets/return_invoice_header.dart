@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../models/returnable_invoice.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../models/return_accent.dart';
@@ -10,7 +10,7 @@ import '../models/return_accent.dart';
 class ReturnInvoiceHeader extends StatelessWidget {
   const ReturnInvoiceHeader({super.key, required this.invoice});
 
-  final SaleInvoice invoice;
+  final ReturnableInvoice invoice;
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +42,14 @@ class ReturnInvoiceHeader extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Text(invoice.id, style: AppText.sectionTitle),
+                    Text(invoice.number, style: AppText.sectionTitle),
                     const SizedBox(width: AppSpacing.sm),
+                    // خارج مهلة الإرجاع بيتعلّم عشان الكاشير ياخد باله.
                     StatusBadge(
-                      label: invoice.isPaid ? 'مدفوعة' : 'آجلة',
-                      tone: invoice.isPaid
+                      label: invoice.isWithinWindow
+                          ? 'جوه المهلة'
+                          : 'خارج مهلة الإرجاع',
+                      tone: invoice.isWithinWindow
                           ? StatusTone.success
                           : StatusTone.warning,
                       compact: true,
@@ -55,8 +58,9 @@ class ReturnInvoiceHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${invoice.customer?.name ?? 'عميل نقدي'} • '
-                  '${Fmt.date(invoice.date)} • ${invoice.paymentMethod}',
+                  '${invoice.customerName ?? 'عميل عابر'} • '
+                  '${Fmt.date(invoice.createdAt)} • '
+                  'من ${Fmt.count(invoice.ageDays)} يوم',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption,

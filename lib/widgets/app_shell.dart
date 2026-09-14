@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 import '../core/api/api_client.dart';
 import '../core/models/shift.dart';
 import '../core/session/session_controller.dart';
+import '../core/session/settings_controller.dart';
 import '../features/cashier_shift/controllers/current_shift_controller.dart';
 import '../features/cashier_shift/data/shift_repository.dart';
 import '../features/cashier_shift/screens/close_shift_dialog.dart';
@@ -157,11 +159,19 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? branchId = context.read<SessionController>().user?.branchId;
 
-    return ChangeNotifierProvider<CurrentShiftController>(
-      create: (BuildContext context) => CurrentShiftController(
-        ShiftRepository(context.read<ApiClient>()),
-        branchId: branchId,
-      )..load(),
+    return MultiProvider(
+      providers: <SingleChildWidget>[
+        ChangeNotifierProvider<CurrentShiftController>(
+          create: (BuildContext context) => CurrentShiftController(
+            ShiftRepository(context.read<ApiClient>()),
+            branchId: branchId,
+          )..load(),
+        ),
+        ChangeNotifierProvider<SettingsController>(
+          create: (BuildContext context) =>
+              SettingsController(context.read<ApiClient>())..load(),
+        ),
+      ],
       child: _AppShellBody(child: child),
     );
   }
