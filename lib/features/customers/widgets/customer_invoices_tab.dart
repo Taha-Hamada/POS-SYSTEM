@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_data_table.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/models/customer.dart';
+import '../controllers/customer_profile_controller.dart';
+import '../models/customer_entries.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import 'invoice_payment_method_cell.dart';
@@ -15,8 +19,8 @@ class CustomerInvoicesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<SaleInvoice> invoices =
-        MockData.invoicesForCustomer(customer.id);
+    final List<CustomerInvoice> invoices =
+        context.watch<CustomerProfileController>().invoices;
 
     return AppDataTable(
       title: 'فواتير العميل',
@@ -34,19 +38,27 @@ class CustomerInvoicesTab extends StatelessWidget {
         AppTableColumn('الإجمالي', size: ColumnSize.M, numeric: true),
       ],
       rows: <AppTableRow>[
-        for (final SaleInvoice inv in invoices)
+        for (final CustomerInvoice inv in invoices)
           AppTableRow(
             cells: <Widget>[
-              Text(inv.id, style: AppText.amountSm.copyWith(fontSize: 13)),
+              Text(inv.number, style: AppText.amountSm.copyWith(fontSize: 13)),
               Text(
-                Fmt.date(inv.date),
+                Fmt.date(inv.createdAt),
                 style: AppText.body.copyWith(fontSize: 13),
               ),
               TableCells.count(inv.itemsCount),
-              InvoicePaymentMethodCell(method: inv.paymentMethod),
+              InvoicePaymentMethodCell(method: inv.primaryMethod),
               StatusBadge(
-                label: inv.isPaid ? 'مدفوعة' : 'آجلة',
-                tone: inv.isPaid ? StatusTone.success : StatusTone.warning,
+                label: inv.isVoided
+                    ? 'ملغاة'
+                    : inv.hasReturns
+                        ? 'عليها مرتجع'
+                        : 'مكتملة',
+                tone: inv.isVoided
+                    ? StatusTone.danger
+                    : inv.hasReturns
+                        ? StatusTone.warning
+                        : StatusTone.success,
                 compact: true,
               ),
               TableCells.amount(inv.total),
@@ -61,7 +73,7 @@ class CustomerInvoicesTab extends StatelessWidget {
             Fmt.money(
               invoices.fold<double>(
                 0,
-                (double s, SaleInvoice i) => s + i.total,
+                (double s, CustomerInvoice i) => s + i.total,
               ),
             ),
             style: AppText.amountMd,

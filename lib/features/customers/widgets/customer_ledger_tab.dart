@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/account_timeline.dart';
-import '../../../mock_data/mock_data.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/models/customer.dart';
+import '../controllers/customer_profile_controller.dart';
+import '../models/customer_entries.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import 'customer_balance_box.dart';
@@ -14,7 +18,8 @@ class CustomerLedgerTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<LedgerEntry> entries = MockData.ledgerFor(customer.id);
+    final List<LedgerEntry> entries =
+        context.watch<CustomerProfileController>().ledger;
 
     return Container(
       decoration: AppDecorations.card(),

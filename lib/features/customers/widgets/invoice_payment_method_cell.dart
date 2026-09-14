@@ -6,13 +6,22 @@ import '../../../theme/app_theme.dart';
 class InvoicePaymentMethodCell extends StatelessWidget {
   const InvoicePaymentMethodCell({super.key, required this.method});
 
+  /// كود طريقة الدفع زي ما السيرفر بيرجّعه: cash أو card أو wallet أو credit.
   final String method;
 
   IconData get _icon => switch (method) {
-        'نقدي' => Icons.payments_outlined,
-        'بطاقة' => Icons.credit_card_rounded,
-        'محفظة' => Icons.account_balance_wallet_outlined,
+        'cash' => Icons.payments_outlined,
+        'card' => Icons.credit_card_rounded,
+        'wallet' => Icons.account_balance_wallet_outlined,
         _ => Icons.schedule_rounded,
+      };
+
+  String get _label => switch (method) {
+        'cash' => 'كاش',
+        'card' => 'بطاقة',
+        'wallet' => 'محفظة',
+        'credit' => 'آجل',
+        _ => method,
       };
 
   @override
@@ -21,7 +30,7 @@ class InvoicePaymentMethodCell extends StatelessWidget {
       children: <Widget>[
         Icon(_icon, size: 15, color: AppColors.textMuted),
         const SizedBox(width: 6),
-        Text(method, style: AppText.body.copyWith(fontSize: 13)),
+        Text(_label, style: AppText.body.copyWith(fontSize: 13)),
       ],
     );
   }

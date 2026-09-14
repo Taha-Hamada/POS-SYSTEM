@@ -155,19 +155,22 @@ void main() {
       await _openScreen(tester, 'العملاء');
 
       expect(find.text('قائمة العملاء'), findsOneWidget);
-      expect(find.text(MockData.customers[1].name), findsOneWidget);
+      // أسماء العملاء جاية من الباك اند المزيّف.
+      expect(find.text('محمد أحمد'), findsOneWidget);
+      expect(find.text('هدى إبراهيم'), findsOneWidget);
 
       await tester.tap(find.text('المدينون فقط'));
       await tester.pumpAndSettle();
 
       // عميل رصيده صفر مايظهرش
       expect(find.text('هدى إبراهيم'), findsNothing);
+      expect(find.text('محمد أحمد'), findsOneWidget);
     });
 
     testWidgets('ملف العميل بتبويباته الثلاثة', (WidgetTester tester) async {
       await _openScreen(tester, 'العملاء');
 
-      await tester.tap(find.text(MockData.customers[1].name));
+      await tester.tap(find.text('محمد أحمد'));
       await tester.pumpAndSettle();
 
       expect(find.text('ملف العميل'), findsOneWidget);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/primary_button.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import 'loyalty_points_row.dart';

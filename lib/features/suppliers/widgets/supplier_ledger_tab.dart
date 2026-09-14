@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/models/ledger_entry.dart';
 import '../../../core/widgets/account_timeline.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../mock_data/mock_data.dart' hide LedgerEntry;
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import 'supplier_ledger_chip.dart';
@@ -14,10 +15,10 @@ class SupplierLedgerTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<LedgerEntry> entries = MockData.ledgerFor(supplier.id);
-    final double paid = entries
-        .where((LedgerEntry e) => !e.isDebit)
-        .fold<double>(0, (double sum, LedgerEntry e) => sum + e.amount.abs());
+    // الباك اند لسه مابيسجّلش كشف حساب للموردين — بيمسك المستحق الإجمالي بس.
+    // فبنعرض التبويب فاضي بدل ما نعرض حركات مش موجودة.
+    const List<LedgerEntry> entries = <LedgerEntry>[];
+    const double paid = 0;
 
     return Container(
       decoration: AppDecorations.card(),

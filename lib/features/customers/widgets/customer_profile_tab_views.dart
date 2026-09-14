@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
 import '../controllers/customer_profile_controller.dart';
 import 'customer_invoices_tab.dart';
 import 'customer_ledger_tab.dart';

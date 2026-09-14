@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../mock_data/mock_data.dart';
+import '../models/ledger_entry.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 
@@ -104,7 +104,7 @@ class _TimelineTile extends StatelessWidget {
                       color: color.withValues(alpha: 0.28),
                     ),
                   ),
-                  child: Icon(entry.type.icon, size: 17, color: color),
+                  child: Icon(entry.icon, size: 17, color: color),
                 ),
                 Expanded(
                   child: Container(
@@ -139,7 +139,7 @@ class _TimelineTile extends StatelessWidget {
                             children: <Widget>[
                               Flexible(
                                 child: Text(
-                                  entry.type.label,
+                                  entry.typeLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppText.cardTitle.copyWith(

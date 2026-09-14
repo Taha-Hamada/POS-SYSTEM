@@ -1,18 +1,23 @@
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
 
-/// نغمة الـBadge حسب مجموعة العميل.
-extension CustomerTierTone on CustomerTier {
-  StatusTone get tone => switch (this) {
-        CustomerTier.gold => StatusTone.warning,
-        CustomerTier.silver => StatusTone.info,
-        CustomerTier.regular => StatusTone.neutral,
+/// مجموعات العملاء زي ما الباك اند بيسمّيها.
+///
+/// بتتخزّن كنص مش enum لأن السيرفر ممكن يضيف مجموعة جديدة من غير ما التطبيق
+/// يتحدّث، والقيمة الغريبة بتتعرض زي ما هي بدل ما تكسر الشاشة.
+const List<String> kCustomerTiers = <String>['regular', 'silver', 'gold'];
+
+extension CustomerTierTone on String {
+  StatusTone get tierTone => switch (this) {
+        'gold' => StatusTone.warning,
+        'silver' => StatusTone.info,
+        _ => StatusTone.neutral,
       };
 
   /// الاسم المختصر المستخدم في فلتر المجموعات.
-  String get shortLabel => switch (this) {
-        CustomerTier.gold => 'ذهبي',
-        CustomerTier.silver => 'فضي',
-        CustomerTier.regular => 'عادي',
+  String get tierLabel => switch (this) {
+        'gold' => 'ذهبي',
+        'silver' => 'فضي',
+        'regular' => 'عادي',
+        _ => this,
       };
 }

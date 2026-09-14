@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/profile_summary_card.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../models/customer_tier_tone.dart';
@@ -17,22 +17,26 @@ class CustomerSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Customer c = customer;
     final bool isDebtor = c.balance < 0;
-    final double creditLimit = MockData.creditLimitFor(c);
+    final double creditLimit = c.creditLimit;
 
     return ProfileSummaryCard(
       name: c.name,
-      subtitle: 'عميل منذ ${Fmt.date(c.lastVisit.subtract(
-        Duration(days: c.ordersCount * 7),
-      ))} • ${Fmt.count(c.ordersCount)} فاتورة',
+      subtitle: '${Fmt.count(c.ordersCount)} فاتورة • '
+          '${c.lastVisitAt == null ? 'مجاش لسه' : 'آخر زيارة ${Fmt.date(c.lastVisitAt!)}'}',
       badge: StatusBadge(
         label: c.tierLabel,
-        tone: c.tier.tone,
+        tone: c.tier.tierTone,
         showDot: false,
       ),
       meta: <(IconData, String)>[
         (Icons.phone_outlined, c.phone),
-        (Icons.mail_outline_rounded, c.email),
-        (Icons.schedule_rounded, 'آخر زيارة ${Fmt.date(c.lastVisit)}'),
+        (Icons.mail_outline_rounded, c.email ?? '—'),
+        (
+          Icons.credit_score_outlined,
+          c.canBuyOnCredit
+              ? 'متاح آجل ${Fmt.moneyRounded(c.availableCredit)}'
+              : 'مفيش آجل متاح',
+        ),
       ],
       stats: <ProfileStat>[
         ProfileStat(

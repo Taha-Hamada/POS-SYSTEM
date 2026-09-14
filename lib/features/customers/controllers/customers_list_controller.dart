@@ -1,69 +1,99 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../../core/models/customer.dart';
+import '../data/customers_repository.dart';
 import '../models/customers_sort_column.dart';
 
 /// حالة شاشة العملاء: البحث، المجموعة، فلتر المدينين، والفرز.
-class CustomersListController extends ChangeNotifier {
+///
+/// العملاء بيتجابوا مرة واحدة، والفلترة والفرز محليًا عشان البطاقات
+/// تعرض إجماليات على الكل مش على الصفحة المعروضة.
+class CustomersListController extends ChangeNotifier with LoadState {
+  CustomersListController(this._repository);
+
+  final CustomersRepository _repository;
+
   final TextEditingController searchController = TextEditingController();
 
+  List<Customer> _all = <Customer>[];
   String _query = '';
-  CustomerTier? _tier;
+  String? _tier;
   bool _onlyDebtors = false;
   int _sortIndex = 0;
   bool _sortAscending = true;
 
+  Timer? _searchDebounce;
   List<Customer>? _cachedRows;
 
-  CustomerTier? get tier => _tier;
+  String? get tier => _tier;
   bool get onlyDebtors => _onlyDebtors;
   int get sortIndex => _sortIndex;
   bool get sortAscending => _sortAscending;
 
-  /// كل العملاء ما عدا "عميل نقدي" (مش عميل حقيقي)
-  List<Customer> get allCustomers => MockData.customers
-      .where((Customer c) => c.id != MockData.walkInCustomer.id)
-      .toList(growable: false);
-
+  List<Customer> get allCustomers => _all;
   List<Customer> get rows => _cachedRows ??= _computeRows();
 
   int get visibleCount => rows.length;
+  bool get isEmpty => !isLoading && !hasFailed && _all.isEmpty;
 
   double get visibleBalance =>
       rows.fold<double>(0, (double s, Customer c) => s + c.balance);
 
+  // ── التحميل ──────────────────────────────────────────────────────────────
+  Future<void> load() async {
+    await runLoad(() async {
+      _all = await _repository.fetchAll();
+      _cachedRows = null;
+    });
+  }
+
+  Future<void> retry() => load();
+
   // ── إحصائيات ─────────────────────────────────────────────────────────────
-  double get totalDebt => allCustomers
+  double get totalDebt => _all
       .where((Customer c) => c.balance < 0)
       .fold<double>(0, (double s, Customer c) => s + c.balance.abs());
 
-  double get totalPurchases => allCustomers
-      .fold<double>(0, (double s, Customer c) => s + c.totalPurchases);
+  double get totalPurchases =>
+      _all.fold<double>(0, (double s, Customer c) => s + c.totalPurchases);
 
-  int tierCount(CustomerTier tier) =>
-      allCustomers.where((Customer c) => c.tier == tier).length;
+  int get totalPoints =>
+      _all.fold<int>(0, (int s, Customer c) => s + c.points);
+
+  int tierCount(String tier) =>
+      _all.where((Customer c) => c.tier == tier).length;
 
   // ── الفلترة والفرز ───────────────────────────────────────────────────────
   List<Customer> _computeRows() {
     final String q = _query.trim().toLowerCase();
 
-    final List<Customer> list = allCustomers.where((Customer c) {
+    final List<Customer> list = _all.where((Customer c) {
       if (_tier != null && c.tier != _tier) return false;
       if (_onlyDebtors && c.balance >= 0) return false;
       if (q.isEmpty) return true;
+
       return c.name.toLowerCase().contains(q) ||
           c.phone.contains(q) ||
-          c.email.toLowerCase().contains(q);
+          (c.email?.toLowerCase().contains(q) ?? false);
     }).toList();
+
+    const List<String> tierOrder = <String>['regular', 'silver', 'gold'];
 
     final CustomersSortColumn column = CustomersSortColumn.values[_sortIndex];
     list.sort((Customer a, Customer b) {
       final int result = switch (column) {
         CustomersSortColumn.name => a.name.compareTo(b.name),
         CustomersSortColumn.phone => a.phone.compareTo(b.phone),
-        CustomersSortColumn.tier => a.tier.index.compareTo(b.tier.index),
+        CustomersSortColumn.tier =>
+          tierOrder.indexOf(a.tier).compareTo(tierOrder.indexOf(b.tier)),
         CustomersSortColumn.balance => a.balance.compareTo(b.balance),
-        CustomersSortColumn.lastVisit => a.lastVisit.compareTo(b.lastVisit),
+        // العميل اللي عمره ما جه بيتحط في الآخر بدل ما يتصدّر.
+        CustomersSortColumn.lastVisit => (a.lastVisitAt ?? DateTime(1970))
+            .compareTo(b.lastVisitAt ?? DateTime(1970)),
       };
       return _sortAscending ? result : -result;
     });
@@ -74,10 +104,11 @@ class CustomersListController extends ChangeNotifier {
   // ── إجراءات ──────────────────────────────────────────────────────────────
   void setQuery(String value) {
     _query = value;
-    _refresh();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 200), _refresh);
   }
 
-  void setTier(CustomerTier? tier) {
+  void setTier(String? tier) {
     _tier = tier;
     _refresh();
   }
@@ -93,6 +124,40 @@ class CustomersListController extends ChangeNotifier {
     _refresh();
   }
 
+  /// إضافة عميل جديد. بترجّع رسالة الخطأ لو فشلت.
+  Future<String?> addCustomer({
+    required String name,
+    required String phone,
+    String? email,
+    double? creditLimit,
+  }) async {
+    final ApiException? failure = await runAction(() async {
+      final Customer created = await _repository.create(
+        name: name,
+        phone: phone,
+        email: email,
+        creditLimit: creditLimit,
+      );
+
+      _all = <Customer>[created, ..._all];
+      _cachedRows = null;
+    });
+
+    // خطأ الحقل أدق من الرسالة العامة لما السيرفر يحدّده.
+    return failure == null
+        ? null
+        : failure.fieldErrors['phone'] ?? failure.message;
+  }
+
+  /// بتتنادى بعد أي تعديل على عميل من شاشة الملف.
+  void replace(Customer customer) {
+    final int index = _all.indexWhere((Customer c) => c.id == customer.id);
+    if (index < 0) return;
+
+    _all[index] = customer;
+    _refresh();
+  }
+
   void _refresh() {
     _cachedRows = null;
     notifyListeners();
@@ -100,6 +165,7 @@ class CustomersListController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     searchController.dispose();
     super.dispose();
   }

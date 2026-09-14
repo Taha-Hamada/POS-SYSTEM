@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_data_table.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../models/customer_entries.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
@@ -42,8 +42,8 @@ class LoyaltyHistoryTable extends StatelessWidget {
                 style: AppText.body.copyWith(fontSize: 13),
               ),
               StatusBadge(
-                label: e.type == LoyaltyType.earn ? 'كسب' : 'استبدال',
-                tone: e.type == LoyaltyType.earn
+                label: e.typeLabel,
+                tone: e.isEarn
                     ? StatusTone.success
                     : StatusTone.warning,
                 compact: true,

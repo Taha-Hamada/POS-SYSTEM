@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/models/customer.dart';
+import '../controllers/customer_profile_controller.dart';
+import '../models/customer_entries.dart';
 import '../../../theme/app_theme.dart';
 import 'loyalty_balance_card.dart';
 import 'loyalty_history_table.dart';
@@ -13,13 +17,15 @@ class CustomerLoyaltyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<LoyaltyEntry> entries = MockData.loyaltyFor(customer.id);
+    final List<LoyaltyEntry> entries =
+        context.watch<CustomerProfileController>().loyalty;
 
+    // الكسب والاستبدال بيتحسبوا من إشارة النقط، عشان التسويات تتحسب صح كمان.
     final int earned = entries
-        .where((LoyaltyEntry e) => e.type == LoyaltyType.earn)
+        .where((LoyaltyEntry e) => e.points > 0)
         .fold<int>(0, (int s, LoyaltyEntry e) => s + e.points);
     final int redeemed = entries
-        .where((LoyaltyEntry e) => e.type == LoyaltyType.redeem)
+        .where((LoyaltyEntry e) => e.points < 0)
         .fold<int>(0, (int s, LoyaltyEntry e) => s + e.points.abs());
 
     return Row(

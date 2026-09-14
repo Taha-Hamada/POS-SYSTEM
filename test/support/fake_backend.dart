@@ -24,6 +24,13 @@ class FakeBackend {
   final List<Map<String, dynamic>> products;
   final List<Map<String, dynamic>> heldInvoices = <Map<String, dynamic>>[];
 
+  /// عملاء بأرصدة مختلفة: واحد عليه مديونية وواحد رصيده صفر.
+  final List<Map<String, dynamic>> customers = <Map<String, dynamic>>[
+    _customer(id: 'cu1', name: 'محمد أحمد', phone: '01001112222', balance: -500,
+        tier: 'gold', points: 320, orders: 12),
+    _customer(id: 'cu2', name: 'هدى إبراهيم', phone: '01003334444'),
+  ];
+
   /// الوردية المفتوحة، أو null لو الكاشير مقفول.
   Map<String, dynamic>? currentShift;
 
@@ -266,6 +273,46 @@ class FakeBackend {
 
     if (path.endsWith('/categories')) {
       return _page(categories);
+    }
+
+    if (path.endsWith('/customers/receivables')) {
+      return _ok(<String, dynamic>{'total': 500, 'count': 1});
+    }
+
+    if (path.endsWith('/ledger')) return _page(_ledger);
+    if (path.endsWith('/loyalty')) return _page(_loyalty);
+
+    if (path.endsWith('/customers') && request.method == 'GET') {
+      return _page(customers);
+    }
+
+    // ملف عميل واحد — بيتطلب بمعرّفه.
+    if (path.contains('/customers/')) {
+      final String id = path.split('/').last;
+      final Map<String, dynamic>? found = customers
+          .cast<Map<String, dynamic>?>()
+          .firstWhere((Map<String, dynamic>? c) => c!['id'] == id,
+              orElse: () => null);
+
+      if (found == null) {
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'success': false,
+            'message': 'العميل غير موجود',
+            'error': <String, dynamic>{'code': 'NOT_FOUND'},
+          }),
+          404,
+          headers: <String, String>{
+            'content-type': 'application/json; charset=utf-8',
+          },
+        );
+      }
+
+      return _ok(found);
+    }
+
+    if (path.endsWith('/invoices') && request.method == 'GET') {
+      return _page(<Map<String, dynamic>>[]);
     }
 
     if (path.endsWith('/reports/dashboard')) {
@@ -556,6 +603,54 @@ class FakeBackend {
       'color': '#F59E0B',
       'productsCount': 1,
       'isActive': true,
+    },
+  ];
+
+  static Map<String, dynamic> _customer({
+    required String id,
+    required String name,
+    required String phone,
+    double balance = 0,
+    String tier = 'regular',
+    int points = 0,
+    int orders = 0,
+  }) =>
+      <String, dynamic>{
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'email': null,
+        'tier': tier,
+        'balance': balance,
+        'creditLimit': 2000,
+        'points': points,
+        'totalPurchases': orders * 250,
+        'ordersCount': orders,
+        'lastVisitAt': DateTime.now().toIso8601String(),
+        'isActive': true,
+      };
+
+  static final List<Map<String, dynamic>> _ledger = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'lg1',
+      'type': 'sale',
+      'amount': -500,
+      'balanceAfter': -500,
+      'createdAt': DateTime.now().toIso8601String(),
+      'note': 'فاتورة بيع',
+      'branch': <String, dynamic>{'name': 'الفرع الرئيسي'},
+    },
+  ];
+
+  static final List<Map<String, dynamic>> _loyalty = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'ly1',
+      'type': 'earn',
+      'points': 320,
+      'balanceAfter': 320,
+      'valueAmount': 0,
+      'createdAt': DateTime.now().toIso8601String(),
+      'note': 'نقط فاتورة',
     },
   ];
 

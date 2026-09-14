@@ -6,7 +6,7 @@ import '../../../core/widgets/app_data_table.dart';
 import '../../../core/widgets/hover_row_button.dart';
 import '../../../core/widgets/phone_cell.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/customers_list_controller.dart';
@@ -39,13 +39,13 @@ class CustomersTable extends StatelessWidget {
         c.name,
         c.initials,
         color: AppColors.accent,
-        subtitle: c.email,
+        subtitle: c.email ?? c.phone,
       ),
       PhoneCell(phone: c.phone),
-      StatusBadge(label: c.tierLabel, tone: c.tier.tone, showDot: false),
+      StatusBadge(label: c.tierLabel, tone: c.tier.tierTone, showDot: false),
       CustomerBalanceCell(balance: c.balance),
       TableCells.twoLine(
-        Fmt.date(c.lastVisit),
+        c.lastVisitAt == null ? 'مجاش لسه' : Fmt.date(c.lastVisitAt!),
         '${Fmt.count(c.ordersCount)} فاتورة',
       ),
       HoverRowButton(

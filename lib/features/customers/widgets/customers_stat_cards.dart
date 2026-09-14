@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/customers_list_controller.dart';
@@ -24,7 +24,6 @@ class CustomersStatCards extends StatelessWidget {
             value: Fmt.count(customers.allCustomers.length),
             icon: Icons.people_alt_outlined,
             iconColor: AppColors.accent,
-            changePercent: 9.1,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -35,17 +34,15 @@ class CustomersStatCards extends StatelessWidget {
             icon: Icons.credit_card_off_outlined,
             iconColor: AppColors.danger,
             higherIsBetter: false,
-            changePercent: 4.8,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: StatCard(
             title: 'عملاء ذهبيون',
-            value: Fmt.count(customers.tierCount(CustomerTier.gold)),
+            value: Fmt.count(customers.tierCount('gold')),
             icon: Icons.workspace_premium_outlined,
             iconColor: AppColors.warning,
-            changePercent: 12.0,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -55,7 +52,6 @@ class CustomersStatCards extends StatelessWidget {
             value: Fmt.moneyRounded(customers.totalPurchases),
             icon: Icons.shopping_bag_outlined,
             iconColor: AppColors.success,
-            changePercent: 17.4,
           ),
         ),
       ],
