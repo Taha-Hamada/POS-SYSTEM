@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../models/payment_entry.dart';
-import '../models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 import 'payment_mini_action.dart';
 
 /// سطر دفعة متسجّلة مع زرار إزالتها.

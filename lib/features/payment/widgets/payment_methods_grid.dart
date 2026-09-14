@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
 import '../controllers/payment_controller.dart';
-import '../models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 import 'payment_method_card.dart';
 
 /// شبكة 2×2 لطرق الدفع.

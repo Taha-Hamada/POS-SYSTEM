@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
 import '../../../core/widgets/app_form_field.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/category.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/product_form_controller.dart';
 import 'labeled_dropdown.dart';
@@ -41,13 +41,25 @@ class BasicInfoTab extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
-              child: LabeledDropdown<String>(
+              child: AppFormField(
+                label: 'كود المنتج (SKU)',
+                controller: form.skuController,
+                hint: 'مثال: RICE-1KG',
+                required: true,
+                onChanged: form.fieldChanged,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: LabeledDropdown<String?>(
                 label: 'الفئة',
                 value: form.categoryId,
-                onChanged: form.setCategory,
-                items: <AppDropdownItem<String>>[
-                  for (final ProductCategory c in MockData.categories)
-                    AppDropdownItem<String>(
+                onChanged: (String? id) {
+                  if (id != null) form.setCategory(id);
+                },
+                items: <AppDropdownItem<String?>>[
+                  for (final Category c in form.categories)
+                    AppDropdownItem<String?>(
                       value: c.id,
                       label: c.name,
                       icon: c.icon,
@@ -55,7 +67,12 @@ class BasicInfoTab extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.lg),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
             Expanded(
               child: AppFormField(
                 label: 'الماركة',
@@ -63,6 +80,8 @@ class BasicInfoTab extends StatelessWidget {
                 hint: 'اختياري',
               ),
             ),
+            const SizedBox(width: AppSpacing.lg),
+            const Spacer(flex: 2),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),

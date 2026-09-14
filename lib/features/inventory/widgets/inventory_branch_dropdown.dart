@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/branch.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../data/inventory_repository.dart';
 import '../controllers/inventory_controller.dart';
 
 /// فلتر الفرع أو المخزن.
@@ -20,7 +20,7 @@ class InventoryBranchDropdown extends StatelessWidget {
       onChanged: inventory.setBranch,
       // مفيش «كل الفروع» لأن المخزون بيتحسب لفرع واحد على السيرفر.
       items: <AppDropdownItem<String?>>[
-        for (final BranchOption b in inventory.branches)
+        for (final Branch b in inventory.branches)
           AppDropdownItem<String?>(
             value: b.id,
             label: b.name,

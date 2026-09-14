@@ -6,7 +6,7 @@ import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/payment_controller.dart';
-import '../models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 
 /// مبالغ سريعة (+50، +100، +200) وزرار «بالظبط» للمتبقي.
 class PaymentQuickAmounts extends StatelessWidget {

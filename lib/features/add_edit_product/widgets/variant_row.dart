@@ -60,10 +60,10 @@ class VariantRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: VariantCellField(
-              hint: '0',
-              initial: variant.quantity,
+              hint: 'سعر المنتج',
+              initial: variant.price,
               numeric: true,
-              onChanged: (String v) => variant.quantity = v,
+              onChanged: (String v) => variant.price = v,
             ),
           ),
           SizedBox(

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/numpad.dart';
 import '../models/payment_entry.dart';
-import '../models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 import '../models/payment_result.dart';
 
 /// حالة شاشة الدفع: الدفعات المسجّلة، الطريقة الحالية، والمبلغ اللي بيتكتب.

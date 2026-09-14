@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
+import '../../../core/models/branch.dart';
 import '../data/inventory_repository.dart';
 import '../models/stock_record.dart';
 import '../models/stock_sort_column.dart';
@@ -24,7 +25,7 @@ class InventoryController extends ChangeNotifier with LoadState {
   String get branchId => _branchId;
 
   List<StockRecord> _rows = <StockRecord>[];
-  List<BranchOption> _branches = <BranchOption>[];
+  List<Branch> _branches = <Branch>[];
   InventorySummary _summary = (
     items: 0,
     units: 0,
@@ -49,7 +50,7 @@ class InventoryController extends ChangeNotifier with LoadState {
   bool get sortAscending => _sortAscending;
 
   List<StockRecord> get rows => _rows;
-  List<BranchOption> get branches => _branches;
+  List<Branch> get branches => _branches;
   InventorySummary get summary => _summary;
 
   bool get canSwitchBranch => _branches.length > 1;
@@ -84,14 +85,14 @@ class InventoryController extends ChangeNotifier with LoadState {
         if (_branches.isEmpty)
           _repository.fetchBranches()
         else
-          Future<List<BranchOption>>.value(_branches),
+          Future<List<Branch>>.value(_branches),
       ]);
 
       final StockPage page = results[0] as StockPage;
       _rows = page.items;
       _total = page.total;
       _summary = results[1] as InventorySummary;
-      _branches = results[2] as List<BranchOption>;
+      _branches = results[2] as List<Branch>;
     });
   }
 

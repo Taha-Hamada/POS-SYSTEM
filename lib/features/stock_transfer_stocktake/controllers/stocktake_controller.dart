@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
+import '../../../core/models/branch.dart';
 import '../../inventory/data/inventory_repository.dart';
 import '../../inventory/models/stock_record.dart';
 import '../models/stocktake_line.dart';
@@ -24,16 +25,16 @@ class StocktakeController extends ChangeNotifier with LoadState {
   String _branchId;
   String _query = '';
   List<StocktakeLine> _lines = <StocktakeLine>[];
-  List<BranchOption> _branches = <BranchOption>[];
+  List<Branch> _branches = <Branch>[];
 
   String get branchId => _branchId;
   String get query => _query;
   List<StocktakeLine> get lines => _lines;
-  List<BranchOption> get branches => _branches;
+  List<Branch> get branches => _branches;
 
   String get branchName => _branches
-      .where((BranchOption b) => b.id == _branchId)
-      .map((BranchOption b) => b.name)
+      .where((Branch b) => b.id == _branchId)
+      .map((Branch b) => b.name)
       .firstOrNull ??
       '';
 
@@ -48,14 +49,14 @@ class StocktakeController extends ChangeNotifier with LoadState {
         if (_branches.isEmpty)
           _repository.fetchBranches()
         else
-          Future<List<BranchOption>>.value(_branches),
+          Future<List<Branch>>.value(_branches),
       ]);
 
       final StockPage page = results[0] as StockPage;
       _lines = page.items
           .map((StockRecord r) => StocktakeLine(record: r))
           .toList();
-      _branches = results[1] as List<BranchOption>;
+      _branches = results[1] as List<Branch>;
     });
   }
 

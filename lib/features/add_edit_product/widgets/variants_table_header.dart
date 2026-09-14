@@ -24,7 +24,7 @@ class VariantsTableHeader extends StatelessWidget {
           Expanded(child: Text('المقاس', style: AppText.label)),
           Expanded(child: Text('اللون', style: AppText.label)),
           Expanded(flex: 2, child: Text('SKU', style: AppText.label)),
-          Expanded(child: Text('الكمية', style: AppText.label)),
+          Expanded(child: Text('سعر خاص', style: AppText.label)),
           const SizedBox(width: 40),
         ],
       ),

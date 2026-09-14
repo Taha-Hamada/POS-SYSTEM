@@ -1,4 +1,4 @@
-import 'payment_method.dart';
+import '../../../core/models/payment_method.dart';
 
 /// دفعة واحدة داخل الفاتورة (الفاتورة ممكن يكون فيها أكتر من واحدة).
 class PaymentEntry {

@@ -6,7 +6,7 @@ import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../features/payment/models/payment_entry.dart';
-import '../../../features/payment/models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 import '../../../features/payment/models/payment_result.dart';
 import '../../../features/payment/screens/payment_dialog.dart';
 import '../../../theme/app_theme.dart';

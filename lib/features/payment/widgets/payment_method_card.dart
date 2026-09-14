@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
-import '../models/payment_method.dart';
+import '../../../core/models/payment_method.dart';
 
 /// كارت طريقة دفع واحدة جوه شبكة الاختيار.
 class PaymentMethodCard extends StatefulWidget {

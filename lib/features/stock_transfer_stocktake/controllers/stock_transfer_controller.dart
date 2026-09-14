@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
+import '../../../core/models/branch.dart';
 import '../../inventory/data/inventory_repository.dart';
 import '../../inventory/models/stock_record.dart';
 import '../models/transfer_line.dart';
@@ -27,7 +28,7 @@ class StockTransferController extends ChangeNotifier with LoadState {
 
   final List<TransferLine> _lines = <TransferLine>[];
   List<StockRecord> _sourceStock = <StockRecord>[];
-  List<BranchOption> _branches = <BranchOption>[];
+  List<Branch> _branches = <Branch>[];
 
   String get fromBranchId => _fromBranchId;
   String? get toBranchId => _toBranchId;
@@ -35,15 +36,15 @@ class StockTransferController extends ChangeNotifier with LoadState {
   UnmodifiableListView<TransferLine> get lines =>
       UnmodifiableListView<TransferLine>(_lines);
 
-  List<BranchOption> get branches => _branches;
+  List<Branch> get branches => _branches;
 
   /// الأصناف اللي في الفرع المُرسِل وليها رصيد متاح.
   List<StockRecord> get availableStock =>
       _sourceStock.where((StockRecord r) => r.available > 0).toList();
 
   String _branchName(String? id) => _branches
-          .where((BranchOption b) => b.id == id)
-          .map((BranchOption b) => b.name)
+          .where((Branch b) => b.id == id)
+          .map((Branch b) => b.name)
           .firstOrNull ??
       '';
 
@@ -77,16 +78,16 @@ class StockTransferController extends ChangeNotifier with LoadState {
         if (_branches.isEmpty)
           _repository.fetchBranches()
         else
-          Future<List<BranchOption>>.value(_branches),
+          Future<List<Branch>>.value(_branches),
       ]);
 
       _sourceStock = (results[0] as StockPage).items;
-      _branches = results[1] as List<BranchOption>;
+      _branches = results[1] as List<Branch>;
 
       // أول فرع تاني بيبقى الوجهة الافتراضية.
       _toBranchId ??= _branches
-          .where((BranchOption b) => b.id != _fromBranchId)
-          .map((BranchOption b) => b.id)
+          .where((Branch b) => b.id != _fromBranchId)
+          .map((Branch b) => b.id)
           .firstOrNull;
     });
   }

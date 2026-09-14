@@ -2,6 +2,31 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/category.dart';
 import '../../../core/models/product.dart';
 
+/// متغير منتج وهو رايح للسيرفر.
+///
+/// السيرفر مش بيمسك رصيد لكل متغير، بيمسك سعر خاص بس، فالمدخلات هنا هي
+/// اللي السيرفر بيخزّنه فعلًا مش أكتر.
+class ProductVariantInput {
+  const ProductVariantInput({
+    this.size = '',
+    this.color = '',
+    this.sku = '',
+    this.priceOverride,
+  });
+
+  final String size;
+  final String color;
+  final String sku;
+  final double? priceOverride;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        if (size.isNotEmpty) 'size': size,
+        if (color.isNotEmpty) 'color': color,
+        if (sku.isNotEmpty) 'sku': sku,
+        if (priceOverride != null) 'priceOverride': priceOverride,
+      };
+}
+
 /// قراءة وكتابة المنتجات والأقسام من الـ API.
 class ProductsRepository {
   const ProductsRepository(this._api);
@@ -45,6 +70,55 @@ class ProductsRepository {
     );
 
     return response.list.map(Category.fromJson).toList();
+  }
+
+  /// بينشئ منتج جديد، ومعاه رصيد افتتاحي اختياري لفرع واحد.
+  ///
+  /// الرصيد الافتتاحي بيتسجل كحركة مخزون على السيرفر، فبيبان في تقرير
+  /// المخزون زي أي إضافة تانية.
+  Future<Product> create({
+    required String name,
+    required String sku,
+    required String categoryId,
+    required double price,
+    required double cost,
+    String? unit,
+    String? brand,
+    String? description,
+    String? barcode,
+    int minStock = 0,
+    int openingStock = 0,
+    String? branchId,
+    List<ProductVariantInput> variants = const <ProductVariantInput>[],
+  }) async {
+    final ApiResponse response = await _api.post(
+      '/products',
+      body: <String, dynamic>{
+        'name': name,
+        'sku': sku,
+        'category': categoryId,
+        'price': price,
+        'cost': cost,
+        if (unit != null && unit.isNotEmpty) 'unit': unit,
+        if (brand != null && brand.isNotEmpty) 'brand': brand,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (barcode != null && barcode.isNotEmpty) 'barcode': barcode,
+        'minStock': minStock,
+        if (variants.isNotEmpty)
+          'variants': variants
+              .map((ProductVariantInput v) => v.toJson())
+              .toList(growable: false),
+        // من غير فرع مفيش مكان يتحط فيه الرصيد، فبنبعت المنتج لوحده.
+        if (branchId != null && openingStock > 0)
+          'openingStock': <String, dynamic>{
+            'branch': branchId,
+            'quantity': openingStock,
+          },
+      },
+    );
+
+    return Product.fromJson(response.object);
   }
 
   Future<Product> setActiveState(String id, {required bool isActive}) async {

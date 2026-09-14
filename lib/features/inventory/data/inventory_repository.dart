@@ -1,12 +1,10 @@
 import '../../../core/api/api_client.dart';
-import '../../../core/api/api_exception.dart';
+import '../../../core/data/branches_repository.dart';
+import '../../../core/models/branch.dart';
 import '../models/stock_record.dart';
 
 /// صفحة من سجلات المخزون مع عددها الكلي.
 typedef StockPage = ({List<StockRecord> items, int total});
-
-/// فرع في فلتر المخزون.
-typedef BranchOption = ({String id, String name});
 
 /// إجماليات مخزون الفرع، محسوبة على السيرفر.
 typedef InventorySummary = ({
@@ -77,24 +75,7 @@ class InventoryRepository {
   ///
   /// أمين المخزن مبيشوفش الفروع، فبترجّع فاضية بدل ما ترمي خطأ،
   /// والشاشة بتقفل على فرعه.
-  Future<List<BranchOption>> fetchBranches() async {
-    try {
-      final ApiResponse response = await _api.get(
-        '/branches',
-        query: <String, dynamic>{'limit': 100, 'isActive': 'true'},
-      );
-
-      return response.list
-          .map((Map<String, dynamic> b) => (
-                id: b['id'] as String? ?? '',
-                name: b['name'] as String? ?? '',
-              ))
-          .toList();
-    } on ApiException catch (exception) {
-      if (exception.isForbidden) return <BranchOption>[];
-      rethrow;
-    }
-  }
+  Future<List<Branch>> fetchBranches() => BranchesRepository(_api).fetchAll();
 
   Future<List<StockMovement>> fetchMovements({
     String? branchId,

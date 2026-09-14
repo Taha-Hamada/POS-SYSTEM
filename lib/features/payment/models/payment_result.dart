@@ -1,5 +1,5 @@
 import 'payment_entry.dart';
-import 'payment_method.dart';
+import '../../../core/models/payment_method.dart';
 
 /// نتيجة عملية الدفع.
 class PaymentResult {
