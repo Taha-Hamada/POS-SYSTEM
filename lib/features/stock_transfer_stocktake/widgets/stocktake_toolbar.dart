@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
 import '../../../core/widgets/screen_header.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/branch.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/stocktake_controller.dart';
@@ -25,11 +25,11 @@ class StocktakeToolbar extends StatelessWidget {
           icon: Icons.store_outlined,
           onChanged: stocktake.changeBranch,
           items: <AppDropdownItem<String>>[
-            for (final Branch b in MockData.branches)
+            for (final Branch b in stocktake.branches)
               AppDropdownItem<String>(
                 value: b.id,
                 label: b.name,
-                icon: b.isMain ? Icons.star_rounded : Icons.store_outlined,
+                icon: Icons.store_outlined,
               ),
           ],
         ),

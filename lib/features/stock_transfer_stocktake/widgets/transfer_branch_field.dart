@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/branch.dart';
 import '../../../theme/app_theme.dart';
 
 /// قائمة اختيار فرع (مُرسِل أو مُستقبِل) بعنوان ملوّن فوقها.
@@ -13,10 +13,14 @@ class TransferBranchField extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onChanged,
+    required this.branches,
   });
 
   final String label;
   final String value;
+
+  /// الفروع اللي السيرفر رجّعها — مش قايمة ثابتة في الكود.
+  final List<Branch> branches;
   final IconData icon;
   final Color color;
   final ValueChanged<String> onChanged;
@@ -42,11 +46,11 @@ class TransferBranchField extends StatelessWidget {
           icon: Icons.store_outlined,
           onChanged: onChanged,
           items: <AppDropdownItem<String>>[
-            for (final Branch b in MockData.branches)
+            for (final Branch b in branches)
               AppDropdownItem<String>(
                 value: b.id,
                 label: b.name,
-                icon: b.isMain ? Icons.star_rounded : Icons.store_outlined,
+                icon: Icons.store_outlined,
               ),
           ],
         ),
