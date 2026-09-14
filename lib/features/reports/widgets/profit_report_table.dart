@@ -5,7 +5,7 @@ import '../../../core/widgets/app_data_table.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
-import '../models/category_report_row.dart';
+import '../models/report_rows.dart';
 import 'bar_cell.dart';
 import 'margin_cell.dart';
 import 'report_footer_totals.dart';
@@ -44,11 +44,11 @@ class ProfitReportTable extends StatelessWidget {
           AppTableRow(
             cells: <Widget>[
               ReportIconCell(
-                icon: r.category.icon,
-                title: r.category.name,
-                subtitle: '${Fmt.count(r.items)} صنف',
+                icon: r.icon,
+                title: r.name,
+                subtitle: '${r.share.toStringAsFixed(1)}% من المبيعات',
               ),
-              TableCells.count(r.units),
+              TableCells.count(r.units.round()),
               BarCell(value: r.revenue, max: maxRevenue),
               TableCells.amount(r.cost, color: AppColors.textSecondary),
               TableCells.amount(r.profit, color: AppColors.success),

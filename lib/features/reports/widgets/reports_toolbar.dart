@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../dashboard/models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/reports_controller.dart';
 import '../models/report_period.dart';
@@ -50,11 +50,11 @@ class ReportsToolbar extends StatelessWidget {
                 label: 'كل الفروع',
                 icon: Icons.apps_rounded,
               ),
-              for (final Branch b in MockData.branches)
+              for (final BranchStats b in reports.branches)
                 AppDropdownItem<String?>(
                   value: b.id,
                   label: b.name,
-                  icon: b.isMain ? Icons.star_rounded : Icons.store_outlined,
+                  icon: Icons.store_outlined,
                 ),
             ],
           ),

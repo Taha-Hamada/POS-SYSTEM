@@ -5,7 +5,7 @@ import '../../../core/widgets/stat_card.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
-import '../models/category_report_row.dart';
+import '../models/report_rows.dart';
 import '../models/report_period.dart';
 import 'profit_report_table.dart';
 import 'report_body.dart';

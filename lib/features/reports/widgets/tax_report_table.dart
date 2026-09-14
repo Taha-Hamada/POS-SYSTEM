@@ -6,7 +6,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
-import '../models/monthly_tax_row.dart';
+import '../models/report_rows.dart';
 import '../models/report_period.dart';
 import 'report_footer_totals.dart';
 

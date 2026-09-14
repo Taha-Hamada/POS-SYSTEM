@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
@@ -17,7 +16,8 @@ class TaxReport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ReportsController reports = context.watch<ReportsController>();
-    final String taxPercent = (MockData.taxRate * 100).toStringAsFixed(0);
+    final String taxPercent =
+        (reports.tax.taxRate * 100).toStringAsFixed(0);
 
     return ReportBody(
       summary: <Widget>[
@@ -26,7 +26,6 @@ class TaxReport extends StatelessWidget {
           value: Fmt.moneyRounded(reports.totalSales),
           icon: Icons.point_of_sale_rounded,
           iconColor: AppColors.accent,
-          changePercent: 12.4,
           changeLabel: reports.period.label,
         ),
         StatCard(

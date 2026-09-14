@@ -5,7 +5,7 @@ import '../../../core/widgets/stat_card.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
-import '../models/employee_report_row.dart';
+import '../models/report_rows.dart';
 import '../models/report_period.dart';
 import 'employees_report_table.dart';
 import 'report_body.dart';
@@ -24,10 +24,9 @@ class EmployeesReport extends StatelessWidget {
       summary: <Widget>[
         StatCard(
           title: 'عدد الموظفين',
-          value: Fmt.count(reports.cashiers.length),
+          value: Fmt.count(rows.length),
           icon: Icons.badge_outlined,
           iconColor: AppColors.accent,
-          changePercent: 0,
           changeLabel:
               reports.branchId == null ? 'كل الفروع' : 'الفرع المختار',
         ),
@@ -36,17 +35,15 @@ class EmployeesReport extends StatelessWidget {
           value: Fmt.moneyRounded(reports.totalSales),
           icon: Icons.trending_up_rounded,
           iconColor: AppColors.success,
-          changePercent: 12.4,
           changeLabel: periodLabel,
         ),
         StatCard(
           title: 'أعلى موظف مبيعًا',
-          value: rows.isEmpty ? '—' : rows.first.employee.name,
+          value: rows.isEmpty ? '—' : rows.first.name,
           icon: Icons.emoji_events_outlined,
           iconColor: AppColors.warning,
           changeLabel:
               rows.isEmpty ? '—' : Fmt.moneyRounded(rows.first.sales),
-          changePercent: 16.3,
         ),
         StatCard(
           title: 'متوسط الفاتورة للفريق',

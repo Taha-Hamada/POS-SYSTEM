@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../core/widgets/status_badge.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/reports_controller.dart';
-import '../models/employee_report_row.dart';
+import '../models/report_rows.dart';
 import '../models/report_period.dart';
 import 'bar_cell.dart';
 
@@ -23,40 +22,34 @@ class EmployeesReportTable extends StatelessWidget {
 
     return AppDataTable(
       title: 'أداء الموظفين',
-      subtitle: 'المبيعات موزّعة على الفريق خلال ${reports.period.label}',
-      minWidth: 900,
+      subtitle: 'مبيعات كل كاشير خلال ${reports.period.label}',
+      minWidth: 880,
       rowHeight: 62,
+      emptyMessage: 'مفيش مبيعات في الفترة دي',
+      emptyIcon: Icons.badge_outlined,
+      // التقرير بيرجّع أرقام البيع بس؛ الدور والفرع في شاشة الموظفين.
       columns: const <AppTableColumn>[
-        AppTableColumn('الموظف', size: ColumnSize.L),
-        AppTableColumn('الدور', size: ColumnSize.M),
-        AppTableColumn('الفرع', size: ColumnSize.M),
+        AppTableColumn('الكاشير', size: ColumnSize.L),
         AppTableColumn('الفواتير', size: ColumnSize.S, numeric: true),
+        AppTableColumn('متوسط الفاتورة', size: ColumnSize.M, numeric: true),
+        AppTableColumn('الخصومات', size: ColumnSize.M, numeric: true),
         AppTableColumn('المبيعات', size: ColumnSize.M, numeric: true),
-        AppTableColumn('الحالة', size: ColumnSize.S),
       ],
       rows: <AppTableRow>[
         for (final EmployeeReportRow r in rows)
           AppTableRow(
             cells: <Widget>[
               TableCells.avatarName(
-                r.employee.name,
-                r.employee.initials,
-                color: r.employee.isActive
-                    ? AppColors.accent
-                    : AppColors.textMuted,
-                subtitle: r.employee.phone,
+                r.name,
+                r.initials,
+                color: AppColors.accent,
+                subtitle: r.username,
               ),
-              TableCells.secondary(r.employee.role),
-              TableCells.secondary(r.employee.branchName),
               TableCells.count(r.invoices),
+              TableCells.amount(r.averageTicket,
+                  color: AppColors.textSecondary),
+              TableCells.amount(r.discounts, color: AppColors.warning),
               BarCell(value: r.sales, max: maxSales),
-              StatusBadge(
-                label: r.employee.isActive ? 'نشط' : 'موقوف',
-                tone: r.employee.isActive
-                    ? StatusTone.success
-                    : StatusTone.neutral,
-                compact: true,
-              ),
             ],
           ),
       ],

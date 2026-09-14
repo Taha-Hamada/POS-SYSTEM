@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/api/api_client.dart';
+import '../../../core/session/auth_user.dart';
+import '../../../core/session/session_controller.dart';
 import '../../../core/widgets/app_snack_bar.dart';
+import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/reports_controller.dart';
+import '../data/reports_repository.dart';
 import '../models/report_period.dart';
 import '../models/report_type.dart';
 import '../widgets/report_content.dart';
@@ -24,7 +29,21 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen>
     with SingleTickerProviderStateMixin {
   /// الكنترولر محتاج vsync عشان أنيميشن الـFade عند تبديل التقرير.
-  late final ReportsController _reports = ReportsController(vsync: this);
+  late final ReportsController _reports;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final AuthUser? user = context.read<SessionController>().user;
+
+    _reports = ReportsController(
+      ReportsRepository(context.read<ApiClient>()),
+      vsync: this,
+      // المدير بيشوف كل الفروع، وغيره بيتقفل على فرعه.
+      lockedBranchId: user != null && user.isAdmin ? null : user?.branchId,
+    )..load();
+  }
 
   @override
   void dispose() {
@@ -75,14 +94,31 @@ class _ReportsScreenState extends State<ReportsScreen>
             const SizedBox(height: AppSpacing.xl),
             const ReportsToolbar(),
             const SizedBox(height: AppSpacing.lg),
-            const Expanded(
+            Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   // قائمة التقارير (يمين في RTL)
-                  SizedBox(width: 264, child: ReportsList()),
-                  SizedBox(width: AppSpacing.xl),
-                  Expanded(child: ReportContent()),
+                  const SizedBox(width: 264, child: ReportsList()),
+                  const SizedBox(width: AppSpacing.xl),
+                  Expanded(
+                    child: Consumer<ReportsController>(
+                      builder: (_, ReportsController reports, _) {
+                        if (reports.isFirstLoad) {
+                          return const LoadingView(message: 'بنحسب التقرير…');
+                        }
+
+                        if (reports.hasFailed) {
+                          return ErrorView(
+                            message: reports.errorMessage!,
+                            onRetry: reports.retry,
+                          );
+                        }
+
+                        return const ReportContent();
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),

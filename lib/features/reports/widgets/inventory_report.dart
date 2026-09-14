@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
@@ -43,17 +42,14 @@ class InventoryReport extends StatelessWidget {
           value: Fmt.moneyRounded(totalRetail - totalCost),
           icon: Icons.savings_outlined,
           iconColor: AppColors.success,
-          changePercent: 9.5,
           changeLabel: 'الفرق بين البيع والتكلفة',
         ),
         StatCard(
-          title: 'أصناف نافدة',
-          value: Fmt.count(MockData.outOfStockProducts.length),
-          icon: Icons.remove_shopping_cart_outlined,
-          iconColor: AppColors.danger,
-          higherIsBetter: false,
-          changePercent: -25.0,
-          changeLabel: 'مقارنة بالأسبوع الماضي',
+          title: 'عدد الأقسام',
+          value: Fmt.count(reports.inventoryRows.length),
+          icon: Icons.category_outlined,
+          iconColor: AppColors.info,
+          changeLabel: 'أقسام فيها رصيد',
         ),
       ],
       content: const InventoryReportTable(),

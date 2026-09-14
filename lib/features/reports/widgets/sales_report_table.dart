@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../mock_data/mock_data.dart';
+import '../../dashboard/models/dashboard_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
@@ -47,10 +47,7 @@ class SalesReportTable extends StatelessWidget {
               TableCells.twoLine(Fmt.date(p.date), _weekdayName(p.date)),
               TableCells.count(p.invoices),
               TableCells.amount(p.sales),
-              TableCells.amount(
-                p.sales * MockData.taxRate,
-                color: AppColors.textSecondary,
-              ),
+              TableCells.amount(p.tax, color: AppColors.textSecondary),
               TableCells.amount(p.profit, color: AppColors.success),
             ],
           ),

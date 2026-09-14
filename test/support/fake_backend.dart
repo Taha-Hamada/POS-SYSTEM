@@ -70,6 +70,25 @@ class FakeBackend {
     };
   }
 
+  /// سلسلة مبيعات بأرقام ثابتة: 1000 لكل يوم.
+  List<Map<String, dynamic>> _series(int days) {
+    final DateTime today = DateTime.now();
+
+    return <Map<String, dynamic>>[
+      for (int i = days - 1; i >= 0; i -= 1)
+        <String, dynamic>{
+          'date': today
+              .subtract(Duration(days: i))
+              .toIso8601String()
+              .substring(0, 10),
+          'sales': 1000,
+          'tax': 140,
+          'profit': 250,
+          'invoices': 8,
+        },
+    ];
+  }
+
   /// مبيعات كل فرع — الأرقام ثابتة عشان الاختبار يعرف يتوقعها.
   static const Map<String, double> _branchSales = <String, double>{
     'b1': 60000,
@@ -254,6 +273,94 @@ class FakeBackend {
           int.tryParse(request.url.queryParameters['days'] ?? '30') ?? 30;
       final String? branch = request.url.queryParameters['branch'];
       return _ok(_dashboard(days: days, branchId: branch));
+    }
+
+    if (path.endsWith('/reports/sales-series')) {
+      final int days =
+          int.tryParse(request.url.queryParameters['days'] ?? '30') ?? 30;
+      return _ok(_series(days));
+    }
+
+    if (path.endsWith('/reports/by-category')) {
+      return _ok(<String, dynamic>{
+        'total': 30000,
+        'categories': <Map<String, dynamic>>[
+          for (final Map<String, dynamic> c in categories)
+            <String, dynamic>{
+              'category': c['id'],
+              'name': c['name'],
+              'icon': c['icon'],
+              'color': c['color'],
+              'units': 120,
+              'revenue': 15000,
+              'profit': 4000,
+              'share': 50,
+            },
+        ],
+      });
+    }
+
+    if (path.endsWith('/reports/top-products')) {
+      return _ok(<Map<String, dynamic>>[
+        for (final Map<String, dynamic> p in products.take(3))
+          <String, dynamic>{
+            'product': p['id'],
+            'name': p['name'],
+            'sku': p['sku'],
+            'units': 20,
+            'revenue': (p['price'] as num) * 20,
+            'profit': (p['price'] as num) * 8,
+          },
+      ]);
+    }
+
+    if (path.endsWith('/reports/cashiers')) {
+      return _ok(<Map<String, dynamic>>[
+        <String, dynamic>{
+          'cashier': 'u1',
+          'name': 'مستخدم الاختبار',
+          'username': 'tester',
+          'invoices': 40,
+          'sales': 30000,
+          'discounts': 500,
+          'averageTicket': 750,
+        },
+      ]);
+    }
+
+    if (path.endsWith('/reports/tax')) {
+      return _ok(<String, dynamic>{
+        'taxRate': settings['taxRate'],
+        'collected': 4200,
+        'paid': 1200,
+        'net': 3000,
+        'purchasesReceived': 8571,
+        'months': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'month': '2026-09',
+            'taxableBase': 30000,
+            'tax': 4200,
+            'invoices': 240,
+          },
+        ],
+      });
+    }
+
+    if (path.endsWith('/reports/inventory-by-category')) {
+      return _ok(<Map<String, dynamic>>[
+        for (final Map<String, dynamic> c in categories)
+          <String, dynamic>{
+            'category': c['id'],
+            'name': c['name'],
+            'icon': c['icon'],
+            'color': c['color'],
+            'items': 3,
+            'units': 120,
+            'cost': 2500,
+            'retail': 4500,
+            'expectedProfit': 2000,
+          },
+      ]);
     }
 
     if (path.endsWith('/reports/branches')) {

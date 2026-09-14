@@ -144,17 +144,22 @@ class SalesPoint {
     required this.sales,
     required this.profit,
     required this.invoices,
+    this.tax = 0,
   });
 
   factory SalesPoint.fromJson(Map<String, dynamic> json) => SalesPoint(
         date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
         sales: DashboardData._num(json['sales']),
+        tax: DashboardData._num(json['tax']),
         profit: DashboardData._num(json['profit']),
         invoices: (json['invoices'] as num?)?.toInt() ?? 0,
       );
 
   final DateTime date;
   final double sales;
+
+  /// الضريبة المحصّلة في اليوم ده، محسوبة على السيرفر.
+  final double tax;
   final double profit;
   final int invoices;
 }

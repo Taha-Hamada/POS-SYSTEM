@@ -61,18 +61,19 @@ class DashboardController extends ChangeNotifier with LoadState {
 
   Future<void> retry() => load();
 
-  void setPeriod(DashboardPeriod period) {
+  /// بترجّع الـFuture عشان اللي بينادي يقدر يستنى التحميل لو محتاج.
+  Future<void> setPeriod(DashboardPeriod period) async {
     if (_period == period) return;
     _period = period;
     notifyListeners();
-    load();
+    await load();
   }
 
-  void setBranch(String? id) {
+  Future<void> setBranch(String? id) async {
     if (!canSwitchBranch || _branchId == id) return;
     _branchId = id;
     notifyListeners();
-    load();
+    await load();
   }
 
   // ── أرقام الفترة الحالية ─────────────────────────────────────────────────

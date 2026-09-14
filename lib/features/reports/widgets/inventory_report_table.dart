@@ -5,7 +5,7 @@ import '../../../core/widgets/app_data_table.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/reports_controller.dart';
-import '../models/inventory_report_row.dart';
+import '../models/report_rows.dart';
 import 'bar_cell.dart';
 import 'report_footer_totals.dart';
 import 'report_icon_cell.dart';
@@ -41,11 +41,11 @@ class InventoryReportTable extends StatelessWidget {
           AppTableRow(
             cells: <Widget>[
               ReportIconCell(
-                icon: r.category?.icon ?? Icons.category_outlined,
-                title: r.category?.name ?? '—',
+                icon: r.icon,
+                title: r.name,
               ),
               TableCells.count(r.items),
-              TableCells.count(r.units),
+              TableCells.count(r.units.round()),
               BarCell(value: r.cost, max: maxCost),
               TableCells.amount(r.retail, color: AppColors.textSecondary),
               TableCells.amount(
