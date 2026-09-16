@@ -67,19 +67,34 @@ jobs:
 
           # مكتبات تشغيل C++ لازم تمشي مع البرنامج، وإلا الجهاز اللي معندهوش
           # Visual C++ Redistributable مش هيفتحه.
-          $crt = Get-ChildItem -Path `
-            "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT" `
-            -Directory -ErrorAction SilentlyContinue | Select-Object -Last 1
+          #
+          # مكان الـredist بيتغيّر مع إصدار الاستوديو على صورة الـrunner
+          # (VC143 مع 2022 وVC144 مع اللي بعده)، فبندوّر على أي نسخة x64،
+          # وآخر حل نسخة الويندوز نفسها.
+          $dlls = @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')
 
-          if ($crt) {
-            foreach ($dll in @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')) {
-              $file = Join-Path $crt.FullName $dll
-              if (Test-Path $file) { Copy-Item $file -Destination $out -Force }
-            }
-            Write-Host "اتنسخت مكتبات التشغيل من $($crt.FullName)"
-          } else {
-            Write-Warning "مالقيتش مكتبات VC++ — الجهاز محتاج Visual C++ Redistributable"
+          $crt = Get-ChildItem -Path "C:\Program Files*\Microsoft Visual Studio" `
+            -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Get-ChildItem -Path $_.FullName -Recurse -Directory `
+                -Filter "Microsoft.VC*.CRT" -ErrorAction SilentlyContinue
+            } |
+            Where-Object { $_.FullName -match '\\x64\\' } |
+            Sort-Object FullName |
+            Select-Object -Last 1
+
+          $source = if ($crt) { $crt.FullName } else { "$env:WINDIR\System32" }
+          Write-Host "مصدر مكتبات التشغيل: $source"
+
+          foreach ($dll in $dlls) {
+            $file = Join-Path $source $dll
+            if (Test-Path $file) { Copy-Item $file -Destination $out -Force }
           }
+
+          # من غير المكتبات دي النسخة هتفشل على أجهزة نضيفة، فالأحسن نعرف
+          # دلوقتي مش بعد ما المستخدم ينزّلها.
+          $missing = $dlls | Where-Object { -not (Test-Path (Join-Path $out $_)) }
+          if ($missing) { throw "مكتبات تشغيل ناقصة في النسخة: $($missing -join ', ')" }
 
           @"
           نظام نقاط البيع — نسخة ويندوز
