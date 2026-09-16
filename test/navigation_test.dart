@@ -29,7 +29,7 @@ void main() {
     await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
     await tester.pumpAndSettle();
 
-    expect(kNavItems.length, 15);
+    expect(kNavItems.length, 17);
 
     for (final NavItem item in kNavItems) {
       final Finder navItem = find.text(item.label).first;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/customer.dart';
 import '../../../core/widgets/app_data_table.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/loyalty_controller.dart';
@@ -23,7 +23,7 @@ class LoyaltyLeaderboard extends StatelessWidget {
     AppTableColumn('رصيد النقاط', size: ColumnSize.M, numeric: true),
   ];
 
-  List<Widget> _cells(Customer c, int index) {
+  List<Widget> _cells(LoyaltyController loyalty, Customer c, int index) {
     return <Widget>[
       LoyaltyRankBadge(rank: index + 1),
       TableCells.avatarName(
@@ -32,10 +32,10 @@ class LoyaltyLeaderboard extends StatelessWidget {
         color: AppColors.accent,
         subtitle: c.phone,
       ),
-      LoyaltyTierPill(tier: MockData.tierForPoints(c.points)),
+      LoyaltyTierPill(tierKey: c.tier, name: loyalty.tierNameOf(c)),
       TableCells.amount(c.totalPurchases),
       Text(
-        Fmt.money(c.points * MockData.pointValue),
+        Fmt.money(loyalty.pointsValue(c)),
         style: AppText.amountSm.copyWith(color: AppColors.success),
       ),
       LoyaltyPointsCell(points: c.points),
@@ -44,7 +44,7 @@ class LoyaltyLeaderboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LoyaltyController loyalty = context.read<LoyaltyController>();
+    final LoyaltyController loyalty = context.watch<LoyaltyController>();
     final List<Customer> customers = loyalty.topCustomers;
 
     return SizedBox(
@@ -59,11 +59,11 @@ class LoyaltyLeaderboard extends StatelessWidget {
         columns: _columns,
         rows: <AppTableRow>[
           for (int i = 0; i < customers.length; i++)
-            AppTableRow(cells: _cells(customers[i], i)),
+            AppTableRow(cells: _cells(loyalty, customers[i], i)),
         ],
         footer: Row(
           children: <Widget>[
-            Text('إجمالي النقاط الممنوحة', style: AppText.caption),
+            Text('نقاط العملاء المعروضين', style: AppText.caption),
             const Spacer(),
             Text(
               Fmt.count(loyalty.totalGrantedPoints),

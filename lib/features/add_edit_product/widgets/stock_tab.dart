@@ -36,7 +36,7 @@ class StockTab extends StatelessWidget {
                 icon: Icons.straighten_rounded,
                 onChanged: form.setUnit,
                 items: <AppDropdownItem<String>>[
-                  for (final String u in ProductFormController.units)
+                  for (final String u in form.unitOptions)
                     AppDropdownItem<String>(value: u, label: u),
                 ],
               ),
@@ -56,21 +56,24 @@ class StockTab extends StatelessWidget {
                 onChanged: form.fieldChanged,
               ),
             ),
-            const SizedBox(width: AppSpacing.xl),
-            Expanded(
-              child: AppFormField(
-                label: 'المخزون الابتدائي',
-                controller: form.openingStockController,
-                hint: '0',
-                suffixText: form.unit,
-                prefixIcon: Icons.inventory_2_outlined,
-                keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                onChanged: form.fieldChanged,
+            // الرصيد الافتتاحي بيتسجل مرة واحدة مع الإضافة، وبعدها بيتغير
+            // بحركات المخزون بس عشان التاريخ يفضل مظبوط.
+            if (!form.isEditing) const SizedBox(width: AppSpacing.xl),
+            if (!form.isEditing)
+              Expanded(
+                child: AppFormField(
+                  label: 'المخزون الابتدائي',
+                  controller: form.openingStockController,
+                  hint: '0',
+                  suffixText: form.unit,
+                  prefixIcon: Icons.inventory_2_outlined,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  onChanged: form.fieldChanged,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),

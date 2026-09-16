@@ -3,8 +3,11 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/models/customer.dart';
+import '../../../core/models/loyalty_tier.dart';
 import '../../../core/models/product.dart';
+import '../../../core/models/promotion.dart';
 import '../../../core/utils/invoice_math.dart';
+import '../../../core/utils/promotion_math.dart';
 import '../data/pos_repository.dart';
 import '../models/cart_discount.dart';
 import '../models/cart_line.dart';
@@ -14,14 +17,27 @@ import '../models/cart_line.dart';
 /// الأرقام هنا معاينة للكاشير؛ السيرفر بيعيد حسابها وقت الاعتماد.
 /// الاتنين بيستخدموا نفس الخطوات، فالرقم المعروض هو الرقم المحصّل.
 class CartController extends ChangeNotifier {
-  CartController({required this.number, required double taxRate})
-      : _taxRate = taxRate; // ignore: prefer_initializing_formals
-
+  CartController({
+    required this.number,
+    required double taxRate,
+    List<Promotion> promotions = const <Promotion>[],
+    List<LoyaltyTier> tiers = const <LoyaltyTier>[],
+  }) // الحقول خاصة والباراميترات المسمّاة مينفعش تبدأ بـ«_».
+    // ignore: prefer_initializing_formals
+    : _taxRate = taxRate,
+       // ignore: prefer_initializing_formals
+       _promotions = promotions,
+       // ignore: prefer_initializing_formals
+       _tiers = tiers;
 
   /// رقم الفاتورة في التبويبات — بيتعرض للكاشير عشان يفرّق بينها.
   final int number;
 
   double _taxRate;
+
+  /// العروض الشغالة ومستويات العملاء — نفس اللي السيرفر هيطبّقه وقت الاعتماد.
+  List<Promotion> _promotions;
+  List<LoyaltyTier> _tiers;
 
   final List<CartLine> _lines = <CartLine>[];
   Customer _customer = const Customer.walkIn();
@@ -43,25 +59,56 @@ class CartController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPricingRules({
+    List<Promotion>? promotions,
+    List<LoyaltyTier>? tiers,
+  }) {
+    if (promotions != null) _promotions = promotions;
+    if (tiers != null) _tiers = tiers;
+    notifyListeners();
+  }
+
   // ── حسابات الفاتورة ──────────────────────────────────────────────────────
-  InvoiceTotals get totals => calculateTotals(
-        lines: <PricedLine>[
-          for (final CartLine l in _lines)
-            PricedLine(
-              unitPrice: l.product.price,
-              quantity: l.quantity,
-              isTaxable: l.product.isTaxable,
-            ),
-        ],
-        taxRate: _taxRate,
-        invoiceDiscount: _discount.amountFor(_grossSubtotal),
+  /// أحسن عرض للسطر وقيمة خصمه — بيتعرض تحت الصنف في السلة.
+  ({Promotion? promotion, double amount}) promotionFor(CartLine line) =>
+      bestPromotionFor(
+        _promotions,
+        productId: line.product.id,
+        categoryId: line.product.category?.id,
+        quantity: line.quantity,
+        unitPrice: line.product.price,
       );
 
-  double get _grossSubtotal =>
-      _lines.fold<double>(0, (double sum, CartLine l) => sum + l.total);
+  /// نسبة خصم مستوى العميل — العميل العابر مالوش مستوى.
+  double get tierDiscountPercent =>
+      _customer.isWalkIn ? 0 : tierDiscountPercentFor(_customer.tier, _tiers);
+
+  String get tierName => tierNameFor(_customer.tier, _tiers);
+
+  InvoiceTotals get totals => calculateTotals(
+    lines: <PricedLine>[
+      for (final CartLine l in _lines)
+        PricedLine(
+          unitPrice: l.product.price,
+          quantity: l.quantity,
+          isTaxable: l.product.isTaxable,
+          discountAmount: promotionFor(l).amount,
+        ),
+    ],
+    taxRate: _taxRate,
+    // النسبة بتتحسب على الصافي بعد العروض وخصم المستوى، زي السيرفر.
+    invoiceDiscount: _discount.isPercentage ? 0 : _discount.value,
+    invoiceDiscountPercent: _discount.isPercentage ? _discount.value : 0,
+    tierDiscountPercent: tierDiscountPercent,
+  );
 
   double get subtotal => totals.subtotal;
-  double get effectiveDiscount => totals.invoiceDiscount;
+
+  /// كل الخصومات مع بعض: العروض والمستوى واليدوي.
+  double get effectiveDiscount => totals.discountTotal;
+  double get promotionDiscount => totals.lineDiscountTotal;
+  double get tierDiscount => totals.tierDiscount;
+  double get manualDiscount => totals.manualDiscount;
   double get tax => totals.taxAmount;
   double get total => totals.total;
 
@@ -73,8 +120,9 @@ class CartController extends ChangeNotifier {
   bool addProduct(Product product) {
     if (product.isOutOfStock) return false;
 
-    final int index =
-        _lines.indexWhere((CartLine l) => l.product.id == product.id);
+    final int index = _lines.indexWhere(
+      (CartLine l) => l.product.id == product.id,
+    );
 
     if (index == -1) {
       _lines.insert(0, CartLine(product: product));
@@ -154,9 +202,9 @@ class CartController extends ChangeNotifier {
 
   /// سطور الفاتورة بالشكل اللي السيرفر بيستقبله.
   List<InvoiceLineInput> toInvoiceLines() => <InvoiceLineInput>[
-        for (final CartLine l in _lines)
-          InvoiceLineInput(productId: l.product.id, quantity: l.quantity),
-      ];
+    for (final CartLine l in _lines)
+      InvoiceLineInput(productId: l.product.id, quantity: l.quantity),
+  ];
 
   /// الخصم بالشكل اللي السيرفر بيستقبله، أو null لو مفيش خصم.
   DiscountInput? toDiscountInput() {

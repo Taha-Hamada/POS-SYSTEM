@@ -3,6 +3,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/add_edit_product/screens/add_product_screen.dart';
 import '../../features/branches/screens/branches_screen.dart';
+import '../../features/cashier_shift/screens/shifts_history_screen.dart';
+import '../../features/invoices/screens/invoices_history_screen.dart';
+import '../../features/categories/screens/categories_screen.dart';
+import '../../features/inventory/screens/stock_alerts_screen.dart';
+import '../../features/returns/screens/returns_history_screen.dart';
 import '../../features/customers/screens/customer_profile_screen.dart';
 import '../../features/customers/screens/customers_list_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
@@ -63,7 +68,8 @@ GoRouter createRouter(SessionController session) => GoRouter(
     child: PlaceholderScreen(
       title: 'الصفحة غير موجودة',
       icon: Icons.explore_off_outlined,
-      description: 'المسار «${state.uri.path}» مش موجود — '
+      description:
+          'المسار «${state.uri.path}» مش موجود — '
           'اختر شاشة من القائمة الجانبية.',
     ),
   ),
@@ -73,18 +79,12 @@ GoRouter createRouter(SessionController session) => GoRouter(
       path: splashPath,
       pageBuilder: (_, _) => _page(const SplashScreen()),
     ),
-    GoRoute(
-      path: loginPath,
-      pageBuilder: (_, _) => _page(const LoginScreen()),
-    ),
+    GoRoute(path: loginPath, pageBuilder: (_, _) => _page(const LoginScreen())),
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) =>
           AppShell(child: child),
       routes: <RouteBase>[
-        GoRoute(
-          path: '/',
-          pageBuilder: (_, _) => _page(const WelcomeScreen()),
-        ),
+        GoRoute(path: '/', pageBuilder: (_, _) => _page(const WelcomeScreen())),
         GoRoute(
           path: '/pos',
           pageBuilder: (_, _) => _page(const PosSaleScreen()),
@@ -106,8 +106,22 @@ GoRouter createRouter(SessionController session) => GoRouter(
           pageBuilder: (_, _) => _page(const SettingsScreen()),
         ),
         GoRoute(
+          path: '/invoices',
+          pageBuilder: (_, _) => _page(const InvoicesHistoryScreen()),
+        ),
+        GoRoute(
+          path: '/shifts',
+          pageBuilder: (_, _) => _page(const ShiftsHistoryScreen()),
+        ),
+        GoRoute(
           path: '/returns',
           pageBuilder: (_, _) => _page(const ReturnsScreen()),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'history',
+              pageBuilder: (_, _) => _page(const ReturnsHistoryScreen()),
+            ),
+          ],
         ),
         GoRoute(
           path: '/promotions',
@@ -129,6 +143,19 @@ GoRouter createRouter(SessionController session) => GoRouter(
               path: 'new',
               pageBuilder: (_, _) => _page(const AddProductScreen()),
             ),
+            GoRoute(
+              path: 'categories',
+              pageBuilder: (_, _) => _page(const CategoriesScreen()),
+            ),
+            GoRoute(
+              path: ':id/edit',
+              pageBuilder: (_, GoRouterState state) => _page(
+                AddProductScreen(
+                  key: ValueKey<String>(state.pathParameters['id']!),
+                  productId: state.pathParameters['id'],
+                ),
+              ),
+            ),
           ],
         ),
         GoRoute(
@@ -138,6 +165,10 @@ GoRouter createRouter(SessionController session) => GoRouter(
             GoRoute(
               path: 'stocktake',
               pageBuilder: (_, _) => _page(const StocktakeScreen()),
+            ),
+            GoRoute(
+              path: 'alerts',
+              pageBuilder: (_, _) => _page(const StockAlertsScreen()),
             ),
           ],
         ),
@@ -158,9 +189,7 @@ GoRouter createRouter(SessionController session) => GoRouter(
             GoRoute(
               path: ':id',
               pageBuilder: (_, GoRouterState state) => _page(
-                CustomerProfileScreen(
-                  customerId: state.pathParameters['id']!,
-                ),
+                CustomerProfileScreen(customerId: state.pathParameters['id']!),
               ),
             ),
           ],
@@ -172,9 +201,7 @@ GoRouter createRouter(SessionController session) => GoRouter(
             GoRoute(
               path: ':id',
               pageBuilder: (_, GoRouterState state) => _page(
-                SupplierProfileScreen(
-                  supplierId: state.pathParameters['id']!,
-                ),
+                SupplierProfileScreen(supplierId: state.pathParameters['id']!),
               ),
             ),
           ],
@@ -192,4 +219,4 @@ GoRouter createRouter(SessionController session) => GoRouter(
       ],
     ),
   ],
-    );
+);

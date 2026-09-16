@@ -16,6 +16,7 @@ class TaxesSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SettingsController settings = context.watch<SettingsController>();
+    final bool editable = settings.canEdit;
 
     return SettingsPanel(
       children: <Widget>[
@@ -28,6 +29,7 @@ class TaxesSettingsSection extends StatelessWidget {
                 controller: settings.taxRateController,
                 suffixText: '%',
                 prefixIcon: Icons.percent_rounded,
+                enabled: editable,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -44,6 +46,8 @@ class TaxesSettingsSection extends StatelessWidget {
                 hint: '000-000-000',
                 prefixIcon: Icons.badge_outlined,
                 controller: settings.taxNumberController,
+                enabled: editable,
+                onChanged: settings.fieldChanged,
               ),
             ),
           ],
@@ -53,7 +57,7 @@ class TaxesSettingsSection extends StatelessWidget {
           title: 'الأسعار شاملة الضريبة',
           subtitle: 'السعر المعروض للعميل بيشمل الضريبة',
           value: settings.taxIncluded,
-          onChanged: settings.setTaxIncluded,
+          onChanged: editable ? settings.setTaxIncluded : (_) {},
           isLast: true,
         ),
         const SizedBox(height: AppSpacing.xl),

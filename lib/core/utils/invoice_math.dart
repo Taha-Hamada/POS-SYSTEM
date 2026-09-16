@@ -37,10 +37,22 @@ class InvoiceTotals {
     required this.taxableBase,
     required this.taxAmount,
     required this.total,
+    this.tierDiscount = 0,
+    this.manualDiscount = 0,
   });
 
   final double subtotal;
+
+  /// خصومات السطور — في الكاشير دي خصومات العروض.
   final double lineDiscountTotal;
+
+  /// خصم مستوى العميل، جزء من [invoiceDiscount].
+  final double tierDiscount;
+
+  /// الخصم اللي الكاشير حطه، جزء من [invoiceDiscount].
+  final double manualDiscount;
+
+  /// كل خصومات الفاتورة: المستوى + اليدوي.
   final double invoiceDiscount;
   final double taxableBase;
   final double taxAmount;
@@ -50,14 +62,19 @@ class InvoiceTotals {
   double get discountTotal => round2(lineDiscountTotal + invoiceDiscount);
 }
 
-/// [invoiceDiscount] خصم على مستوى الفاتورة بالجنيه، محسوب على الصافي بعد خصومات السطور.
+/// خصومات الفاتورة بالترتيب: خصم مستوى العميل [tierDiscountPercent] على الصافي
+/// بعد خصومات السطور، وبعده الخصم اليدوي على اللي فاضل — بنسبة
+/// [invoiceDiscountPercent] أو بمبلغ [invoiceDiscount].
 InvoiceTotals calculateTotals({
   required List<PricedLine> lines,
   required double taxRate,
   double invoiceDiscount = 0,
+  double invoiceDiscountPercent = 0,
+  double tierDiscountPercent = 0,
 }) {
-  final double subtotal =
-      round2(lines.fold<double>(0, (double s, PricedLine l) => s + l.gross));
+  final double subtotal = round2(
+    lines.fold<double>(0, (double s, PricedLine l) => s + l.gross),
+  );
 
   final double lineDiscountTotal = round2(
     lines.fold<double>(0, (double s, PricedLine l) => s + l.discountAmount),
@@ -65,9 +82,26 @@ InvoiceTotals calculateTotals({
 
   final double afterLineDiscounts = round2(subtotal - lineDiscountTotal);
 
-  // الخصم مبيعديش قيمة الفاتورة ومبيبقاش سالب.
-  final double discount =
-      round2(invoiceDiscount.clamp(0, afterLineDiscounts).toDouble());
+  // كل خصم مبيعديش المبلغ اللي بيتحسب عليه ومبيبقاش سالب.
+  final double tierDiscount = tierDiscountPercent > 0
+      ? round2(
+          (afterLineDiscounts * tierDiscountPercent / 100)
+              .clamp(0, afterLineDiscounts)
+              .toDouble(),
+        )
+      : 0;
+
+  final double afterTierDiscount = round2(afterLineDiscounts - tierDiscount);
+
+  final double requestedManual = invoiceDiscountPercent > 0
+      ? afterTierDiscount * invoiceDiscountPercent / 100
+      : invoiceDiscount;
+
+  final double manualDiscount = round2(
+    requestedManual.clamp(0, afterTierDiscount).toDouble(),
+  );
+
+  final double discount = round2(tierDiscount + manualDiscount);
 
   final double taxableAfterLine = round2(
     lines
@@ -76,8 +110,9 @@ InvoiceTotals calculateTotals({
   );
 
   // نصيب الأصناف الخاضعة من الصافي، عشان الخصم يقلّل الوعاء بنفس النسبة.
-  final double taxableShare =
-      afterLineDiscounts > 0 ? taxableAfterLine / afterLineDiscounts : 0;
+  final double taxableShare = afterLineDiscounts > 0
+      ? taxableAfterLine / afterLineDiscounts
+      : 0;
 
   final double taxableBase = round2(taxableAfterLine - discount * taxableShare);
   final double taxAmount = round2(taxableBase * taxRate);
@@ -85,6 +120,8 @@ InvoiceTotals calculateTotals({
   return InvoiceTotals(
     subtotal: subtotal,
     lineDiscountTotal: lineDiscountTotal,
+    tierDiscount: tierDiscount,
+    manualDiscount: manualDiscount,
     invoiceDiscount: discount,
     taxableBase: taxableBase,
     taxAmount: taxAmount,

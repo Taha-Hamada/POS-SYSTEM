@@ -26,6 +26,17 @@ class ApiConfig {
     return 'http://localhost:5000$_prefix';
   }
 
+  /// عنوان السيرفر من غير بادئة الـAPI — الملفات المرفوعة بتتخدم منه.
+  static String get origin =>
+      baseUrl.substring(0, baseUrl.length - _prefix.length);
+
+  /// رابط كامل لصورة مرفوعة. السيرفر بيخزن المسار النسبي (/uploads/...).
+  static String? mediaUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '$origin$path';
+  }
+
   /// أي طلب بياخد أكتر من كده معناه إن السيرفر مش مستجيب.
   static const Duration timeout = Duration(seconds: 20);
 }

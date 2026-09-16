@@ -1,15 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/store_settings.dart';
+import '../../../core/printing/pdf_kit.dart';
+import '../../../core/printing/print_job.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/shift_controller.dart';
+import '../printing/shift_report_pdf.dart';
 
 /// فوتر حوار الإغلاق: ملخّص الوردية وأزرار الطباعة والإغلاق.
 class CloseShiftFooter extends StatelessWidget {
   const CloseShiftFooter({super.key});
+
+  /// التقرير بيتطبع قبل الإغلاق بالمعدود اللي اتكتب لحد دلوقتي،
+  /// عشان الكاشير يسلّمه مع الدرج.
+  Future<void> _printReport(BuildContext context, ShiftController shift) {
+    final StoreSettings store = storeSettingsOf(context);
+
+    return printDocument(
+      context,
+      name: 'تقرير وردية ${shift.shift!.number}',
+      format: PdfKit.rollFormat(store.receiptWidthMm),
+      build: (format) => buildShiftReportPdf(
+        shift: shift.shift!,
+        totals: shift.totals,
+        store: store,
+        countedCash: shift.actual,
+        format: format,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +75,9 @@ class CloseShiftFooter extends StatelessWidget {
           SecondaryButton(
             label: 'طباعة تقرير الوردية',
             icon: Icons.print_outlined,
-            onPressed: () {},
+            onPressed: shift.shift == null
+                ? null
+                : () => _printReport(context, shift),
           ),
           const SizedBox(width: AppSpacing.md),
           PrimaryButton(

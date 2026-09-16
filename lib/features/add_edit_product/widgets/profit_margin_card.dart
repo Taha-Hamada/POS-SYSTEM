@@ -24,13 +24,11 @@ class ProfitMarginCard extends StatelessWidget {
         color: !hasValues
             ? AppColors.surfaceAlt
             : isLoss
-                ? AppColors.dangerSoft
-                : AppColors.successSoft,
+            ? AppColors.dangerSoft
+            : AppColors.successSoft,
         borderRadius: AppRadius.lgAll,
         border: Border.all(
-          color: !hasValues
-              ? AppColors.border
-              : tone.withValues(alpha: 0.25),
+          color: !hasValues ? AppColors.border : tone.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
@@ -45,9 +43,7 @@ class ProfitMarginCard extends StatelessWidget {
               borderRadius: AppRadius.mdAll,
             ),
             child: Icon(
-              isLoss
-                  ? Icons.trending_down_rounded
-                  : Icons.trending_up_rounded,
+              isLoss ? Icons.trending_down_rounded : Icons.trending_up_rounded,
               size: 22,
               color: !hasValues ? AppColors.textMuted : tone,
             ),

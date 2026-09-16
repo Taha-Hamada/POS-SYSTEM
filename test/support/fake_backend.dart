@@ -16,9 +16,14 @@ import 'package:provider/single_child_widget.dart';
 /// اختبارات الواجهة لازم تشتغل من غير سيرفر شغال، وفي نفس الوقت الشاشات بقت
 /// بتقرأ من الـ API. فبنرد هنا بردود بنفس شكل الباك اند الحقيقي بالظبط.
 class FakeBackend {
-  FakeBackend({List<Map<String, dynamic>>? products, List<Map<String, dynamic>>? categories})
-      : categories = categories ?? _defaultCategories,
-        products = products ?? _defaultProducts;
+  FakeBackend({
+    List<Map<String, dynamic>>? products,
+    List<Map<String, dynamic>>? categories,
+  }) : // نسخة لكل باك اند عشان إضافة قسم في اختبار ماتسربش للاختبار اللي بعده.
+       categories = List<Map<String, dynamic>>.of(
+         categories ?? _defaultCategories,
+       ),
+       products = products ?? _defaultProducts;
 
   final List<Map<String, dynamic>> categories;
   final List<Map<String, dynamic>> products;
@@ -26,8 +31,15 @@ class FakeBackend {
 
   /// عملاء بأرصدة مختلفة: واحد عليه مديونية وواحد رصيده صفر.
   final List<Map<String, dynamic>> customers = <Map<String, dynamic>>[
-    _customer(id: 'cu1', name: 'محمد أحمد', phone: '01001112222', balance: -500,
-        tier: 'gold', points: 320, orders: 12),
+    _customer(
+      id: 'cu1',
+      name: 'محمد أحمد',
+      phone: '01001112222',
+      balance: -500,
+      tier: 'gold',
+      points: 320,
+      orders: 12,
+    ),
     _customer(id: 'cu2', name: 'هدى إبراهيم', phone: '01003334444'),
   ];
 
@@ -54,22 +66,21 @@ class FakeBackend {
     double totalPurchases = 0,
     int ordersCount = 0,
     bool isActive = true,
-  }) =>
-      <String, dynamic>{
-        'id': id,
-        'name': name,
-        'phone': phone,
-        'contactPerson': contactPerson,
-        'email': email,
-        'address': '',
-        'taxNumber': '',
-        'balanceDue': balanceDue,
-        'paymentTermDays': 30,
-        'totalPurchases': totalPurchases,
-        'ordersCount': ordersCount,
-        'note': '',
-        'isActive': isActive,
-      };
+  }) => <String, dynamic>{
+    'id': id,
+    'name': name,
+    'phone': phone,
+    'contactPerson': contactPerson,
+    'email': email,
+    'address': '',
+    'taxNumber': '',
+    'balanceDue': balanceDue,
+    'paymentTermDays': 30,
+    'totalPurchases': totalPurchases,
+    'ordersCount': ordersCount,
+    'note': '',
+    'isActive': isActive,
+  };
 
   /// أوامر الشراء — واحد من كل حالة عشان الجدول يغطّيها كلها.
   late final List<Map<String, dynamic>> purchaseOrders = <Map<String, dynamic>>[
@@ -89,12 +100,7 @@ class FakeBackend {
       supplierId: 'sp2',
       status: 'completed',
       lines: <Map<String, dynamic>>[
-        _orderLine(
-          id: 'pol3',
-          product: products[0],
-          quantity: 4,
-          received: 4,
-        ),
+        _orderLine(id: 'pol3', product: products[0], quantity: 4, received: 4),
       ],
     ),
     _order(
@@ -112,12 +118,7 @@ class FakeBackend {
       supplierId: 'sp2',
       status: 'partially_received',
       lines: <Map<String, dynamic>>[
-        _orderLine(
-          id: 'pol5',
-          product: products[0],
-          quantity: 12,
-          received: 5,
-        ),
+        _orderLine(id: 'pol5', product: products[0], quantity: 12, received: 5),
       ],
     ),
   ];
@@ -150,8 +151,9 @@ class FakeBackend {
     required List<Map<String, dynamic>> lines,
     double shippingCost = 0,
   }) {
-    final Map<String, dynamic> supplier = suppliers
-        .firstWhere((Map<String, dynamic> s) => s['id'] == supplierId);
+    final Map<String, dynamic> supplier = suppliers.firstWhere(
+      (Map<String, dynamic> s) => s['id'] == supplierId,
+    );
 
     final double subtotal = lines.fold<double>(
       0,
@@ -179,8 +181,9 @@ class FakeBackend {
       'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
       'status': status,
       'orderDate': DateTime.now().toIso8601String(),
-      'expectedDate':
-          DateTime.now().add(const Duration(days: 5)).toIso8601String(),
+      'expectedDate': DateTime.now()
+          .add(const Duration(days: 5))
+          .toIso8601String(),
       'lines': lines,
       'subtotal': subtotal,
       'shippingCost': shippingCost,
@@ -223,22 +226,80 @@ class FakeBackend {
     String branchName = 'الفرع الرئيسي',
     String method = 'cash',
     String note = 'ملاحظة الاختبار',
-  }) =>
-      <String, dynamic>{
-        'id': id,
-        'number': number,
-        'category': category,
-        'amount': amount,
-        'status': status,
-        'paymentMethod': method,
-        'date': DateTime.now().toIso8601String(),
-        'branch': <String, dynamic>{'id': branchId, 'name': branchName},
-        'note': note,
-        'createdBy': <String, dynamic>{'id': 'u2', 'name': 'موظف الاختبار'},
-      };
+  }) => <String, dynamic>{
+    'id': id,
+    'number': number,
+    'category': category,
+    'amount': amount,
+    'status': status,
+    'paymentMethod': method,
+    'date': DateTime.now().toIso8601String(),
+    'branch': <String, dynamic>{'id': branchId, 'name': branchName},
+    'note': note,
+    'createdBy': <String, dynamic>{'id': 'u2', 'name': 'موظف الاختبار'},
+  };
 
   /// الوردية المفتوحة، أو null لو الكاشير مقفول.
   Map<String, dynamic>? currentShift;
+
+  /// حجم آخر صورة اترفعت — الاختبار بيتأكد إن الملف وصل فعلًا.
+  int? uploadedImageBytes;
+
+  static final Map<String, dynamic> _historyShift = <String, dynamic>{
+    'id': 'sh-h1',
+    'number': 'SH-00007',
+    'status': 'closed',
+    'openingBalance': 500,
+    'openedAt': DateTime.now()
+        .subtract(const Duration(hours: 9))
+        .toIso8601String(),
+    'closedAt': DateTime.now()
+        .subtract(const Duration(hours: 1))
+        .toIso8601String(),
+    'cashier': <String, dynamic>{'id': 'u2', 'name': 'كاشير الصباح'},
+    'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+    'closing': <String, dynamic>{
+      'countedCash': 2850,
+      'expectedCash': 2900,
+      'difference': -50,
+      'salesTotal': 2400,
+      'invoicesCount': 12,
+      'note': 'فكة ناقصة',
+    },
+  };
+
+  /// فواتير سجل الفواتير — نسخة لكل باك اند عشان الإلغاء مايعلّمش على غيره.
+  final List<Map<String, dynamic>> historyInvoices = <Map<String, dynamic>>[
+    for (final (String id, String number, double total)
+        in <(String, String, double)>[
+          ('inv-h1', 'INV-000101', 228),
+          ('inv-h2', 'INV-000102', 114),
+        ])
+      <String, dynamic>{
+        'id': id,
+        'number': number,
+        'status': 'completed',
+        'subtotal': total / 1.14,
+        'taxAmount': total - total / 1.14,
+        'total': total,
+        'returnedTotal': 0,
+        'createdAt': DateTime.now().toIso8601String(),
+        'cashier': <String, dynamic>{'id': 'u1', 'name': 'مستخدم الاختبار'},
+        'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+        'customer': null,
+        'payments': <Map<String, dynamic>>[
+          <String, dynamic>{'method': 'cash', 'amount': total},
+        ],
+        'lines': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'name': 'بيبسي كانز',
+            'quantity': 2,
+            'unitPrice': total / 2.28,
+            'lineTotal': total / 1.14,
+          },
+        ],
+      },
+  ];
 
   Map<String, dynamic> settings = <String, dynamic>{
     'storeName': 'متجر الاختبار',
@@ -248,6 +309,7 @@ class FakeBackend {
     'allowNegativeStock': false,
     'requireCustomerForCredit': true,
     'requireOpenShift': false,
+    'notifications': <String, dynamic>{'lowStock': true, 'expiry': true},
   };
 
   /// بيفتح وردية بالأرقام اللي الاختبار محتاجها.
@@ -342,9 +404,10 @@ class FakeBackend {
 
     return switch (status) {
       'out' => all.where((Map<String, dynamic> r) => qty(r) <= 0).toList(),
-      'low' => all
-          .where((Map<String, dynamic> r) => qty(r) > 0 && qty(r) <= min(r))
-          .toList(),
+      'low' =>
+        all
+            .where((Map<String, dynamic> r) => qty(r) > 0 && qty(r) <= min(r))
+            .toList(),
       'ok' => all.where((Map<String, dynamic> r) => qty(r) > min(r)).toList(),
       _ => all,
     };
@@ -367,7 +430,10 @@ class FakeBackend {
     final double scale = branchId == null
         ? 1
         : (_branchSales[branchId] ?? 0) /
-            _branchSales.values.fold<double>(0, (double s, double v) => s + v);
+              _branchSales.values.fold<double>(
+                0,
+                (double s, double v) => s + v,
+              );
 
     final double sales = perDay * days * scale;
     final DateTime today = DateTime.now();
@@ -463,6 +529,225 @@ class FakeBackend {
     return closed;
   }
 
+  /// مستويات العضوية الافتراضية زي الباك اند.
+  List<Map<String, dynamic>> loyaltyTiers = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'key': 'silver',
+      'name': 'فضي',
+      'minPurchases': 15000,
+      'discountPercent': 3,
+      'benefits': <String>['خصم 3% تلقائي على كل فاتورة'],
+    },
+    <String, dynamic>{
+      'key': 'gold',
+      'name': 'ذهبي',
+      'minPurchases': 50000,
+      'discountPercent': 7,
+      'benefits': <String>['خصم 7% تلقائي على كل فاتورة'],
+    },
+    <String, dynamic>{
+      'key': 'platinum',
+      'name': 'بلاتيني',
+      'minPurchases': 120000,
+      'discountPercent': 12,
+      'benefits': <String>['خصم 12% تلقائي على كل فاتورة'],
+    },
+  ];
+
+  /// عروض من كل حالة. العروض الشغالة على قسم مش موجود في الكتالوج،
+  /// عشان مايغيّروش أرقام اختبارات الكاشير.
+  late final List<Map<String, dynamic>> promotions = <Map<String, dynamic>>[
+    _promotion(
+      id: 'pr1',
+      name: 'خصم الصيف على المشروبات',
+      type: 'percentage',
+      percent: 15,
+      startsInDays: -10,
+      endsInDays: 20,
+      usage: 342,
+    ),
+    _promotion(
+      id: 'pr2',
+      name: 'اشترِ 2 واحصل على 1',
+      type: 'buy_x_get_y',
+      startsInDays: -5,
+      endsInDays: 25,
+      usage: 186,
+    ),
+    _promotion(
+      id: 'pr3',
+      name: 'عرض العودة للمدارس',
+      type: 'percentage',
+      percent: 20,
+      startsInDays: 6,
+      endsInDays: 36,
+    ),
+    _promotion(
+      id: 'pr4',
+      name: 'عرض رمضان على الألبان',
+      type: 'quantity_discount',
+      percent: 10,
+      minQuantity: 5,
+      startsInDays: -120,
+      endsInDays: -60,
+      usage: 738,
+    ),
+  ];
+
+  static Map<String, dynamic> _promotion({
+    required String id,
+    required String name,
+    required String type,
+    required int startsInDays,
+    required int endsInDays,
+    double percent = 0,
+    int minQuantity = 1,
+    int usage = 0,
+    bool isActive = true,
+  }) {
+    final DateTime now = DateTime.now();
+
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'description': '',
+      'type': type,
+      'discountPercent': percent,
+      'minQuantity': minQuantity,
+      'buyQuantity': 2,
+      'getQuantity': 1,
+      'scope': 'category',
+      'category': <String, dynamic>{'id': 'cat-none', 'name': 'مشروبات'},
+      'products': <String>[],
+      'startsAt': now.add(Duration(days: startsInDays)).toIso8601String(),
+      'endsAt': now.add(Duration(days: endsInDays)).toIso8601String(),
+      'isActive': isActive,
+      'usageCount': usage,
+    };
+  }
+
+  static String _promotionStatus(Map<String, dynamic> p) {
+    final DateTime now = DateTime.now();
+    if (p['isActive'] != true) return 'stopped';
+    if (DateTime.parse(p['startsAt'] as String).isAfter(now)) {
+      return 'scheduled';
+    }
+    if (DateTime.parse(p['endsAt'] as String).isBefore(now)) return 'expired';
+    return 'active';
+  }
+
+  /// الموظفين — مدير نظام من غير فرع وكاشير على الفرع الرئيسي.
+  final List<Map<String, dynamic>> users = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'u1',
+      'name': 'مستخدم الاختبار',
+      'username': 'tester',
+      'role': 'admin',
+      'branch': null,
+      'phone': '',
+      'salary': 0,
+      'isActive': true,
+      'lastLoginAt': DateTime.now().toIso8601String(),
+    },
+    <String, dynamic>{
+      'id': 'u3',
+      'name': 'سارة الكاشير',
+      'username': 'sara',
+      'role': 'cashier',
+      'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+      'phone': '01000000000',
+      'salary': 6000,
+      'isActive': true,
+      'lastLoginAt': null,
+    },
+  ];
+
+  static const List<String> _allPermissions = <String>[
+    'product:view',
+    'product:manage',
+    'category:view',
+    'category:manage',
+    'customer:view',
+    'customer:manage',
+    'supplier:view',
+    'supplier:manage',
+    'invoice:view',
+    'invoice:create',
+    'invoice:void',
+    'invoice:discount',
+    'return:view',
+    'return:manage',
+    'inventory:view',
+    'inventory:adjust',
+    'inventory:transfer',
+    'purchase:view',
+    'purchase:manage',
+    'shift:view',
+    'shift:manage',
+    'expense:view',
+    'expense:manage',
+    'expense:approve',
+    'promotion:view',
+    'promotion:manage',
+    'branch:view',
+    'branch:manage',
+    'user:view',
+    'user:manage',
+    'report:view',
+    'settings:manage',
+  ];
+
+  static const Map<String, List<String>> _defaultRolePermissions =
+      <String, List<String>>{
+        'admin': _allPermissions,
+        'manager': <String>[
+          'invoice:create',
+          'invoice:discount',
+          'report:view',
+        ],
+        'cashier': <String>['invoice:create', 'invoice:view', 'shift:manage'],
+        'accountant': <String>['report:view', 'expense:approve'],
+        'stock_keeper': <String>['inventory:view', 'inventory:adjust'],
+      };
+
+  static const Map<String, String> _roleLabels = <String, String>{
+    'admin': 'مدير النظام',
+    'manager': 'مدير فرع',
+    'cashier': 'كاشير',
+    'accountant': 'محاسب',
+    'stock_keeper': 'أمين مخزن',
+  };
+
+  /// باقات الأدوار بعد تعديلات الاختبار.
+  final Map<String, List<String>> rolePermissions = <String, List<String>>{
+    for (final MapEntry<String, List<String>> e
+        in _defaultRolePermissions.entries)
+      e.key: List<String>.of(e.value),
+  };
+
+  Map<String, dynamic> _catalog() => <String, dynamic>{
+    'roles': <Map<String, dynamic>>[
+      for (final String role in _roleLabels.keys)
+        <String, dynamic>{
+          'value': role,
+          'label': _roleLabels[role],
+          'permissions': rolePermissions[role],
+          'defaultPermissions': _defaultRolePermissions[role],
+          'customized':
+              rolePermissions[role]!.length !=
+              _defaultRolePermissions[role]!.length,
+          'editable': role != 'admin',
+          'usersCount': users
+              .where((Map<String, dynamic> u) => u['role'] == role)
+              .length,
+        },
+    ],
+    'permissions': <Map<String, dynamic>>[
+      for (final String p in _allPermissions)
+        <String, dynamic>{'key': p, 'value': p, 'group': p.split(':').first},
+    ],
+  };
+
   /// المسارات اللي اتطلبت — مفيدة للتأكد إن الشاشة طلبت اللي المفروض تطلبه.
   final List<String> requestedPaths = <String>[];
 
@@ -480,11 +765,175 @@ class FakeBackend {
     if (path.endsWith('/auth/me')) return _ok(_session['user'] as Object);
     if (path.endsWith('/auth/login')) return _ok(_session);
 
+    if (path.endsWith('/promotions/live')) {
+      return _ok(
+        promotions
+            .where((Map<String, dynamic> p) => _promotionStatus(p) == 'active')
+            .toList(),
+      );
+    }
+
+    if (path.endsWith('/promotions/summary')) {
+      return _ok(<String, dynamic>{
+        for (final String s in <String>[
+          'active',
+          'scheduled',
+          'expired',
+          'stopped',
+        ])
+          s: promotions
+              .where((Map<String, dynamic> p) => _promotionStatus(p) == s)
+              .length,
+      });
+    }
+
+    if (path.endsWith('/promotions') && request.method == 'GET') {
+      final String? status = request.url.queryParameters['status'];
+      return _page(
+        promotions
+            .where(
+              (Map<String, dynamic> p) =>
+                  status == null || _promotionStatus(p) == status,
+            )
+            .toList(),
+      );
+    }
+
+    if (path.endsWith('/promotions') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final Map<String, dynamic> created = <String, dynamic>{
+        'id': 'pr${promotions.length + 1}',
+        'isActive': true,
+        'usageCount': 0,
+        'products': <String>[],
+        ...body,
+      };
+      promotions.insert(0, created);
+      return _ok(created);
+    }
+
+    if (path.contains('/promotions/')) {
+      final List<String> parts = path.split('/promotions/').last.split('/');
+      final Map<String, dynamic> promotion = promotions.firstWhere(
+        (Map<String, dynamic> p) => p['id'] == parts.first,
+      );
+
+      if (request.method == 'PATCH') {
+        promotion.addAll(jsonDecode(request.body) as Map<String, dynamic>);
+      }
+      return _ok(promotion);
+    }
+
+    if (path.endsWith('/branches/overview')) {
+      return _ok(<String, dynamic>{
+        'totals': <String, dynamic>{
+          'branches': _branches.length,
+          'open': _branches.length,
+          'employees': users.length,
+          'todaySales': 1200,
+          'yesterdaySales': 1000,
+          'monthSales': 25000,
+          'lastMonthSales': 20000,
+        },
+        'branches': <Map<String, dynamic>>[
+          for (final Map<String, dynamic> b in _branches)
+            <String, dynamic>{
+              ...b,
+              'address': 'عنوان الاختبار',
+              'isMain': b['id'] == 'b1',
+              'isOpen': true,
+              'isActive': true,
+              'openingHours': <String, String>{'from': '09:00', 'to': '23:00'},
+              'employeesCount': 1,
+              'todaySales': 600,
+              'todayInvoices': 4,
+              'monthSales': 12500,
+            },
+        ],
+      });
+    }
+
+    if (path.endsWith('/users/catalog')) return _ok(_catalog());
+
+    if (path.contains('/users/roles/')) {
+      final String role = path.split('/').last;
+
+      if (request.method == 'PATCH') {
+        final Map<String, dynamic> body =
+            jsonDecode(request.body) as Map<String, dynamic>;
+        rolePermissions[role] = (body['permissions'] as List<dynamic>)
+            .cast<String>();
+      } else {
+        rolePermissions[role] = List<String>.of(_defaultRolePermissions[role]!);
+      }
+
+      return _ok(_catalog());
+    }
+
+    // صلاحيات موظف بعينه فوق باقة دوره.
+    if (path.endsWith('/permissions') && path.contains('/users/')) {
+      final String id = path.split('/')[path.split('/').length - 2];
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+
+      final Map<String, dynamic> user = users.firstWhere(
+        (Map<String, dynamic> u) => u['id'] == id,
+      );
+      user
+        ..['grantedPermissions'] = (body['granted'] as List<dynamic>)
+            .cast<String>()
+        ..['revokedPermissions'] = (body['revoked'] as List<dynamic>)
+            .cast<String>();
+
+      return _ok(user);
+    }
+
+    if (path.endsWith('/users') && request.method == 'GET') {
+      return _page(users);
+    }
+
+    if (path.endsWith('/auth/logout-all')) {
+      return _ok(<String, dynamic>{
+        'revokedAt': DateTime.now().toIso8601String(),
+      });
+    }
+
+    // رفع صورة المنتج بيوصل كـmultipart، وبنكتفي بتسجيل المسار.
+    if (path.contains('/products/') && path.endsWith('/image')) {
+      final String id = path.split('/')[path.split('/').length - 2];
+      final Map<String, dynamic> product = products.firstWhere(
+        (Map<String, dynamic> p) => p['id'] == id,
+        orElse: () => products.first,
+      );
+
+      product['imageUrl'] = request.method == 'DELETE'
+          ? null
+          : '/uploads/products/$id-test.png';
+      uploadedImageBytes = request.method == 'DELETE'
+          ? null
+          : request.bodyBytes.length;
+
+      return _ok(product);
+    }
+
     if (path.endsWith('/products')) {
       return _page(products);
     }
 
-    if (path.endsWith('/settings')) return _ok(settings);
+    if (path.endsWith('/settings')) {
+      if (request.method == 'PATCH') {
+        final Map<String, dynamic> body =
+            jsonDecode(request.body) as Map<String, dynamic>;
+        if (body['loyaltyTiers'] != null) {
+          loyaltyTiers = (body['loyaltyTiers'] as List<dynamic>)
+              .cast<Map<String, dynamic>>();
+        }
+        settings = <String, dynamic>{...settings, ...body}
+          ..remove('loyaltyTiers');
+      }
+      return _ok(<String, dynamic>{...settings, 'loyaltyTiers': loyaltyTiers});
+    }
 
     // مفيش وردية مفتوحة افتراضيًا؛ الاختبار بيقدر يفتحها بـopenShift().
     if (path.endsWith('/shifts/current')) return _ok2(currentShift);
@@ -507,7 +956,76 @@ class FakeBackend {
 
     if (path.endsWith('/cash')) return _ok(currentShift!['shift'] as Object);
 
+    // سجل الورديات: وردية مقفولة بعجز 50.
+    if (path.endsWith('/shifts') && request.method == 'GET') {
+      return _page(<Map<String, dynamic>>[_historyShift]);
+    }
+
+    if (path.endsWith('/shifts/sh-h1')) {
+      return _ok(<String, dynamic>{
+        'shift': _historyShift,
+        'totals': <String, dynamic>{
+          'salesTotal': 2400,
+          'invoicesCount': 12,
+          'cashSales': 1900,
+          'expectedCash': 2900,
+          'byMethod': <String, dynamic>{
+            'card': <String, dynamic>{'amount': 500},
+          },
+        },
+      });
+    }
+
     if (path.contains('/shifts/')) return _ok2(currentShift);
+
+    // سجل الفواتير: ملخّص الفترة وتفاصيل الفاتورة وإلغاؤها.
+    if (path.endsWith('/invoices/summary')) {
+      return _ok(<String, dynamic>{
+        'invoicesCount': 2,
+        'total': 342,
+        'returnedTotal': 0,
+        'profit': 80,
+      });
+    }
+
+    if (path.contains('/invoices/inv-h') && path.endsWith('/void')) {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final Map<String, dynamic> invoice = historyInvoices.firstWhere(
+        (Map<String, dynamic> i) => path.contains('/invoices/${i['id']}/'),
+      );
+      invoice
+        ..['status'] = 'voided'
+        ..['voidReason'] = body['reason'];
+      return _ok(invoice);
+    }
+
+    if (path.contains('/invoices/inv-h')) {
+      return _ok(
+        historyInvoices.firstWhere(
+          (Map<String, dynamic> i) => path.endsWith('/invoices/${i['id']}'),
+        ),
+      );
+    }
+
+    if (path.endsWith('/auth/change-password')) {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      if (body['currentPassword'] != 'Old@12345') {
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'success': false,
+            'message': 'كلمة السر الحالية غير صحيحة',
+            'error': <String, dynamic>{'code': 'BAD_REQUEST'},
+          }),
+          400,
+          headers: <String, String>{
+            'content-type': 'application/json; charset=utf-8',
+          },
+        );
+      }
+      return _ok(_session);
+    }
 
     // المعلّقات بتتخزن في الذاكرة عشان اختبارات التعليق تشتغل من غير سيرفر.
     if (path.endsWith('/invoices/held') && request.method == 'GET') {
@@ -522,6 +1040,74 @@ class FakeBackend {
 
     if (path.endsWith('/invoices') && request.method == 'POST') {
       return _ok(_invoiceFrom(request));
+    }
+
+    // تنبيهات المخزون: صنف ناقص واحد ومنتج صلاحيته قربت تخلص.
+    if (path.endsWith('/inventory/low-stock')) {
+      return _ok(<Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'st-low',
+          'quantity': 2,
+          'effectiveMinStock': 10,
+          'product': <String, dynamic>{
+            'id': products[0]['id'],
+            'name': products[0]['name'],
+            'sku': products[0]['sku'],
+            'unit': 'قطعة',
+          },
+          'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+        },
+      ]);
+    }
+
+    if (path.endsWith('/products/expiring')) {
+      return _ok(<Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': products[1]['id'],
+          'name': products[1]['name'],
+          'sku': products[1]['sku'],
+          'unit': 'قطعة',
+          'expiryDate': DateTime.now()
+              .add(const Duration(days: 5))
+              .toIso8601String(),
+        },
+      ]);
+    }
+
+    if (path.endsWith('/returns/summary')) {
+      return _ok(<String, dynamic>{
+        'returnsCount': 1,
+        'total': 57,
+        'costTotal': 30,
+      });
+    }
+
+    if (path.endsWith('/returns') && request.method == 'GET') {
+      return _page(<Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'ret-1',
+          'number': 'RET-000001',
+          'total': 57,
+          'refundMethod': 'cash',
+          'createdAt': DateTime.now().toIso8601String(),
+          'invoice': <String, dynamic>{'id': 'inv-1', 'number': 'INV-000001'},
+          'cashier': <String, dynamic>{'id': 'u1', 'name': 'مستخدم الاختبار'},
+          'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+          'reason': 'منتج تالف',
+        },
+      ]);
+    }
+
+    if (path.endsWith('/categories') && request.method == 'POST') {
+      final Map<String, dynamic> body =
+          jsonDecode(request.body) as Map<String, dynamic>;
+      final Map<String, dynamic> created = <String, dynamic>{
+        'id': 'cat-${categories.length + 1}',
+        'productsCount': 0,
+        ...body,
+      };
+      categories.add(created);
+      return _ok(created);
     }
 
     if (path.endsWith('/categories')) {
@@ -583,9 +1169,11 @@ class FakeBackend {
           jsonDecode(request.body) as Map<String, dynamic>;
       final String id = path.split('/suppliers/').last.split('/').first;
 
-      final Map<String, dynamic> supplier =
-          suppliers.firstWhere((Map<String, dynamic> s) => s['id'] == id);
-      supplier['balanceDue'] = (supplier['balanceDue'] as num).toDouble() -
+      final Map<String, dynamic> supplier = suppliers.firstWhere(
+        (Map<String, dynamic> s) => s['id'] == id,
+      );
+      supplier['balanceDue'] =
+          (supplier['balanceDue'] as num).toDouble() -
           (body['amount'] as num).toDouble();
 
       return _ok(supplier);
@@ -606,8 +1194,9 @@ class FakeBackend {
           final String? search = query['search'];
           if (search == null) return true;
 
-          return '${s['name']}${s['phone']}${s['contactPerson']}'
-              .contains(search);
+          return '${s['name']}${s['phone']}${s['contactPerson']}'.contains(
+            search,
+          );
         }).toList(),
       );
     }
@@ -663,9 +1252,11 @@ class FakeBackend {
       }
 
       final Map<String, num> awaiting = <String, num>{
-        'count': byStatus['confirmed']!['count']! +
+        'count':
+            byStatus['confirmed']!['count']! +
             byStatus['partially_received']!['count']!,
-        'total': byStatus['confirmed']!['total']! +
+        'total':
+            byStatus['confirmed']!['total']! +
             byStatus['partially_received']!['total']!,
       };
 
@@ -720,8 +1311,9 @@ class FakeBackend {
 
     if (path.contains('/purchase-orders/')) {
       final String id = path.split('/purchase-orders/').last.split('/').first;
-      final Map<String, dynamic> order = purchaseOrders
-          .firstWhere((Map<String, dynamic> o) => o['id'] == id);
+      final Map<String, dynamic> order = purchaseOrders.firstWhere(
+        (Map<String, dynamic> o) => o['id'] == id,
+      );
 
       if (path.endsWith('/confirm')) order['status'] = 'confirmed';
 
@@ -746,8 +1338,10 @@ class FakeBackend {
             (byCategory[category] ?? 0) + (e['amount'] as num).toDouble();
       }
 
-      final double total =
-          byCategory.values.fold<double>(0, (double s, double v) => s + v);
+      final double total = byCategory.values.fold<double>(
+        0,
+        (double s, double v) => s + v,
+      );
 
       return _ok(<String, dynamic>{
         'total': total,
@@ -790,10 +1384,10 @@ class FakeBackend {
           jsonDecode(request.body) as Map<String, dynamic>;
       final String id = path.split('/expenses/').last.split('/').first;
 
-      final Map<String, dynamic> expense =
-          expenses.firstWhere((Map<String, dynamic> e) => e['id'] == id);
-      expense['status'] =
-          (body['approve'] as bool) ? 'approved' : 'rejected';
+      final Map<String, dynamic> expense = expenses.firstWhere(
+        (Map<String, dynamic> e) => e['id'] == id,
+      );
+      expense['status'] = (body['approve'] as bool) ? 'approved' : 'rejected';
 
       return _ok(expense);
     }
@@ -820,8 +1414,10 @@ class FakeBackend {
       final String id = path.split('/').last;
       final Map<String, dynamic>? found = customers
           .cast<Map<String, dynamic>?>()
-          .firstWhere((Map<String, dynamic>? c) => c!['id'] == id,
-              orElse: () => null);
+          .firstWhere(
+            (Map<String, dynamic>? c) => c!['id'] == id,
+            orElse: () => null,
+          );
 
       if (found == null) {
         return http.Response(
@@ -841,7 +1437,21 @@ class FakeBackend {
     }
 
     if (path.endsWith('/invoices') && request.method == 'GET') {
-      return _page(<Map<String, dynamic>>[]);
+      // فواتير العميل في ملفه فاضية؛ السجل العام بيرجّع فواتير الذاكرة.
+      final Map<String, String> query = request.url.queryParameters;
+      if (query.containsKey('customer')) {
+        return _page(<Map<String, dynamic>>[]);
+      }
+
+      final String? status = query['status'];
+      return _page(
+        historyInvoices
+            .where(
+              (Map<String, dynamic> i) =>
+                  status == null || i['status'] == status,
+            )
+            .toList(),
+      );
     }
 
     if (path.endsWith('/reports/dashboard')) {
@@ -987,7 +1597,10 @@ class FakeBackend {
 
     if (path.endsWith('/reports/branches')) {
       return _ok(<String, dynamic>{
-        'total': _branchSales.values.fold<double>(0, (double s, double v) => s + v),
+        'total': _branchSales.values.fold<double>(
+          0,
+          (double s, double v) => s + v,
+        ),
         'branches': <Map<String, dynamic>>[
           for (final MapEntry<String, double> entry in _branchSales.entries)
             <String, dynamic>{
@@ -1041,18 +1654,20 @@ class FakeBackend {
     final double tax = subtotal * taxRate;
     final double total = subtotal + tax;
 
-    final double paid = (body['payments'] as List<dynamic>? ?? <dynamic>[]).fold<double>(
-      0,
-      (double s, dynamic p) =>
-          s + ((p as Map<String, dynamic>)['amount'] as num).toDouble(),
-    );
+    final double paid = (body['payments'] as List<dynamic>? ?? <dynamic>[])
+        .fold<double>(
+          0,
+          (double s, dynamic p) =>
+              s + ((p as Map<String, dynamic>)['amount'] as num).toDouble(),
+        );
 
     _invoiceCounter += 1;
 
     return <String, dynamic>{
       'id': 'inv-$_invoiceCounter',
-      'number':
-          held ? null : 'INV-${_invoiceCounter.toString().padLeft(6, '0')}',
+      'number': held
+          ? null
+          : 'INV-${_invoiceCounter.toString().padLeft(6, '0')}',
       'label': body['label'],
       'lines': stored,
       'subtotal': subtotal,
@@ -1105,7 +1720,10 @@ class FakeBackend {
     };
   }
 
-  Map<String, dynamic> _orderLineFrom(Map<String, dynamic> requested, String id) {
+  Map<String, dynamic> _orderLineFrom(
+    Map<String, dynamic> requested,
+    String id,
+  ) {
     final Map<String, dynamic> product = products.firstWhere(
       (Map<String, dynamic> p) => p['id'] == requested['product'],
       orElse: () => products.first,
@@ -1122,15 +1740,16 @@ class FakeBackend {
   void _applyReceipt(Map<String, dynamic> order, http.Request request) {
     final Map<String, dynamic> body =
         jsonDecode(request.body) as Map<String, dynamic>;
-    final List<Map<String, dynamic>> lines =
-        (order['lines'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final List<Map<String, dynamic>> lines = (order['lines'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
 
     double receivedValue = (order['receivedValue'] as num).toDouble();
 
     for (final dynamic raw in body['lines'] as List<dynamic>) {
       final Map<String, dynamic> requested = raw as Map<String, dynamic>;
-      final Map<String, dynamic> line = lines
-          .firstWhere((Map<String, dynamic> l) => l['id'] == requested['orderLine']);
+      final Map<String, dynamic> line = lines.firstWhere(
+        (Map<String, dynamic> l) => l['id'] == requested['orderLine'],
+      );
 
       final double quantity = (requested['quantity'] as num).toDouble();
       line['receivedQuantity'] =
@@ -1144,7 +1763,8 @@ class FakeBackend {
     );
     final double received = lines.fold<double>(
       0,
-      (double sum, Map<String, dynamic> l) => sum + (l['receivedQuantity'] as num),
+      (double sum, Map<String, dynamic> l) =>
+          sum + (l['receivedQuantity'] as num),
     );
 
     order['receivedValue'] = receivedValue;
@@ -1175,46 +1795,62 @@ class FakeBackend {
 
   /// زي [_ok] بس بيسمح بقيمة فاضية، للمسارات اللي ردها ممكن يكون null.
   static http.Response _ok2(Object? data) => http.Response(
-        jsonEncode(<String, dynamic>{'success': true, 'message': null, 'data': data}),
-        200,
-        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode(<String, dynamic>{
+      'success': true,
+      'message': null,
+      'data': data,
+    }),
+    200,
+    headers: <String, String>{
+      'content-type': 'application/json; charset=utf-8',
+    },
+  );
 
   static http.Response _notFound(String message) => http.Response(
-        jsonEncode(<String, dynamic>{
-          'success': false,
-          'message': message,
-          'error': <String, dynamic>{'code': 'NOT_FOUND'},
-        }),
-        404,
-        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode(<String, dynamic>{
+      'success': false,
+      'message': message,
+      'error': <String, dynamic>{'code': 'NOT_FOUND'},
+    }),
+    404,
+    headers: <String, String>{
+      'content-type': 'application/json; charset=utf-8',
+    },
+  );
 
   static http.Response _ok(Object data) => http.Response(
-        jsonEncode(<String, dynamic>{'success': true, 'message': null, 'data': data}),
-        200,
-        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode(<String, dynamic>{
+      'success': true,
+      'message': null,
+      'data': data,
+    }),
+    200,
+    headers: <String, String>{
+      'content-type': 'application/json; charset=utf-8',
+    },
+  );
 
   static http.Response _page(List<Map<String, dynamic>> items) => http.Response(
-        jsonEncode(<String, dynamic>{
-          'success': true,
-          'message': null,
-          'data': items,
-          'meta': <String, dynamic>{
-            'pagination': <String, dynamic>{
-              'page': 1,
-              'limit': 100,
-              'total': items.length,
-              'pages': 1,
-              'hasNext': false,
-              'hasPrev': false,
-            },
-          },
-        }),
-        200,
-        headers: <String, String>{'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode(<String, dynamic>{
+      'success': true,
+      'message': null,
+      'data': items,
+      'meta': <String, dynamic>{
+        'pagination': <String, dynamic>{
+          'page': 1,
+          'limit': 100,
+          'total': items.length,
+          'pages': 1,
+          'hasNext': false,
+          'hasPrev': false,
+        },
+      },
+    }),
+    200,
+    headers: <String, String>{
+      'content-type': 'application/json; charset=utf-8',
+    },
+  );
 
   static final Map<String, dynamic> _session = <String, dynamic>{
     'user': <String, dynamic>{
@@ -1231,24 +1867,25 @@ class FakeBackend {
     },
   };
 
-  static final List<Map<String, dynamic>> _defaultCategories = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'id': 'c1',
-      'name': 'مشروبات',
-      'icon': 'local_drink',
-      'color': '#3B82F6',
-      'productsCount': 2,
-      'isActive': true,
-    },
-    <String, dynamic>{
-      'id': 'c2',
-      'name': 'وجبات خفيفة',
-      'icon': 'fastfood',
-      'color': '#F59E0B',
-      'productsCount': 1,
-      'isActive': true,
-    },
-  ];
+  static final List<Map<String, dynamic>> _defaultCategories =
+      <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'c1',
+          'name': 'مشروبات',
+          'icon': 'local_drink',
+          'color': '#3B82F6',
+          'productsCount': 2,
+          'isActive': true,
+        },
+        <String, dynamic>{
+          'id': 'c2',
+          'name': 'وجبات خفيفة',
+          'icon': 'fastfood',
+          'color': '#F59E0B',
+          'productsCount': 1,
+          'isActive': true,
+        },
+      ];
 
   static Map<String, dynamic> _customer({
     required String id,
@@ -1258,21 +1895,20 @@ class FakeBackend {
     String tier = 'regular',
     int points = 0,
     int orders = 0,
-  }) =>
-      <String, dynamic>{
-        'id': id,
-        'name': name,
-        'phone': phone,
-        'email': null,
-        'tier': tier,
-        'balance': balance,
-        'creditLimit': 2000,
-        'points': points,
-        'totalPurchases': orders * 250,
-        'ordersCount': orders,
-        'lastVisitAt': DateTime.now().toIso8601String(),
-        'isActive': true,
-      };
+  }) => <String, dynamic>{
+    'id': id,
+    'name': name,
+    'phone': phone,
+    'email': null,
+    'tier': tier,
+    'balance': balance,
+    'creditLimit': 2000,
+    'points': points,
+    'totalPurchases': orders * 250,
+    'ordersCount': orders,
+    'lastVisitAt': DateTime.now().toIso8601String(),
+    'isActive': true,
+  };
 
   static final List<Map<String, dynamic>> _ledger = <Map<String, dynamic>>[
     <String, dynamic>{
@@ -1309,56 +1945,62 @@ class FakeBackend {
     int stock = 50,
     int minStock = 10,
     bool isActive = true,
-  }) =>
-      <String, dynamic>{
-        'id': id,
-        'name': name,
-        'sku': sku,
-        'barcode': null,
-        'category': <String, dynamic>{
-          'id': categoryId,
-          'name': categoryName,
-          'icon': 'local_drink',
-          'color': '#3B82F6',
-        },
-        'brand': '',
-        'unit': 'قطعة',
-        'price': price,
-        'cost': cost,
-        'stock': stock,
-        'reserved': 0,
-        'minStock': minStock,
-        'effectiveMinStock': minStock,
-        'trackStock': true,
-        'isTaxable': true,
-        'isActive': isActive,
-        'expiryDate': null,
-        'imageUrl': null,
-        'colorIndex': 0,
-      };
+  }) => <String, dynamic>{
+    'id': id,
+    'name': name,
+    'sku': sku,
+    'barcode': null,
+    'category': <String, dynamic>{
+      'id': categoryId,
+      'name': categoryName,
+      'icon': 'local_drink',
+      'color': '#3B82F6',
+    },
+    'brand': '',
+    'unit': 'قطعة',
+    'price': price,
+    'cost': cost,
+    'stock': stock,
+    'reserved': 0,
+    'minStock': minStock,
+    'effectiveMinStock': minStock,
+    'trackStock': true,
+    'isTaxable': true,
+    'isActive': isActive,
+    'expiryDate': null,
+    'imageUrl': null,
+    'colorIndex': 0,
+  };
 
-  static final List<Map<String, dynamic>> _defaultProducts = <Map<String, dynamic>>[
-    product(id: 'p1', name: 'بيبسي كانز', sku: 'PEP-330', stock: 80),
-    product(id: 'p2', name: 'مياه معدنية', sku: 'WTR-600', stock: 4, minStock: 20),
-    // منتج متوقّف — بيغذي تبويب «غير نشطة».
-    product(
-      id: 'p3',
-      name: 'شيبسي جبنة',
-      sku: 'CHP-CHS',
-      categoryId: 'c2',
-      categoryName: 'وجبات خفيفة',
-      stock: 0,
-      isActive: false,
-    ),
-    // منتج شغّال بس خلص من المخزن — بيغذي شارة «نفد المخزون».
-    product(
-      id: 'p4',
-      name: 'عصير مانجو',
-      sku: 'JUC-MNG',
-      stock: 0,
-      minStock: 12,
-    ),
-  ];
+  static final List<Map<String, dynamic>> _defaultProducts =
+      <Map<String, dynamic>>[
+        product(id: 'p1', name: 'بيبسي كانز', sku: 'PEP-330', stock: 80),
+        product(
+          id: 'p2',
+          name: 'مياه معدنية',
+          sku: 'WTR-600',
+          stock: 4,
+          minStock: 20,
+        ),
+        // منتج متوقّف — بيغذي تبويب «غير نشطة».
+        product(
+          id: 'p3',
+          name: 'شيبسي جبنة',
+          sku: 'CHP-CHS',
+          categoryId: 'c2',
+          categoryName: 'وجبات خفيفة',
+          stock: 0,
+          isActive: false,
+        ),
+        // منتج شغّال بس خلص من المخزن — بيغذي شارة «نفد المخزون».
+        product(
+          id: 'p4',
+          name: 'عصير مانجو',
+          sku: 'JUC-MNG',
+          stock: 0,
+          minStock: 12,
+        ),
+      ];
 }
 
 /// بيلفّ شاشة واحدة بالـproviders اللي محتاجاها، عشان اختبارات الواجهة
@@ -1370,8 +2012,9 @@ Future<Widget> wrapScreen(Widget child, {FakeBackend? backend}) async {
 
   await session.login(username: 'tester', password: 'x');
 
-  final CurrentShiftController shifts =
-      CurrentShiftController(ShiftRepository(api));
+  final CurrentShiftController shifts = CurrentShiftController(
+    ShiftRepository(api),
+  );
   await shifts.load();
 
   return MultiProvider(

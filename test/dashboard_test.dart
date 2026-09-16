@@ -5,7 +5,6 @@ import 'package:pos_system/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_backend.dart';
-import 'package:pos_system/mock_data/mock_data.dart';
 
 const Size _desktop = Size(1600, 950);
 
@@ -120,34 +119,46 @@ void main() {
   });
 
   group('الفروع', () {
-    testWidgets('شبكة كروت الفروع بنقاط الحالة', (WidgetTester tester) async {
+    testWidgets('شبكة كروت الفروع بأرقامها من السيرفر', (
+      WidgetTester tester,
+    ) async {
       await _openScreen(tester, 'الفروع');
 
-      // اسم الفرع الحالي بيظهر كمان في مبدّل الفروع بالشريط العلوي
-      for (final Branch b in MockData.branches) {
-        expect(find.text(b.name), findsWidgets);
-      }
-      expect(find.text('مفتوح الآن'), findsNWidgets(2));
-      expect(find.text('مغلق'), findsOneWidget);
+      // اسم فرع المستخدم بيظهر كمان في مؤشر الفرع بالشريط العلوي
+      expect(find.text('الفرع الرئيسي'), findsWidgets);
+      expect(find.text('فرع المعادي'), findsOneWidget);
+      // حالة كل فرع بكوده — بطاقة الإحصائيات فوق فيها «مفتوح الآن» برضه.
+      expect(find.text('مفتوح الآن • MAIN'), findsOneWidget);
+      expect(find.text('مفتوح الآن • MAAD'), findsOneWidget);
+      expect(find.text('2 مفتوح الآن'), findsOneWidget);
       expect(find.text('مبيعات اليوم'), findsWidgets);
     });
 
-    testWidgets('إضافة فرع جديد بيظهر في الشبكة', (WidgetTester tester) async {
+    testWidgets('حوار إضافة فرع بيحفظ على السيرفر ويقفل', (
+      WidgetTester tester,
+    ) async {
       await _openScreen(tester, 'الفروع');
 
       await tester.tap(find.text('إضافة فرع جديد').first);
       await tester.pumpAndSettle();
 
       expect(find.text('فرع جديد'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).at(0), 'فرع الشيخ زايد');
-      await tester.enterText(find.byType(TextField).at(1), 'الحي المتميز');
+
+      final Finder dialogFields = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      );
+
+      // الاسم والكود إلزاميين — السيرفر بيرفض غير كده.
+      await tester.enterText(dialogFields.at(0), 'فرع الشيخ زايد');
+      await tester.enterText(dialogFields.at(1), 'ZAYED');
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('إضافة الفرع'));
       await tester.pumpAndSettle();
 
-      expect(find.text('فرع الشيخ زايد'), findsOneWidget);
-      expect(find.text('قيد التجهيز'), findsOneWidget);
+      expect(find.text('فرع جديد'), findsNothing);
+      expect(find.text('اتضاف الفرع الجديد'), findsOneWidget);
     });
   });
 
@@ -160,19 +171,12 @@ void main() {
       await tester.tap(find.text('الأجهزة المتصلة').first);
       await tester.pumpAndSettle();
 
-      // بطاقة لكل جهاز
-      for (final ConnectedDevice d in MockData.devices) {
-        expect(find.text(d.model), findsOneWidget);
-      }
-      expect(find.text('متصل'), findsNWidgets(3));
-      expect(find.text('غير متصل'), findsOneWidget);
-      expect(find.text('اختبار الاتصال'), findsNWidgets(4));
-
-      // اختبار الاتصال بيغيّر حالة الزر
-      await tester.tap(find.text('اختبار الاتصال').first);
-      await tester.pump();
-      expect(find.text('جارٍ الاختبار…'), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      // القسم بيقرا طابعات الجهاز الحقيقية — في الاختبار مفيش منصة طباعة،
+      // فبيخلص بقايمة فاضية بدل ما يفضل بيحمّل.
+      expect(find.textContaining('طابعات الجهاز ده'), findsOneWidget);
+      expect(find.text('مفيش طابعات متسطبة على الجهاز'), findsOneWidget);
+      expect(find.text('اسأل كل مرة (حوار الطباعة)'), findsOneWidget);
+      expect(find.textContaining('قارئ الباركود والميزان'), findsOneWidget);
     });
 
     testWidgets('قسم الضرائب بيحسب المثال لحظيًا', (WidgetTester tester) async {

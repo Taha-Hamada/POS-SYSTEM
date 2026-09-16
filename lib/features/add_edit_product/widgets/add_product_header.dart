@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
+import '../controllers/product_form_controller.dart';
 import 'add_product_back_button.dart';
+import 'add_product_footer.dart';
 
 /// هيدر الشاشة: زرار الرجوع + العنوان والوصف.
 class AddProductHeader extends StatelessWidget {
@@ -10,9 +12,11 @@ class AddProductHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool editing = context.read<ProductFormController>().isEditing;
+
     return Row(
       children: <Widget>[
-        AddProductBackButton(onTap: () => context.go('/products')),
+        AddProductBackButton(onTap: () => closeProductForm(context)),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
@@ -20,12 +24,14 @@ class AddProductHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                'إضافة منتج جديد',
+                editing ? 'تعديل منتج' : 'إضافة منتج جديد',
                 style: AppText.pageTitle.copyWith(fontSize: 24),
               ),
               const SizedBox(height: 3),
               Text(
-                'املأ البيانات في التبويبات التالية ثم اضغط «حفظ المنتج»',
+                editing
+                    ? 'عدّل البيانات ثم اضغط «حفظ التعديلات» — الرصيد بيتغير من شاشة المخزون'
+                    : 'املأ البيانات في التبويبات التالية ثم اضغط «حفظ المنتج»',
                 style: AppText.caption,
               ),
             ],

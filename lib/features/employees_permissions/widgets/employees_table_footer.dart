@@ -11,8 +11,8 @@ class EmployeesTableFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EmployeesListController employees =
-        context.watch<EmployeesListController>();
+    final EmployeesListController employees = context
+        .watch<EmployeesListController>();
 
     return Row(
       children: <Widget>[

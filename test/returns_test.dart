@@ -35,8 +35,9 @@ void main() {
 
       if (backendUp) {
         // البيع والمرتجع محتاجين وردية مفتوحة.
-        final CurrentShiftController shifts =
-            CurrentShiftController(ShiftRepository(api));
+        final CurrentShiftController shifts = CurrentShiftController(
+          ShiftRepository(api),
+        );
         await shifts.load();
         if (!shifts.isOpen) await shifts.open(1000);
         shifts.dispose();
@@ -71,7 +72,7 @@ void main() {
   /// بيعمل فاتورة جديدة ويرجّع رقمها.
   Future<String> sellOne({int quantity = 4}) async {
     final Product target = sales.products.firstWhere(
-      (Product p) => p.trackStock && p.available > quantity + 5,
+      (Product p) => p.trackStock && p.price > 0 && p.available > quantity + 5,
     );
 
     for (int i = 0; i < quantity; i += 1) {
@@ -163,8 +164,9 @@ void main() {
     final ReturnLine line = returns.lines.first;
     final String productId = line.productId;
 
-    final Product before =
-        sales.products.firstWhere((Product p) => p.id == productId);
+    final Product before = sales.products.firstWhere(
+      (Product p) => p.id == productId,
+    );
 
     returns.setLineSelected(line, true);
     returns.setReturnQuantity(line, 2);
@@ -181,8 +183,9 @@ void main() {
     expect(returns.lines.first.source.returnedQuantity, 2);
 
     await sales.refreshCatalog();
-    final Product after =
-        sales.products.firstWhere((Product p) => p.id == productId);
+    final Product after = sales.products.firstWhere(
+      (Product p) => p.id == productId,
+    );
 
     expect(after.stock, before.stock + 2, reason: 'الصنف رجع للمخزون');
   });
@@ -196,8 +199,9 @@ void main() {
     final ReturnLine line = returns.lines.first;
     final String productId = line.productId;
 
-    final Product before =
-        sales.products.firstWhere((Product p) => p.id == productId);
+    final Product before = sales.products.firstWhere(
+      (Product p) => p.id == productId,
+    );
 
     returns.setLineSelected(line, true);
     returns.setReturnQuantity(line, 2);
@@ -207,8 +211,9 @@ void main() {
     expect(await returns.submit(), isNotNull, reason: returns.error);
 
     await sales.refreshCatalog();
-    final Product after =
-        sales.products.firstWhere((Product p) => p.id == productId);
+    final Product after = sales.products.firstWhere(
+      (Product p) => p.id == productId,
+    );
 
     expect(after.stock, before.stock, reason: 'التالف مبيرجعش');
   });
@@ -241,8 +246,9 @@ void main() {
       return;
     }
 
+    // منتج بسعر، عشان الرد على الحساب يبقى له قيمة فعلًا.
     final Product target = sales.products.firstWhere(
-      (Product p) => p.trackStock && p.available > 5,
+      (Product p) => p.trackStock && p.price > 0 && p.available > 5,
     );
 
     sales.active
@@ -271,6 +277,9 @@ void main() {
   test('طرق الرد كلها معروفة للسيرفر', () {
     if (skip()) return;
 
-    expect(kRefundMethods.keys, containsAll(<String>['cash', 'card', 'credit']));
+    expect(
+      kRefundMethods.keys,
+      containsAll(<String>['cash', 'card', 'credit']),
+    );
   });
 }

@@ -6,29 +6,54 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/roles_permissions_controller.dart';
+import '../models/role_catalog.dart';
 
 /// الشريط السفلي الثابت: حالة الحفظ وأزرار الاستعادة والحفظ.
 class RolesPermissionsFooter extends StatelessWidget {
   const RolesPermissionsFooter({super.key});
 
-  void _save(BuildContext context) {
-    final RolesPermissionsController roles =
-        context.read<RolesPermissionsController>();
-    final String roleName = roles.role.name;
+  Future<void> _save(BuildContext context) async {
+    final RolesPermissionsController roles = context
+        .read<RolesPermissionsController>();
+    final String roleName = roles.role?.label ?? '';
 
-    roles.save();
-    showPlainSnackBar(
+    final String? error = await roles.save();
+    if (!context.mounted) return;
+
+    showAppSnackBar(
       context,
-      'تم حفظ صلاحيات دور «$roleName» (تجريبي)',
+      error ?? 'اتحفظت صلاحيات دور «$roleName»',
+      isError: error != null,
       width: 460,
     );
   }
 
+  Future<void> _reset(BuildContext context) async {
+    final String? error = await context
+        .read<RolesPermissionsController>()
+        .resetToDefaults();
+    if (!context.mounted || error == null) return;
+
+    showAppSnackBar(context, error, isError: true, width: 460);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final RolesPermissionsController roles =
-        context.watch<RolesPermissionsController>();
+    final RolesPermissionsController roles = context
+        .watch<RolesPermissionsController>();
+    final RoleInfo? role = roles.role;
+
+    // مفيش حاجة تتحفظ لو المستخدم معندوش إدارة الموظفين.
+    if (!roles.canEdit || role == null) return const SizedBox.shrink();
+
     final bool dirty = roles.dirty;
+    final bool busy = roles.isLoading;
+
+    final String status = !role.editable
+        ? 'صلاحيات «${role.label}» كاملة ومش بتتعدّل'
+        : dirty
+        ? 'يوجد تغييرات غير محفوظة على دور «${role.label}»'
+        : 'كل التغييرات محفوظة';
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -58,9 +83,7 @@ class RolesPermissionsFooter extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              dirty
-                  ? 'يوجد تغييرات غير محفوظة على دور «${roles.role.name}»'
-                  : 'كل التغييرات محفوظة',
+              status,
               style: AppText.caption.copyWith(fontSize: 12.5),
             ),
           ),
@@ -68,14 +91,14 @@ class RolesPermissionsFooter extends StatelessWidget {
             label: 'استعادة الافتراضي',
             icon: Icons.restart_alt_rounded,
             size: AppButtonSize.large,
-            onPressed: dirty ? roles.reset : null,
+            onPressed: roles.canReset && !busy ? () => _reset(context) : null,
           ),
           const SizedBox(width: AppSpacing.md),
           PrimaryButton(
-            label: 'حفظ التغييرات',
+            label: busy ? 'جاري الحفظ…' : 'حفظ التغييرات',
             icon: Icons.save_outlined,
             size: AppButtonSize.large,
-            onPressed: dirty ? () => _save(context) : null,
+            onPressed: dirty && !busy ? () => _save(context) : null,
           ),
         ],
       ),

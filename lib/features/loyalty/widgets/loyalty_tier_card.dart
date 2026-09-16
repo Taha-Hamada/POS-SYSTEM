@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/loyalty_tier.dart';
 import '../../../theme/app_theme.dart';
 import 'loyalty_tier_benefits.dart';
 import 'loyalty_tier_card_header.dart';
@@ -11,10 +11,14 @@ class LoyaltyTierCard extends StatefulWidget {
     super.key,
     required this.tier,
     required this.membersCount,
+    this.onEdit,
   });
 
-  final LoyaltyTierInfo tier;
+  final LoyaltyTier tier;
   final int membersCount;
+
+  /// null لو المستخدم مالوش صلاحية تعديل الولاء.
+  final VoidCallback? onEdit;
 
   @override
   State<LoyaltyTierCard> createState() => _LoyaltyTierCardState();
@@ -25,7 +29,8 @@ class _LoyaltyTierCardState extends State<LoyaltyTierCard> {
 
   @override
   Widget build(BuildContext context) {
-    final LoyaltyTierInfo tier = widget.tier;
+    final LoyaltyTier tier = widget.tier;
+    final List<Color> gradient = tierGradient(tier.key);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -38,7 +43,7 @@ class _LoyaltyTierCardState extends State<LoyaltyTierCard> {
           boxShadow: _hovered
               ? <BoxShadow>[
                   BoxShadow(
-                    color: tier.gradient.first.withValues(alpha: 0.32),
+                    color: gradient.first.withValues(alpha: 0.32),
                     blurRadius: 26,
                     offset: const Offset(0, 10),
                   ),
@@ -53,6 +58,7 @@ class _LoyaltyTierCardState extends State<LoyaltyTierCard> {
               LoyaltyTierCardHeader(
                 tier: tier,
                 membersCount: widget.membersCount,
+                onEdit: widget.onEdit,
               ),
               Expanded(child: LoyaltyTierBenefits(tier: tier)),
             ],

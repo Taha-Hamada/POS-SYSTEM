@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/api/api_client.dart';
+import '../../../core/session/session_controller.dart';
+import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/screen_header.dart';
-import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/roles_permissions_controller.dart';
+import '../data/employees_repository.dart';
 import '../widgets/permissions_area.dart';
 import '../widgets/roles_list_panel.dart';
 import '../widgets/roles_permissions_footer.dart';
@@ -21,8 +24,11 @@ class RolesPermissionsScreen extends StatefulWidget {
 class _RolesPermissionsScreenState extends State<RolesPermissionsScreen>
     with SingleTickerProviderStateMixin {
   /// الكنترولر محتاج vsync عشان أنيميشن الـFade عند تبديل الدور.
-  late final RolesPermissionsController _roles =
-      RolesPermissionsController(vsync: this);
+  late final RolesPermissionsController _roles = RolesPermissionsController(
+    EmployeesRepository(context.read<ApiClient>()),
+    vsync: this,
+    canEdit: context.read<SessionController>().can('user:manage'),
+  )..load();
 
   @override
   void dispose() {
@@ -55,26 +61,9 @@ class _RolesPermissionsScreenState extends State<RolesPermissionsScreen>
                       onTap: () => context.go('/employees'),
                       tooltip: 'رجوع للموظفين',
                     ),
-                    actions: <Widget>[
-                      SecondaryButton(
-                        label: 'دور جديد',
-                        icon: Icons.add_moderator_outlined,
-                        onPressed: () {},
-                      ),
-                    ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  const Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        // عمود الأدوار (يمين في RTL)
-                        SizedBox(width: 288, child: RolesListPanel()),
-                        SizedBox(width: AppSpacing.xl),
-                        Expanded(child: PermissionsArea()),
-                      ],
-                    ),
-                  ),
+                  const Expanded(child: _RolesBody()),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               ),
@@ -83,6 +72,34 @@ class _RolesPermissionsScreenState extends State<RolesPermissionsScreen>
           const RolesPermissionsFooter(),
         ],
       ),
+    );
+  }
+}
+
+class _RolesBody extends StatelessWidget {
+  const _RolesBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final RolesPermissionsController roles = context
+        .watch<RolesPermissionsController>();
+
+    if (roles.isFirstLoad) {
+      return const LoadingView(message: 'بنحمّل الأدوار…');
+    }
+
+    if (roles.hasFailed && roles.roles.isEmpty) {
+      return ErrorView(message: roles.errorMessage!, onRetry: roles.retry);
+    }
+
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // عمود الأدوار (يمين في RTL)
+        SizedBox(width: 288, child: RolesListPanel()),
+        SizedBox(width: AppSpacing.xl),
+        Expanded(child: PermissionsArea()),
+      ],
     );
   }
 }

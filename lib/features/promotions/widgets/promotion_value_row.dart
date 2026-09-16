@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/promotion.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../models/promotion_type_color.dart';
 
-/// قيمة العرض + عدد مرات استخدامه.
+/// قيمة العرض + عدد الفواتير اللي اتطبق فيها.
 class PromotionValueRow extends StatelessWidget {
   const PromotionValueRow({super.key, required this.promotion});
 
@@ -21,7 +21,7 @@ class PromotionValueRow extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
             child: Text(
-              promotion.value,
+              promotion.valueLabel,
               style: AppText.amountHero.copyWith(
                 fontSize: 26,
                 color: promotion.type.color,
@@ -40,7 +40,7 @@ class PromotionValueRow extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '${Fmt.count(promotion.usageCount)} استخدام',
+                '${Fmt.count(promotion.usageCount)} فاتورة',
                 style: AppText.caption.copyWith(fontSize: 11.5),
               ),
             ],

@@ -1,35 +1,98 @@
 import 'package:flutter/material.dart';
 
-import '../models/draft_branch.dart';
+import '../../../core/models/branch.dart';
+import '../models/branch_stats.dart';
 
-/// حالة نموذج إضافة فرع.
+/// بيبعت بيانات الفرع للسيرفر ويرجّع رسالة الخطأ لو فشل.
+typedef BranchSubmit = Future<String?> Function(BranchInput input);
+
+/// حالة نموذج الفرع — إضافة فرع جديد أو تعديل فرع موجود.
 class AddBranchController extends ChangeNotifier {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-  final TextEditingController managerController = TextEditingController();
+  AddBranchController({Branch? initial}) : isEditing = initial != null {
+    if (initial == null) return;
 
+    nameController.text = initial.name;
+    codeController.text = initial.code;
+    addressController.text = initial.address;
+    phoneController.text = initial.phone;
+    openFromController.text = initial.openFrom;
+    openToController.text = initial.openTo;
+    _managerId = initial.managerId;
+  }
+
+  final bool isEditing;
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController codeController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController openFromController = TextEditingController(
+    text: '09:00',
+  );
+  final TextEditingController openToController = TextEditingController(
+    text: '23:00',
+  );
+
+  static final RegExp _time = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
+
+  String? _managerId;
+  bool _saving = false;
+  String? _error;
+
+  String? get managerId => _managerId;
+  bool get saving => _saving;
+  String? get error => _error;
+
+  bool get hoursValid =>
+      _time.hasMatch(openFromController.text.trim()) &&
+      _time.hasMatch(openToController.text.trim());
+
+  /// نفس حدود السيرفر: الاسم والكود حرفين على الأقل، والمواعيد HH:MM.
   bool get isValid =>
-      nameController.text.trim().isNotEmpty &&
-      addressController.text.trim().isNotEmpty;
+      nameController.text.trim().length >= 2 &&
+      codeController.text.trim().length >= 2 &&
+      hoursValid;
 
   void fieldChanged([String? _]) => notifyListeners();
 
-  /// بيبني الفرع المبدئي بالقيم المُدخلة.
-  DraftBranch build() {
-    final String manager = managerController.text.trim();
+  void setManager(String? id) {
+    _managerId = id;
+    notifyListeners();
+  }
 
-    return DraftBranch(
-      name: nameController.text.trim(),
-      address: addressController.text.trim(),
-      manager: manager.isEmpty ? 'لم يتم التعيين' : manager,
-    );
+  BranchInput build() => BranchInput(
+    name: nameController.text.trim(),
+    code: codeController.text.trim().toUpperCase(),
+    address: addressController.text.trim(),
+    phone: phoneController.text.trim(),
+    managerId: _managerId,
+    openFrom: openFromController.text.trim(),
+    openTo: openToController.text.trim(),
+  );
+
+  /// بترجّع true لو السيرفر قبل البيانات.
+  Future<bool> submit(BranchSubmit onSubmit) async {
+    _saving = true;
+    _error = null;
+    notifyListeners();
+
+    final String? failure = await onSubmit(build());
+
+    _saving = false;
+    _error = failure;
+    notifyListeners();
+
+    return failure == null;
   }
 
   @override
   void dispose() {
     nameController.dispose();
+    codeController.dispose();
     addressController.dispose();
-    managerController.dispose();
+    phoneController.dispose();
+    openFromController.dispose();
+    openToController.dispose();
     super.dispose();
   }
 }

@@ -1,43 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/branch.dart';
+import '../../../core/models/employee.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/add_branch_controller.dart';
-import '../models/draft_branch.dart';
 import '../widgets/add_branch_actions.dart';
 import '../widgets/add_branch_fields.dart';
 import '../widgets/add_branch_header.dart';
 
-/// يفتح حوار إضافة فرع ويرجّع الفرع الجديد (أو null لو اتلغى).
-Future<DraftBranch?> showAddBranchDialog(BuildContext context) {
-  return showDialog<DraftBranch>(
+/// يفتح حوار الفرع ويرجّع true لو اتحفظ.
+///
+/// الحفظ بيحصل جوه الحوار عشان أخطاء السيرفر (زي كود مكرر) تظهر جنب الحقول
+/// والمستخدم يصلّحها من غير ما يكتب كل حاجة من الأول.
+Future<bool?> showAddBranchDialog(
+  BuildContext context, {
+  required BranchSubmit onSubmit,
+  List<Employee> managers = const <Employee>[],
+  Branch? initial,
+}) {
+  return showDialog<bool>(
     context: context,
-    builder: (BuildContext context) => const AddBranchDialog(),
+    builder: (BuildContext context) => AddBranchDialog(
+      onSubmit: onSubmit,
+      managers: managers,
+      initial: initial,
+    ),
   );
 }
 
-/// حوار إضافة فرع — بيجمّع الهيدر والحقول والأزرار بس.
+/// حوار إضافة أو تعديل فرع — بيجمّع الهيدر والحقول والأزرار بس.
 class AddBranchDialog extends StatelessWidget {
-  const AddBranchDialog({super.key});
+  const AddBranchDialog({
+    super.key,
+    required this.onSubmit,
+    this.managers = const <Employee>[],
+    this.initial,
+  });
+
+  final BranchSubmit onSubmit;
+  final List<Employee> managers;
+  final Branch? initial;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AddBranchController>(
-      create: (_) => AddBranchController(),
+      create: (_) => AddBranchController(initial: initial),
       child: Dialog(
         child: SizedBox(
-          width: 520,
+          width: 560,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: const Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                AddBranchHeader(),
-                SizedBox(height: AppSpacing.xl),
-                AddBranchFields(),
-                SizedBox(height: AppSpacing.xxl),
-                AddBranchActions(),
+                const AddBranchHeader(),
+                const SizedBox(height: AppSpacing.xl),
+                AddBranchFields(managers: managers),
+                const SizedBox(height: AppSpacing.xxl),
+                AddBranchActions(onSubmit: onSubmit),
               ],
             ),
           ),

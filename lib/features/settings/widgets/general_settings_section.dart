@@ -4,19 +4,26 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/app_dropdown.dart';
 import '../../../core/widgets/app_form_field.dart';
 import '../../../core/widgets/labeled_field.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/settings_controller.dart';
 import 'setting_switch.dart';
 import 'settings_panel.dart';
 
-/// قسم الإعدادات العامة.
+/// قسم الإعدادات العامة: بيانات المتجر والعملة وسياسات البيع.
 class GeneralSettingsSection extends StatelessWidget {
   const GeneralSettingsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
     final SettingsController settings = context.watch<SettingsController>();
+    final bool editable = settings.canEdit;
+
+    // عملة مخزّنة مش في القايمة بتتعرض بكودها بدل ما تختفي.
+    final Map<String, String> currencies = <String, String>{
+      ...SettingsController.currencies,
+      if (!SettingsController.currencies.containsKey(settings.currency))
+        settings.currency: settings.currency,
+    };
 
     return SettingsPanel(
       children: <Widget>[
@@ -24,68 +31,74 @@ class GeneralSettingsSection extends StatelessWidget {
           label: 'اسم المتجر',
           controller: settings.storeNameController,
           hint: 'الاسم اللي هيظهر على الفواتير',
+          required: true,
+          enabled: editable,
+          onChanged: settings.fieldChanged,
         ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: LabeledField(
-                label: 'العملة',
-                child: AppDropdown<String>(
-                  value: settings.currency,
-                  width: double.infinity,
-                  height: 48,
-                  icon: Icons.payments_outlined,
-                  onChanged: settings.setCurrency,
-                  items: const <AppDropdownItem<String>>[
-                    AppDropdownItem<String>(
-                      value: 'الجنيه المصري (ج.م)',
-                      label: 'الجنيه المصري (ج.م)',
-                    ),
-                    AppDropdownItem<String>(
-                      value: 'الريال السعودي (ر.س)',
-                      label: 'الريال السعودي (ر.س)',
-                    ),
-                    AppDropdownItem<String>(
-                      value: 'الدرهم الإماراتي (د.إ)',
-                      label: 'الدرهم الإماراتي (د.إ)',
-                    ),
-                  ],
-                ),
+              child: AppFormField(
+                label: 'العنوان',
+                controller: settings.storeAddressController,
+                hint: 'بيظهر أعلى الإيصال',
+                prefixIcon: Icons.location_on_outlined,
+                enabled: editable,
+                onChanged: settings.fieldChanged,
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
-              child: LabeledField(
-                label: 'الفرع الافتراضي',
-                child: AppDropdown<String>(
-                  value: MockData.branches.first.id,
-                  width: double.infinity,
-                  height: 48,
-                  icon: Icons.store_outlined,
-                  onChanged: (_) {},
-                  items: <AppDropdownItem<String>>[
-                    for (final Branch b in MockData.branches)
-                      AppDropdownItem<String>(value: b.id, label: b.name),
-                  ],
-                ),
+              child: AppFormField(
+                label: 'التليفون',
+                controller: settings.storePhoneController,
+                prefixIcon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                enabled: editable,
+                onChanged: settings.fieldChanged,
               ),
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.xl),
-        const SettingSwitch(
-          title: 'الوضع الليلي',
-          subtitle: 'تفعيل الثيم الداكن للواجهة (قريبًا)',
-          value: false,
-          onChanged: _ignore,
+        const SizedBox(height: AppSpacing.lg),
+        LabeledField(
+          label: 'العملة',
+          child: AppDropdown<String>(
+            value: settings.currency,
+            width: double.infinity,
+            height: 48,
+            icon: Icons.payments_outlined,
+            onChanged: editable ? settings.setCurrency : (_) {},
+            items: <AppDropdownItem<String>>[
+              for (final MapEntry<String, String> c in currencies.entries)
+                AppDropdownItem<String>(value: c.key, label: c.value),
+            ],
+          ),
         ),
-        const SettingSwitch(
-          title: 'إغلاق الوردية تلقائيًا',
-          subtitle: 'إنهاء الوردية عند إغلاق البرنامج',
-          value: true,
-          onChanged: _ignore,
+        const SizedBox(height: AppSpacing.xl),
+        Text('سياسات البيع', style: AppText.label.copyWith(fontSize: 12.5)),
+        const SizedBox(height: AppSpacing.sm),
+        SettingSwitch(
+          title: 'لازم وردية مفتوحة قبل البيع',
+          subtitle: 'الكاشير مايقدرش يبيع غير بعد ما يفتح الدرج',
+          value: settings.requireOpenShift,
+          onChanged: editable ? settings.setRequireOpenShift : _readOnly,
+        ),
+        SettingSwitch(
+          title: 'البيع الآجل على عميل مسجّل بس',
+          subtitle: 'مينفعش تبيع آجل من غير ما تختار العميل',
+          value: settings.requireCustomerForCredit,
+          onChanged: editable
+              ? settings.setRequireCustomerForCredit
+              : _readOnly,
+        ),
+        SettingSwitch(
+          title: 'السماح بالبيع بالسالب',
+          subtitle: 'البيع يكمل حتى لو رصيد الصنف مايكفيش',
+          value: settings.allowNegativeStock,
+          onChanged: editable ? settings.setAllowNegativeStock : _readOnly,
           isLast: true,
         ),
       ],
@@ -93,5 +106,5 @@ class GeneralSettingsSection extends StatelessWidget {
   }
 }
 
-/// مفاتيح لسه مش مربوطة بحالة — بتفضل ثابتة زي الأصل.
-void _ignore(bool _) {}
+/// المستخدم مالوش صلاحية تعديل، فالمفاتيح بتفضل على قيمتها.
+void _readOnly(bool _) {}

@@ -1,3 +1,5 @@
+import '../models/user_role.dart';
+
 /// المستخدم اللي مسجّل دخول دلوقتي، زي ما الباك اند بيرجّعه.
 class AuthUser {
   const AuthUser({
@@ -24,7 +26,9 @@ class AuthUser {
       branchId: branch is Map<String, dynamic>
           ? branch['id'] as String?
           : branch as String?,
-      branchName: branch is Map<String, dynamic> ? branch['name'] as String? : null,
+      branchName: branch is Map<String, dynamic>
+          ? branch['name'] as String?
+          : null,
       permissions: (json['permissions'] as List<dynamic>? ?? <dynamic>[])
           .cast<String>()
           .toSet(),
@@ -48,14 +52,7 @@ class AuthUser {
   bool canAny(List<String> required) =>
       isAdmin || required.any(permissions.contains);
 
-  String get roleLabel => switch (role) {
-        'admin' => 'مدير النظام',
-        'manager' => 'مدير فرع',
-        'cashier' => 'كاشير',
-        'accountant' => 'محاسب',
-        'stock_keeper' => 'أمين مخزن',
-        _ => role,
-      };
+  String get roleLabel => UserRole.labelFor(role);
 
   String get initials {
     final List<String> parts = name.trim().split(RegExp(r'\s+'));

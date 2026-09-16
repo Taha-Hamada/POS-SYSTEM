@@ -13,8 +13,9 @@ class SettingsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsSection section =
-        context.select((SettingsController s) => s.section);
+    final SettingsSection section = context.select(
+      (SettingsController s) => s.section,
+    );
 
     return Container(
       decoration: AppDecorations.card(),
@@ -36,11 +37,7 @@ class SettingsPanel extends StatelessWidget {
                     color: AppColors.accentSoft,
                     borderRadius: AppRadius.mdAll,
                   ),
-                  child: Icon(
-                    section.icon,
-                    size: 20,
-                    color: AppColors.accent,
-                  ),
+                  child: Icon(section.icon, size: 20, color: AppColors.accent),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(

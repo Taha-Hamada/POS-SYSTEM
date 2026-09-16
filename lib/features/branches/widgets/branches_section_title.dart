@@ -11,8 +11,7 @@ class BranchesSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int count =
-        context.select((BranchesController b) => b.branchesCount);
+    final int count = context.select((BranchesController b) => b.rows.length);
 
     return Row(
       children: <Widget>[

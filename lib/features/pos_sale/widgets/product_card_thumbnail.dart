@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/api/api_config.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
@@ -18,11 +19,20 @@ class ProductCardThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Product p = product;
+    final String? image = ApiConfig.mediaUrl(p.imageUrl);
+
+    final Widget placeholder = Icon(
+      p.categoryIcon,
+      size: 34,
+      color: p.accentColor,
+    );
 
     return Stack(
       children: <Widget>[
         Container(
           width: double.infinity,
+          height: double.infinity,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topRight,
@@ -34,11 +44,14 @@ class ProductCardThumbnail extends StatelessWidget {
             ),
             borderRadius: AppRadius.mdAll,
           ),
-          child: Icon(
-            p.categoryIcon,
-            size: 34,
-            color: p.accentColor,
-          ),
+          // الصورة لو موجودة، وأيقونة القسم لو مفيش أو التحميل فشل.
+          child: image == null
+              ? placeholder
+              : Image.network(
+                  image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => placeholder,
+                ),
         ),
         if (p.isOutOfStock || p.isLowStock)
           PositionedDirectional(

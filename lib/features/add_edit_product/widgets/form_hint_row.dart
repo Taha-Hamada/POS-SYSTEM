@@ -16,10 +16,7 @@ class FormHintRow extends StatelessWidget {
         Icon(icon, size: 15, color: AppColors.textMuted),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Text(
-            text,
-            style: AppText.caption.copyWith(fontSize: 11.5),
-          ),
+          child: Text(text, style: AppText.caption.copyWith(fontSize: 11.5)),
         ),
       ],
     );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/models/employee.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
@@ -13,13 +13,19 @@ class UserAccountRow extends StatelessWidget {
     super.key,
     required this.employee,
     required this.isLast,
+    this.onResetPassword,
   });
 
   final Employee employee;
   final bool isLast;
 
+  /// null لو المستخدم مالوش إدارة الموظفين.
+  final VoidCallback? onResetPassword;
+
   @override
   Widget build(BuildContext context) {
+    final DateTime? lastLogin = employee.lastLoginAt;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
@@ -58,8 +64,8 @@ class UserAccountRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${employee.role} • '
-                  'آخر دخول ${Fmt.date(employee.lastLogin)}',
+                  '@${employee.username} • ${employee.roleLabel} • '
+                  '${lastLogin == null ? 'لم يسجّل دخول' : 'آخر دخول ${Fmt.date(lastLogin)}'}',
                   style: AppText.caption.copyWith(fontSize: 11.5),
                 ),
               ],
@@ -67,17 +73,17 @@ class UserAccountRow extends StatelessWidget {
           ),
           StatusBadge(
             label: employee.isActive ? 'نشط' : 'موقوف',
-            tone: employee.isActive
-                ? StatusTone.success
-                : StatusTone.neutral,
+            tone: employee.isActive ? StatusTone.success : StatusTone.neutral,
             compact: true,
           ),
-          const SizedBox(width: AppSpacing.md),
-          SecondaryButton(
-            label: 'إعادة تعيين كلمة المرور',
-            size: AppButtonSize.small,
-            onPressed: () {},
-          ),
+          if (onResetPassword != null) ...<Widget>[
+            const SizedBox(width: AppSpacing.md),
+            SecondaryButton(
+              label: 'إعادة تعيين كلمة المرور',
+              size: AppButtonSize.small,
+              onPressed: onResetPassword,
+            ),
+          ],
         ],
       ),
     );

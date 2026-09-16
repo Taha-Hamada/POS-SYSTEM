@@ -116,11 +116,19 @@ void main() {
 
     expect(reports.categoryRows, isNotEmpty);
 
-    final CategoryReportRow row = reports.categoryRows.first;
-    expect(row.name, isNotEmpty);
-    expect(row.revenue, greaterThan(0));
-    expect(row.cost, closeTo(row.revenue - row.profit, 0.01));
-    expect(row.margin, greaterThan(0));
+    // القسم ممكن يخسر فعلًا (بيع تحت التكلفة أو عروض)، فبنتأكد من اتساق
+    // الأرقام مش من إن الهامش موجب.
+    for (final CategoryReportRow row in reports.categoryRows) {
+      expect(row.name, isNotEmpty);
+      expect(row.cost, closeTo(row.revenue - row.profit, 0.01));
+      if (row.revenue > 0) {
+        expect(row.margin.sign, row.profit.sign, reason: row.name);
+      }
+    }
+    expect(
+      reports.categoryRows.any((CategoryReportRow r) => r.revenue > 0),
+      isTrue,
+    );
 
     final double shares = reports.categoryRows
         .fold<double>(0, (double s, CategoryReportRow r) => s + r.share);
@@ -166,7 +174,15 @@ void main() {
 
     final MonthlyTaxRow month = reports.monthlyTaxRows.first;
     expect(month.label, isNotEmpty);
-    expect(month.tax, closeTo(month.taxableBase * reports.tax.taxRate, 1));
+    // الضريبة بتتقرّب لكل فاتورة لوحدها، فالفرق بيكبر مع عدد الفواتير:
+    // قرش لكل فاتورة بحد أدنى جنيه.
+    expect(
+      month.tax,
+      closeTo(
+        month.taxableBase * reports.tax.taxRate,
+        (month.invoices * 0.01).clamp(1, double.infinity),
+      ),
+    );
   });
 
   test('تقرير المخزون بيجمّع بالأقسام بقيمتين', () async {

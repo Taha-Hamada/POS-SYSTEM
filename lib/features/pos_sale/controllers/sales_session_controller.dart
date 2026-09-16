@@ -7,6 +7,7 @@ import '../../../core/api/load_state.dart';
 import '../../../core/models/category.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
+import '../../../core/models/promotion.dart';
 import '../../../core/models/store_settings.dart';
 import '../data/pos_repository.dart';
 import '../models/cart_discount.dart';
@@ -29,6 +30,7 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   List<Product> _products = <Product>[];
   List<Category> _categories = <Category>[];
   StoreSettings _settings = const StoreSettings();
+  List<Promotion> _promotions = <Promotion>[];
 
   int _activeIndex = 0;
   int _nextNumber = 1;
@@ -64,24 +66,43 @@ class SalesSessionController extends ChangeNotifier with LoadState {
         _repository.fetchCategories(),
         _repository.fetchSettings(),
         _repository.fetchHeld(),
+        _repository.fetchLivePromotions(),
       ]);
 
       _products = results[0] as List<Product>;
       _categories = results[1] as List<Category>;
       _settings = results[2] as StoreSettings;
       _held = results[3] as List<HeldInvoice>;
+      _promotions = results[4] as List<Promotion>;
 
       if (_carts.isEmpty) {
-        _carts.add(CartController(number: _nextNumber++, taxRate: _settings.taxRate));
+        _carts.add(_newCart());
       } else {
         for (final CartController cart in _carts) {
-          cart.setTaxRate(_settings.taxRate);
+          cart
+            ..setTaxRate(_settings.taxRate)
+            ..setPricingRules(
+              promotions: _promotions,
+              tiers: _settings.loyaltyTiers,
+            );
         }
       }
     });
   }
 
   Future<void> retry() => load();
+
+  /// كل تبويب جديد بياخد نفس الضريبة والعروض والمستويات.
+  CartController _newCart() => CartController(
+    number: _nextNumber++,
+    taxRate: _settings.taxRate,
+    promotions: _promotions,
+    tiers: _settings.loyaltyTiers,
+  );
+
+  /// العروض الشغالة دلوقتي — لو اتغيرت وسط اليوم السيرفر هو المرجع وقت الدفع.
+  UnmodifiableListView<Promotion> get promotions =>
+      UnmodifiableListView<Promotion>(_promotions);
 
   /// بيعدّل رصيد المنتجات محليًا بعد عملية غيّرته.
   ///
@@ -162,7 +183,7 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   }
 
   void openNew() {
-    _carts.add(CartController(number: _nextNumber++, taxRate: _settings.taxRate));
+    _carts.add(_newCart());
     _activeIndex = _carts.length - 1;
     notifyListeners();
   }
@@ -224,7 +245,9 @@ class SalesSessionController extends ChangeNotifier with LoadState {
       target.restoreFrom(restored, discount: const CartDiscount.none());
     });
 
-    if (failure == null) _applyStockDeltas(_heldQuantities(invoice), reserve: true);
+    if (failure == null) {
+      _applyStockDeltas(_heldQuantities(invoice), reserve: true);
+    }
 
     return failure?.message;
   }
@@ -235,20 +258,21 @@ class SalesSessionController extends ChangeNotifier with LoadState {
       _held = _held.where((HeldInvoice h) => h.id != invoice.id).toList();
     });
 
-    if (failure == null) _applyStockDeltas(_heldQuantities(invoice), reserve: true);
+    if (failure == null) {
+      _applyStockDeltas(_heldQuantities(invoice), reserve: true);
+    }
 
     return failure?.message;
   }
 
   /// كميات فاتورة معلّقة بالسالب — إلغاؤها أو استرجاعها بيفك حجزها.
   Map<String, int> _heldQuantities(HeldInvoice invoice) => <String, int>{
-        for (final HeldInvoiceLine line in invoice.lines)
-          line.productId: -line.quantity,
-      };
+    for (final HeldInvoiceLine line in invoice.lines)
+      line.productId: -line.quantity,
+  };
 
   CartController _openTab() {
-    final CartController cart =
-        CartController(number: _nextNumber++, taxRate: _settings.taxRate);
+    final CartController cart = _newCart();
     _carts.add(cart);
     _activeIndex = _carts.length - 1;
     return cart;
@@ -287,8 +311,7 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   Future<Customer> createCustomer({
     required String name,
     required String phone,
-  }) =>
-      _repository.createCustomer(name: name, phone: phone);
+  }) => _repository.createCustomer(name: name, phone: phone);
 
   void _closeOrClearActive() {
     if (canCloseTabs) {

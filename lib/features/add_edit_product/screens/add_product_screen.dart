@@ -14,7 +14,10 @@ import '../widgets/product_form_tab_views.dart';
 
 /// شاشة إضافة/تعديل منتج — بتجمّع الهيدر والتبويبات والشريط السفلي بس.
 class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({super.key});
+  const AddProductScreen({super.key, this.productId});
+
+  /// null = منتج جديد، غير كده الشاشة بتتملى بالمنتج وبتحفظ تعديل.
+  final String? productId;
 
   @override
   State<AddProductScreen> createState() => _AddProductScreenState();
@@ -34,6 +37,7 @@ class _AddProductScreenState extends State<AddProductScreen>
       vsync: this,
       // الرصيد الافتتاحي بيتسجل في فرع المستخدم اللي بيضيف المنتج.
       branchId: context.read<SessionController>().user?.branchId,
+      productId: widget.productId,
     )..load();
   }
 

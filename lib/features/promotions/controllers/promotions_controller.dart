@@ -1,26 +1,58 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' hide Category;
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/load_state.dart';
+import '../../../core/models/category.dart';
+import '../../../core/models/product.dart';
+import '../../../core/models/promotion.dart';
+import '../../products_list/data/products_repository.dart';
+import '../data/promotions_repository.dart';
+import '../models/promotion_input.dart';
 
-/// حالة شاشة العروض: فلاتر القائمة + نموذج إنشاء عرض جديد.
-class PromotionsController extends ChangeNotifier {
-  // ── فلاتر القائمة ────────────────────────────────────────────────────────
+/// حالة شاشة العروض: القايمة وفلاترها، والأقسام والمنتجات لحوار العرض.
+class PromotionsController extends ChangeNotifier with LoadState {
+  PromotionsController(
+    this._repository,
+    this._products, {
+    this.canManage = false,
+  });
+
+  final PromotionsRepository _repository;
+  final ProductsRepository _products;
+
+  /// من غير صلاحية إدارة العروض الشاشة بتبقى للعرض بس.
+  final bool canManage;
+
+  List<Promotion> _all = <Promotion>[];
+
   PromotionStatus? _statusFilter;
   PromotionType? _typeFilter;
 
   PromotionStatus? get statusFilter => _statusFilter;
   PromotionType? get typeFilter => _typeFilter;
 
-  List<Promotion> get rows => MockData.promotions.where((Promotion p) {
+  List<Promotion> get rows => _all
+      .where((Promotion p) {
         if (_statusFilter != null && p.status != _statusFilter) return false;
         if (_typeFilter != null && p.type != _typeFilter) return false;
         return true;
-      }).toList(growable: false);
+      })
+      .toList(growable: false);
 
   int get visibleCount => rows.length;
 
   int countByStatus(PromotionStatus status) =>
-      MockData.promotions.where((Promotion p) => p.status == status).length;
+      _all.where((Promotion p) => p.status == status).length;
+
+  bool get isEmpty => !isLoading && !hasFailed && _all.isEmpty;
+
+  Future<void> load() async {
+    await runLoad(() async {
+      _all = await _repository.fetchAll();
+    });
+  }
+
+  Future<void> retry() => load();
 
   /// الضغط على نفس الشريحة تاني بيلغي الفلتر.
   void toggleStatusFilter(PromotionStatus status) {
@@ -33,62 +65,62 @@ class PromotionsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── نموذج الإنشاء ────────────────────────────────────────────────────────
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController valueController = TextEditingController();
+  // ── الأقسام والمنتجات لحوار العرض ───────────────────────────────────────
+  List<Category> _categories = <Category>[];
+  List<Product> _catalog = <Product>[];
+  bool _lookupsLoaded = false;
 
-  PromotionType _formType = PromotionType.percentage;
-  DateTime _start = MockData.today;
-  DateTime _end = MockData.today.add(const Duration(days: 30));
+  List<Category> get categories => _categories;
+  List<Product> get catalog => _catalog;
 
-  PromotionType get formType => _formType;
-  DateTime get start => _start;
-  DateTime get end => _end;
+  /// بتتحمّل أول مرة الحوار يتفتح بس — الشاشة نفسها مش محتاجاها.
+  Future<void> ensureLookups() async {
+    if (_lookupsLoaded) return;
 
-  int get durationDays => _end.difference(_start).inDays;
+    try {
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        _products.fetchCategories(),
+        _products.fetchAll(),
+      ]);
 
-  String get promotionName => nameController.text.trim();
-
-  bool get isFormValid =>
-      promotionName.isNotEmpty &&
-      valueController.text.trim().isNotEmpty &&
-      _end.isAfter(_start);
-
-  /// بيرجّع النموذج لحالته الأولى قبل كل فتح للحوار.
-  void resetForm() {
-    nameController.clear();
-    valueController.clear();
-    _formType = PromotionType.percentage;
-    _start = MockData.today;
-    _end = MockData.today.add(const Duration(days: 30));
-  }
-
-  void setFormType(PromotionType type) {
-    _formType = type;
-    notifyListeners();
-  }
-
-  void setStart(DateTime date) {
-    _start = date;
-    // النهاية لازم تفضل بعد البداية
-    if (!_end.isAfter(_start)) {
-      _end = _start.add(const Duration(days: 30));
+      _categories = results[0] as List<Category>;
+      _catalog = (results[1] as List<Product>)
+          .where((Product p) => p.isActive)
+          .toList(growable: false);
+      _lookupsLoaded = true;
+    } on ApiException {
+      // الحوار بيشتغل برضه على «كل المنتجات» لو القوايم فشلت.
     }
+
     notifyListeners();
   }
 
-  void setEnd(DateTime date) {
-    _end = date;
-    notifyListeners();
+  // ── الكتابة ──────────────────────────────────────────────────────────────
+  /// إنشاء عرض أو تعديله. بترجّع رسالة الخطأ لو فشل.
+  Future<String?> save(PromotionInput input, {Promotion? existing}) async {
+    final ApiException? failure = await runAction(() async {
+      if (existing == null) {
+        await _repository.create(input);
+      } else {
+        await _repository.update(existing.id, input);
+      }
+    });
+
+    if (failure == null) await load();
+
+    return failure?.message;
   }
 
-  /// أي تعديل في حقول النص بيعيد تقييم صلاحية النموذج.
-  void formFieldChanged([String? _]) => notifyListeners();
+  Future<String?> setActive(
+    Promotion promotion, {
+    required bool isActive,
+  }) async {
+    final ApiException? failure = await runAction(() async {
+      await _repository.setActive(promotion.id, isActive: isActive);
+    });
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    valueController.dispose();
-    super.dispose();
+    if (failure == null) await load();
+
+    return failure?.message;
   }
 }

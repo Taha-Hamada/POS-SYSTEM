@@ -9,17 +9,18 @@ void main() {
     int qty = 1,
     bool taxable = true,
     double discount = 0,
-  }) =>
-      PricedLine(
-        unitPrice: price,
-        quantity: qty,
-        isTaxable: taxable,
-        discountAmount: discount,
-      );
+  }) => PricedLine(
+    unitPrice: price,
+    quantity: qty,
+    isTaxable: taxable,
+    discountAmount: discount,
+  );
 
   test('فاتورة بسيطة بضريبة 14%', () {
-    final InvoiceTotals t =
-        calculateTotals(lines: <PricedLine>[line()], taxRate: 0.14);
+    final InvoiceTotals t = calculateTotals(
+      lines: <PricedLine>[line()],
+      taxRate: 0.14,
+    );
 
     expect(t.subtotal, 100);
     expect(t.taxAmount, 14);
@@ -98,9 +99,46 @@ void main() {
     expect(t.total, 0);
   });
 
+  test('خصم المستوى قبل اليدوي بنفس أرقام السيرفر', () {
+    // نفس المثال اللي اتحسب على invoice.pricing.js في الباك اند: 129.13.
+    final InvoiceTotals t = calculateTotals(
+      lines: <PricedLine>[
+        line(price: 10, qty: 3, discount: 10),
+        line(price: 4, qty: 10, discount: 8),
+        line(price: 100, qty: 1, taxable: false, discount: 5),
+      ],
+      taxRate: 0.14,
+      invoiceDiscountPercent: 10,
+      tierDiscountPercent: 7,
+    );
+
+    expect(t.subtotal, 170);
+    expect(t.lineDiscountTotal, 23);
+    expect(t.tierDiscount, 10.29);
+    expect(t.manualDiscount, 13.67);
+    expect(t.invoiceDiscount, 23.96);
+    expect(t.taxAmount, 6.09);
+    expect(t.total, 129.13);
+  });
+
+  test('الخصم الثابت مبيعديش المتبقي بعد خصم المستوى', () {
+    final InvoiceTotals t = calculateTotals(
+      lines: <PricedLine>[line(price: 100)],
+      taxRate: 0,
+      invoiceDiscount: 500,
+      tierDiscountPercent: 10,
+    );
+
+    expect(t.tierDiscount, 10);
+    expect(t.manualDiscount, 90);
+    expect(t.total, 0);
+  });
+
   test('فاتورة فاضية بترجع أصفار', () {
-    final InvoiceTotals t =
-        calculateTotals(lines: <PricedLine>[], taxRate: 0.14);
+    final InvoiceTotals t = calculateTotals(
+      lines: <PricedLine>[],
+      taxRate: 0.14,
+    );
 
     expect(t.subtotal, 0);
     expect(t.taxAmount, 0);

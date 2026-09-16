@@ -34,10 +34,7 @@ void main() {
     try {
       await api.get('/health');
       final SessionController auth = SessionController(api);
-      backendUp = await auth.login(
-        username: 'admin',
-        password: 'Admin@12345',
-      );
+      backendUp = await auth.login(username: 'admin', password: 'Admin@12345');
     } on ApiException {
       backendUp = false;
     }
@@ -90,16 +87,18 @@ void main() {
     if (skip()) return;
 
     customers.sortBy(CustomersSortColumn.balance.index, true);
-    final List<double> ascending =
-        customers.rows.map((Customer c) => c.balance).toList();
+    final List<double> ascending = customers.rows
+        .map((Customer c) => c.balance)
+        .toList();
 
     for (int i = 1; i < ascending.length; i += 1) {
       expect(ascending[i - 1], lessThanOrEqualTo(ascending[i]));
     }
 
     customers.sortBy(CustomersSortColumn.balance.index, false);
-    final List<double> descending =
-        customers.rows.map((Customer c) => c.balance).toList();
+    final List<double> descending = customers.rows
+        .map((Customer c) => c.balance)
+        .toList();
 
     expect(descending, ascending.reversed.toList());
   });
@@ -109,10 +108,7 @@ void main() {
 
     customers.toggleOnlyDebtors();
 
-    expect(
-      customers.rows.every((Customer c) => c.balance < 0),
-      isTrue,
-    );
+    expect(customers.rows.every((Customer c) => c.balance < 0), isTrue);
   });
 
   test('إجمالي المديونية بيطابق تقرير السيرفر', () async {
@@ -141,7 +137,8 @@ void main() {
     if (skip()) return;
 
     // رقم فريد عشان التشغيل المتكرر ميفشلش.
-    final String phone = '0100${DateTime.now().millisecondsSinceEpoch % 10000000}';
+    final String phone =
+        '0100${DateTime.now().millisecondsSinceEpoch % 10000000}';
     final int before = customers.rows.length;
 
     final String? error = await customers.addCustomer(
@@ -152,10 +149,7 @@ void main() {
 
     expect(error, isNull);
     expect(customers.rows.length, before + 1);
-    expect(
-      customers.rows.any((Customer c) => c.phone == phone),
-      isTrue,
-    );
+    expect(customers.rows.any((Customer c) => c.phone == phone), isTrue);
   });
 
   group('ملف العميل', () {
@@ -178,10 +172,7 @@ void main() {
 
       await api.post(
         '/customers/${target.id}/adjustments',
-        body: <String, dynamic>{
-          'amount': -500,
-          'note': 'تجهيز اختبار السداد',
-        },
+        body: <String, dynamic>{'amount': -500, 'note': 'تجهيز اختبار السداد'},
       );
 
       return repository.fetchById(target.id);
@@ -211,8 +202,9 @@ void main() {
     test('عميل مش موجود بيرجّع 404 مش انهيار', () async {
       if (skip()) return;
 
-      final CustomerProfileController p =
-          await openProfile('aaaaaaaaaaaaaaaaaaaaaaaa');
+      final CustomerProfileController p = await openProfile(
+        'aaaaaaaaaaaaaaaaaaaaaaaa',
+      );
 
       expect(p.hasFailed, isTrue);
       expect(p.failure!.isNotFound, isTrue);
@@ -232,7 +224,8 @@ void main() {
 
       expect(error, isNull);
       expect(p.customer!.debt, closeTo(debt - 1, 0.01));
-      expect(p.ledger.length, ledgerBefore + 1);
+      // الملف بيجيب آخر 50 حركة بس، فالعميل اللي وصل للحد مبيزيدش.
+      expect(p.ledger.length, ledgerBefore < 50 ? ledgerBefore + 1 : 50);
       expect(p.ledger.first.type, 'payment');
     });
 
@@ -242,8 +235,9 @@ void main() {
       final Customer debtor = await makeDebtor();
       final CustomerProfileController p = await openProfile(debtor.id);
 
-      final String? error =
-          await p.recordPayment(amount: p.customer!.debt + 1000);
+      final String? error = await p.recordPayment(
+        amount: p.customer!.debt + 1000,
+      );
 
       expect(error, isNotNull);
     });
@@ -266,9 +260,7 @@ void main() {
       for (int i = 1; i < p.ledger.length; i += 1) {
         expect(
           p.ledger[i - 1].createdAt.isAfter(p.ledger[i].createdAt) ||
-              p.ledger[i - 1]
-                  .createdAt
-                  .isAtSameMomentAs(p.ledger[i].createdAt),
+              p.ledger[i - 1].createdAt.isAtSameMomentAs(p.ledger[i].createdAt),
           isTrue,
         );
       }

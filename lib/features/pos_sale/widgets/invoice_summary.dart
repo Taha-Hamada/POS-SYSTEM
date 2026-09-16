@@ -12,9 +12,14 @@ import 'invoice_total_row.dart';
 class InvoiceSummary extends StatelessWidget {
   const InvoiceSummary({super.key});
 
+  String _minus(double amount) =>
+      amount > 0 ? '− ${Fmt.money(amount)}' : Fmt.money(0);
+
   @override
   Widget build(BuildContext context) {
     final CartController cart = context.watch<CartController>();
+
+    final double tierPercent = cart.tierDiscountPercent;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -30,14 +35,30 @@ class InvoiceSummary extends StatelessWidget {
             label: 'المجموع الفرعي',
             value: Fmt.money(cart.subtotal),
           ),
+          // العروض والمستوى بيظهروا بس لما يطبّقوا، عشان الملخص مايزدحمش.
+          if (cart.promotionDiscount > 0) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm + 2),
+            InvoiceSummaryRow(
+              label: 'خصم العروض',
+              value: _minus(cart.promotionDiscount),
+              valueColor: AppColors.success,
+            ),
+          ],
+          if (cart.tierDiscount > 0) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm + 2),
+            InvoiceSummaryRow(
+              label:
+                  'خصم مستوى ${cart.tierName} '
+                  '(${tierPercent == tierPercent.roundToDouble() ? tierPercent.toStringAsFixed(0) : tierPercent.toStringAsFixed(1)}%)',
+              value: _minus(cart.tierDiscount),
+              valueColor: AppColors.success,
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm + 2),
           InvoiceSummaryRow(
             label: 'الخصم${cart.discount.shortLabel}',
-            value: cart.effectiveDiscount > 0
-                ? '− ${Fmt.money(cart.effectiveDiscount)}'
-                : Fmt.money(0),
-            valueColor:
-                cart.effectiveDiscount > 0 ? AppColors.success : null,
+            value: _minus(cart.manualDiscount),
+            valueColor: cart.manualDiscount > 0 ? AppColors.success : null,
           ),
           const SizedBox(height: AppSpacing.sm + 2),
           InvoiceSummaryRow(

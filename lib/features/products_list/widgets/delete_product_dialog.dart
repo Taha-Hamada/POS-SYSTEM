@@ -4,7 +4,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
 
-/// بيطلب تأكيد حذف منتج — بيرجّع true لو المستخدم أكّد.
+/// بيطلب تأكيد إيقاف منتج — بيرجّع true لو المستخدم أكّد.
 Future<bool?> showDeleteProductDialog(BuildContext context, Product product) {
   return showDialog<bool>(
     context: context,
@@ -20,10 +20,10 @@ class DeleteProductDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تأكيد الحذف'),
+      title: const Text('إيقاف المنتج'),
       content: Text(
-        'هل أنت متأكد من حذف «${product.name}»؟ '
-        'لا يمكن التراجع عن هذا الإجراء.',
+        '«${product.name}» هيختفي من شاشة البيع، وفواتيره القديمة ورصيده '
+        'هيفضلوا زي ما هم. تقدر ترجّعه بعدين من تبويب «غير نشطة».',
       ),
       actions: <Widget>[
         TextButton(
@@ -31,7 +31,7 @@ class DeleteProductDialog extends StatelessWidget {
           child: const Text('إلغاء'),
         ),
         PrimaryButton(
-          label: 'حذف',
+          label: 'إيقاف',
           color: AppColors.danger,
           size: AppButtonSize.small,
           onPressed: () => Navigator.of(context).pop(true),

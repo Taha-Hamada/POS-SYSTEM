@@ -7,6 +7,7 @@ class Shift {
     required this.openedAt,
     required this.isOpen,
     this.cashierName,
+    this.branchId,
     this.branchName,
     this.closedAt,
     this.closing,
@@ -21,13 +22,19 @@ class Shift {
       id: json['id'] as String,
       number: json['number'] as String? ?? '',
       openingBalance: (json['openingBalance'] as num?)?.toDouble() ?? 0,
-      openedAt: DateTime.tryParse(json['openedAt'] as String? ?? '') ??
+      openedAt:
+          DateTime.tryParse(json['openedAt'] as String? ?? '') ??
           DateTime.now(),
       isOpen: json['status'] == 'open',
-      cashierName:
-          cashier is Map<String, dynamic> ? cashier['name'] as String? : null,
-      branchName:
-          branch is Map<String, dynamic> ? branch['name'] as String? : null,
+      cashierName: cashier is Map<String, dynamic>
+          ? cashier['name'] as String?
+          : null,
+      branchId: branch is Map<String, dynamic>
+          ? branch['id'] as String?
+          : branch as String?,
+      branchName: branch is Map<String, dynamic>
+          ? branch['name'] as String?
+          : null,
       closedAt: json['closedAt'] == null
           ? null
           : DateTime.tryParse(json['closedAt'] as String),
@@ -43,6 +50,9 @@ class Shift {
   final DateTime openedAt;
   final bool isOpen;
   final String? cashierName;
+
+  /// فرع الوردية — الحساب اللي مش مربوط بفرع بيبيع فيه.
+  final String? branchId;
   final String? branchName;
   final DateTime? closedAt;
 
@@ -132,13 +142,13 @@ class ShiftClosing {
   });
 
   factory ShiftClosing.fromJson(Map<String, dynamic> json) => ShiftClosing(
-        countedCash: ShiftTotals._num(json['countedCash']),
-        expectedCash: ShiftTotals._num(json['expectedCash']),
-        difference: ShiftTotals._num(json['difference']),
-        salesTotal: ShiftTotals._num(json['salesTotal']),
-        invoicesCount: (json['invoicesCount'] as num?)?.toInt() ?? 0,
-        note: json['note'] as String? ?? '',
-      );
+    countedCash: ShiftTotals._num(json['countedCash']),
+    expectedCash: ShiftTotals._num(json['expectedCash']),
+    difference: ShiftTotals._num(json['difference']),
+    salesTotal: ShiftTotals._num(json['salesTotal']),
+    invoicesCount: (json['invoicesCount'] as num?)?.toInt() ?? 0,
+    note: json['note'] as String? ?? '',
+  );
 
   final double countedCash;
   final double expectedCash;

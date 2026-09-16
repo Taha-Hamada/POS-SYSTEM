@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 
-/// معاينة مبسّطة لشكل الإيصال.
+/// معاينة مبسّطة لشكل الإيصال ببيانات المتجر الحالية.
 class ReceiptPreview extends StatelessWidget {
-  const ReceiptPreview({super.key, required this.footer});
+  const ReceiptPreview({
+    super.key,
+    required this.storeName,
+    required this.footer,
+    this.subtitle = '',
+    this.widthMm = 80,
+  });
 
+  final String storeName;
+  final String subtitle;
   final String footer;
+
+  /// الورق الأضيق بيتعرض أضيق عشان المعاينة تقرّب من الحقيقة.
+  final int widthMm;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 260,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: widthMm <= 58 ? 200 : 260,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -29,18 +40,24 @@ class ReceiptPreview extends StatelessWidget {
             color: AppColors.primary,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text('POS System', style: AppText.cardTitle.copyWith(fontSize: 14)),
           Text(
-            MockData.currentBranch.name,
+            storeName.trim().isEmpty ? '—' : storeName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppText.caption.copyWith(fontSize: 10.5),
+            style: AppText.cardTitle.copyWith(fontSize: 14),
           ),
+          if (subtitle.trim().isNotEmpty)
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.caption.copyWith(fontSize: 10.5),
+            ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Divider(height: 1),
           ),
-          // أسطر وهمية بتمثّل أصناف الفاتورة
+          // أسطر رمزية بتمثّل أصناف الفاتورة
           for (int i = 0; i < 3; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),

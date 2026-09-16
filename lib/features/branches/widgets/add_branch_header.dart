@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
+import '../controllers/add_branch_controller.dart';
 
-/// هيدر حوار إضافة فرع.
+/// هيدر حوار الفرع.
 class AddBranchHeader extends StatelessWidget {
   const AddBranchHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final bool editing = context.read<AddBranchController>().isEditing;
+
     return Row(
       children: <Widget>[
         Container(
@@ -17,14 +21,19 @@ class AddBranchHeader extends StatelessWidget {
             color: AppColors.accentSoft,
             borderRadius: AppRadius.mdAll,
           ),
-          child: const Icon(
-            Icons.add_business_outlined,
+          child: Icon(
+            editing ? Icons.edit_outlined : Icons.add_business_outlined,
             size: 20,
             color: AppColors.accent,
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Expanded(child: Text('فرع جديد', style: AppText.sectionTitle)),
+        Expanded(
+          child: Text(
+            editing ? 'تعديل الفرع' : 'فرع جديد',
+            style: AppText.sectionTitle,
+          ),
+        ),
         IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.close_rounded, size: 20),

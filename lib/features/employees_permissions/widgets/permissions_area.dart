@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/roles_permissions_controller.dart';
+import '../models/permission_groups.dart';
 import 'permission_group_card.dart';
 import 'role_banner.dart';
 
@@ -13,8 +13,8 @@ class PermissionsArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RolesPermissionsController roles =
-        context.read<RolesPermissionsController>();
+    final RolesPermissionsController roles = context
+        .watch<RolesPermissionsController>();
 
     return FadeTransition(
       opacity: CurvedAnimation(
@@ -32,8 +32,8 @@ class PermissionsArea extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  for (final PermissionGroup group
-                      in MockData.permissionGroups) ...<Widget>[
+                  for (final PermissionGroupDef group
+                      in roles.groups) ...<Widget>[
                     PermissionGroupCard(group: group),
                     const SizedBox(height: AppSpacing.lg),
                   ],

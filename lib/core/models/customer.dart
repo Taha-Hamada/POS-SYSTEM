@@ -16,37 +16,37 @@ class Customer {
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) => Customer(
-        id: json['id'] as String,
-        name: json['name'] as String? ?? '',
-        phone: json['phone'] as String? ?? '',
-        email: json['email'] as String?,
-        tier: json['tier'] as String? ?? 'regular',
-        balance: (json['balance'] as num?)?.toDouble() ?? 0,
-        creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
-        points: (json['points'] as num?)?.toInt() ?? 0,
-        totalPurchases: (json['totalPurchases'] as num?)?.toDouble() ?? 0,
-        ordersCount: (json['ordersCount'] as num?)?.toInt() ?? 0,
-        lastVisitAt: json['lastVisitAt'] == null
-            ? null
-            : DateTime.tryParse(json['lastVisitAt'] as String),
-        isActive: json['isActive'] as bool? ?? true,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    email: json['email'] as String?,
+    tier: json['tier'] as String? ?? 'regular',
+    balance: (json['balance'] as num?)?.toDouble() ?? 0,
+    creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
+    points: (json['points'] as num?)?.toInt() ?? 0,
+    totalPurchases: (json['totalPurchases'] as num?)?.toDouble() ?? 0,
+    ordersCount: (json['ordersCount'] as num?)?.toInt() ?? 0,
+    lastVisitAt: json['lastVisitAt'] == null
+        ? null
+        : DateTime.tryParse(json['lastVisitAt'] as String),
+    isActive: json['isActive'] as bool? ?? true,
+  );
 
   /// العميل العابر — بيع نقدي من غير حساب. مالوش وجود على السيرفر،
   /// فالفاتورة بتتبعت من غير عميل أصلًا.
   const Customer.walkIn()
-      : id = '',
-        name = 'عميل عابر',
-        phone = '',
-        email = null,
-        tier = 'regular',
-        balance = 0,
-        creditLimit = 0,
-        points = 0,
-        totalPurchases = 0,
-        ordersCount = 0,
-        lastVisitAt = null,
-        isActive = true;
+    : id = '',
+      name = 'عميل عابر',
+      phone = '',
+      email = null,
+      tier = 'regular',
+      balance = 0,
+      creditLimit = 0,
+      points = 0,
+      totalPurchases = 0,
+      ordersCount = 0,
+      lastVisitAt = null,
+      isActive = true;
 
   final String id;
   final String name;
@@ -76,10 +76,11 @@ class Customer {
   bool get canBuyOnCredit => !isWalkIn && availableCredit > 0;
 
   String get tierLabel => switch (tier) {
-        'gold' => 'ذهبي',
-        'silver' => 'فضي',
-        _ => 'عادي',
-      };
+    'platinum' => 'بلاتيني',
+    'gold' => 'ذهبي',
+    'silver' => 'فضي',
+    _ => 'عادي',
+  };
 
   String get initials {
     final List<String> parts = name.trim().split(RegExp(r'\s+'));

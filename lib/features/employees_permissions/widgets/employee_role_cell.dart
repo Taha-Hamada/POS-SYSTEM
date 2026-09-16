@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/employee.dart';
 import '../../../theme/app_theme.dart';
 
 /// خلية الدور الوظيفي: أيقونة الدور + اسمه.
@@ -11,19 +11,17 @@ class EmployeeRoleCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Role? role = MockData.roleById(employee.roleId);
-
     return Row(
       children: <Widget>[
         Icon(
-          role?.icon ?? Icons.person_outline_rounded,
+          employee.userRole?.icon ?? Icons.person_outline_rounded,
           size: 15,
           color: AppColors.textMuted,
         ),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            employee.role,
+            employee.roleLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppText.body.copyWith(fontSize: 13),

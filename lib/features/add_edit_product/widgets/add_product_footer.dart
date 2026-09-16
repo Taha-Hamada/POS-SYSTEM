@@ -10,6 +10,17 @@ import '../../../theme/app_theme.dart';
 import '../controllers/product_form_controller.dart';
 import '../models/product_form_tab.dart';
 
+/// بيقفل الفورم ويرجع للقايمة اللي فتحته عشان تتحمّل تاني.
+///
+/// لو الفورم اتفتح بالرابط مباشرة مفيش قايمة تحته، فبنروح لها.
+void closeProductForm(BuildContext context, {bool saved = false}) {
+  if (context.canPop()) {
+    context.pop(saved);
+  } else {
+    context.go('/products');
+  }
+}
+
 /// الشريط السفلي الثابت: حالة النموذج وأزرار الإلغاء والحفظ.
 class AddProductFooter extends StatelessWidget {
   const AddProductFooter({super.key});
@@ -56,8 +67,13 @@ class AddProductFooter extends StatelessWidget {
       return;
     }
 
-    showPlainSnackBar(context, 'تم حفظ «${saved.name}»');
-    context.go('/products');
+    // المنتج اتحفظ حتى لو الصورة فشلت، فبنقول ده بوضوح بدل «تم الحفظ» بس.
+    showPlainSnackBar(
+      context,
+      form.imageError ?? 'تم حفظ «${saved.name}»',
+      width: form.imageError == null ? 420 : 560,
+    );
+    closeProductForm(context, saved: true);
   }
 
   @override
@@ -103,11 +119,15 @@ class AddProductFooter extends StatelessWidget {
           SecondaryButton(
             label: 'إلغاء',
             size: AppButtonSize.large,
-            onPressed: () => context.go('/products'),
+            onPressed: () => closeProductForm(context),
           ),
           const SizedBox(width: AppSpacing.md),
           PrimaryButton(
-            label: form.isLoading ? 'بنحفظ…' : 'حفظ المنتج',
+            label: form.isLoading
+                ? 'بنحفظ…'
+                : form.isEditing
+                ? 'حفظ التعديلات'
+                : 'حفظ المنتج',
             icon: Icons.save_outlined,
             size: AppButtonSize.large,
             onPressed: form.isLoading ? null : () => _save(context),

@@ -42,7 +42,7 @@ class LoyaltyExampleCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'تعادل ${Fmt.money(loyalty.exampleDiscount)} خصم',
+            'تعادل ${Fmt.money(loyalty.exampleDiscount)} عند الاستبدال',
             style: AppText.caption.copyWith(fontSize: 11.5),
           ),
         ],

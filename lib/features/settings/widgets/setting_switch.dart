@@ -45,9 +45,7 @@ class _SettingSwitchState extends State<SettingSwitch> {
             borderRadius: AppRadius.smAll,
             border: widget.isLast
                 ? null
-                : const Border(
-                    bottom: BorderSide(color: AppColors.border),
-                  ),
+                : const Border(bottom: BorderSide(color: AppColors.border)),
           ),
           child: Row(
             children: <Widget>[
@@ -80,9 +78,7 @@ class _SettingSwitchState extends State<SettingSwitch> {
                 activeTrackColor: AppColors.accent,
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: AppColors.borderStrong,
-                trackOutlineColor: WidgetStateProperty.all(
-                  Colors.transparent,
-                ),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],

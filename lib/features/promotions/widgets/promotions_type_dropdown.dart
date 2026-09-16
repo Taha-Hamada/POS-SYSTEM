@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/promotion.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../controllers/promotions_controller.dart';
 
 /// فلتر نوع العرض.
@@ -11,8 +11,8 @@ class PromotionsTypeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final PromotionsController promotions =
-        context.watch<PromotionsController>();
+    final PromotionsController promotions = context
+        .watch<PromotionsController>();
 
     return AppDropdown<PromotionType?>(
       value: promotions.typeFilter,

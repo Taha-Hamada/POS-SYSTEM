@@ -22,9 +22,16 @@ class PosSaleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? branchId = context.read<SessionController>().user?.branchId;
+    // الحساب اللي مالوش فرع بيبيع في فرع ورديته المفتوحة، فالأرصدة تبقى
+    // أرصدة الفرع ده. لما الوردية تتفتح والشاشة مفتوحة، الكتالوج بيتحمّل تاني.
+    final String? shiftBranchId = context.select(
+      (CurrentShiftController s) => s.shift?.branchId,
+    );
+    final String? branchId =
+        context.read<SessionController>().user?.branchId ?? shiftBranchId;
 
     return ChangeNotifierProvider<SalesSessionController>(
+      key: ValueKey<String?>(branchId),
       create: (BuildContext context) => SalesSessionController(
         PosRepository(context.read<ApiClient>()),
         branchId: branchId,

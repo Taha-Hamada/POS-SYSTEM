@@ -65,7 +65,7 @@ class PaymentSuccessView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'جارٍ طباعة الفاتورة…',
+                  'جارٍ تسجيل الفاتورة…',
                   style: AppText.body.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.xxl),

@@ -20,12 +20,19 @@ class ProductVariantInput {
   final double? priceOverride;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        if (size.isNotEmpty) 'size': size,
-        if (color.isNotEmpty) 'color': color,
-        if (sku.isNotEmpty) 'sku': sku,
-        if (priceOverride != null) 'priceOverride': priceOverride,
-      };
+    if (size.isNotEmpty) 'size': size,
+    if (color.isNotEmpty) 'color': color,
+    if (sku.isNotEmpty) 'sku': sku,
+    if (priceOverride != null) 'priceOverride': priceOverride,
+  };
 }
+
+/// منتج بالحقول اللي شاشة التعديل محتاجاها ومش في [Product].
+typedef ProductDraft = ({
+  Product product,
+  String description,
+  List<ProductVariantInput> variants,
+});
 
 /// قراءة وكتابة المنتجات والأقسام من الـ API.
 class ProductsRepository {
@@ -119,6 +126,115 @@ class ProductsRepository {
     );
 
     return Product.fromJson(response.object);
+  }
+
+  /// المنتج بكل حقوله عشان شاشة التعديل تتملى بيه.
+  ///
+  /// موديل [Product] مبيشيلش الوصف والمتغيرات لأن باقي الشاشات مش محتاجاهم،
+  /// فبيرجعوا جنبه هنا.
+  Future<ProductDraft> fetchForEdit(String id) async {
+    final ApiResponse response = await _api.get('/products/$id');
+    final Map<String, dynamic> data = response.object;
+
+    return (
+      product: Product.fromJson(data),
+      description: data['description'] as String? ?? '',
+      variants: (data['variants'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (Map<String, dynamic> v) => ProductVariantInput(
+              size: v['size'] as String? ?? '',
+              color: v['color'] as String? ?? '',
+              sku: v['sku'] as String? ?? '',
+              priceOverride: (v['priceOverride'] as num?)?.toDouble(),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  /// بيعدّل بيانات المنتج. الرصيد مش هنا — بيتغير بحركات المخزون بس.
+  Future<Product> update(
+    String id, {
+    required String name,
+    required String sku,
+    required String categoryId,
+    required double price,
+    required double cost,
+    required String unit,
+    required String brand,
+    required String description,
+    required int minStock,
+    String? barcode,
+    List<ProductVariantInput> variants = const <ProductVariantInput>[],
+  }) async {
+    final ApiResponse response = await _api.patch(
+      '/products/$id',
+      body: <String, dynamic>{
+        'name': name,
+        'sku': sku,
+        'category': categoryId,
+        'price': price,
+        'cost': cost,
+        'unit': unit,
+        'brand': brand,
+        'description': description,
+        'minStock': minStock,
+        // null بتشيل الباركود لو المستخدم مسحه.
+        'barcode': barcode,
+        'variants': variants
+            .map((ProductVariantInput v) => v.toJson())
+            .toList(growable: false),
+      },
+    );
+
+    return Product.fromJson(response.object);
+  }
+
+  /// بيرفع صورة المنتج ويستبدل القديمة. السيرفر بيقبل PNG/JPG/WEBP لحد 2 ميجا.
+  Future<Product> uploadImage(
+    String id, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final ApiResponse response = await _api.upload(
+      '/products/$id/image',
+      field: 'image',
+      bytes: bytes,
+      filename: filename,
+    );
+    return Product.fromJson(response.object);
+  }
+
+  Future<Product> removeImage(String id) async {
+    final ApiResponse response = await _api.delete('/products/$id/image');
+    return Product.fromJson(response.object);
+  }
+
+  /// تعديل سعر جماعي بنسبة أو بمبلغ — على منتجات محددة أو قسم كامل.
+  ///
+  /// السيرفر بيقرّب لخانتين ومبينزّلش السعر تحت الصفر في التعديل بالمبلغ.
+  Future<({int matched, int modified})> bulkUpdatePrices({
+    List<String>? productIds,
+    String? categoryId,
+    required bool percentage,
+    required double value,
+  }) async {
+    final ApiResponse response = await _api.patch(
+      '/products/bulk-prices',
+      body: <String, dynamic>{
+        if (productIds != null && productIds.isNotEmpty)
+          'productIds': productIds,
+        'category': ?categoryId,
+        'mode': percentage ? 'percentage' : 'fixed',
+        'value': value,
+      },
+    );
+
+    return (
+      matched: (response.object['matched'] as num?)?.toInt() ?? 0,
+      modified: (response.object['modified'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<Product> setActiveState(String id, {required bool isActive}) async {

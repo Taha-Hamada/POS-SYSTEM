@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/roles_permissions_controller.dart';
+import '../models/role_catalog.dart';
 import 'role_card.dart';
 
 /// عمود الأدوار (يمين في RTL).
@@ -13,8 +13,8 @@ class RolesListPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RolesPermissionsController roles =
-        context.watch<RolesPermissionsController>();
+    final RolesPermissionsController roles = context
+        .watch<RolesPermissionsController>();
 
     return Container(
       decoration: AppDecorations.card(),
@@ -37,25 +37,23 @@ class RolesListPanel extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Text('الأدوار', style: AppText.cardTitle),
                 const Spacer(),
-                Text(
-                  Fmt.count(MockData.roles.length),
-                  style: AppText.caption,
-                ),
+                Text(Fmt.count(roles.roles.length), style: AppText.caption),
               ],
             ),
           ),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: MockData.roles.length,
+              itemCount: roles.roles.length,
               itemBuilder: (BuildContext context, int i) {
-                final Role role = MockData.roles[i];
+                final RoleInfo role = roles.roles[i];
                 return RoleCard(
                   role: role,
-                  selected: role.id == roles.selectedRoleId,
-                  enabledCount: roles.enabledCountForRole(role.id),
+                  selected: role.value == roles.selectedRoleId,
+                  enabledCount: roles.enabledCountForRole(role.value),
                   totalCount: roles.totalPermissions,
-                  onTap: () => roles.selectRole(role.id),
+                  dirty: roles.isDirty(role.value),
+                  onTap: () => roles.selectRole(role.value),
                 );
               },
             ),

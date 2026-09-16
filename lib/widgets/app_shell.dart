@@ -4,24 +4,26 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import '../core/api/api_client.dart';
+import '../core/api/api_exception.dart';
 import '../core/models/shift.dart';
+import '../core/models/store_settings.dart';
+import '../core/session/auth_user.dart';
 import '../core/session/session_controller.dart';
 import '../core/session/settings_controller.dart';
 import '../features/cashier_shift/controllers/current_shift_controller.dart';
 import '../features/cashier_shift/data/shift_repository.dart';
+import '../features/cashier_shift/screens/cash_movement_dialog.dart';
 import '../features/cashier_shift/screens/close_shift_dialog.dart';
 import '../features/cashier_shift/screens/open_shift_dialog.dart';
-import '../mock_data/mock_data.dart';
+import '../features/cashier_shift/screens/shift_branch_picker.dart';
+import '../features/inventory/data/stock_alerts_repository.dart';
+import '../features/login/screens/change_password_dialog.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
 /// عنصر تنقل في القائمة الجانبية.
 class NavItem {
-  const NavItem({
-    required this.label,
-    required this.icon,
-    required this.route,
-  });
+  const NavItem({required this.label, required this.icon, required this.route});
 
   final String label;
   final IconData icon;
@@ -56,9 +58,19 @@ const List<NavSection> kNavSections = <NavSection>[
         route: '/pos',
       ),
       NavItem(
+        label: 'الفواتير',
+        icon: Icons.receipt_outlined,
+        route: '/invoices',
+      ),
+      NavItem(
         label: 'المرتجعات',
         icon: Icons.assignment_return_outlined,
         route: '/returns',
+      ),
+      NavItem(
+        label: 'الورديات',
+        icon: Icons.schedule_rounded,
+        route: '/shifts',
       ),
       NavItem(
         label: 'العروض والخصومات',
@@ -130,11 +142,7 @@ const List<NavSection> kNavSections = <NavSection>[
   NavSection(
     title: 'الإدارة',
     items: <NavItem>[
-      NavItem(
-        label: 'الفروع',
-        icon: Icons.store_outlined,
-        route: '/branches',
-      ),
+      NavItem(label: 'الفروع', icon: Icons.store_outlined, route: '/branches'),
       NavItem(
         label: 'الإعدادات',
         icon: Icons.settings_outlined,
@@ -191,24 +199,31 @@ class _AppShellState extends State<_AppShellBody> {
   static const double _collapsedWidth = 84;
 
   bool _collapsed = false;
-  Branch _branch = MockData.currentBranch;
 
   Future<void> _openShift() async {
-    final CurrentShiftController shifts = context.read<CurrentShiftController>();
+    final CurrentShiftController shifts = context
+        .read<CurrentShiftController>();
+
+    // الحساب اللي مش مربوط بفرع (زي مدير النظام) بيختار فرع الوردية الأول،
+    // وإلا السيرفر بيرفض لأن الوردية والفواتير لازم يبقى ليها فرع.
+    String? branchId = context.read<SessionController>().user?.branchId;
+    if (branchId == null) {
+      branchId = await showShiftBranchPicker(context);
+      if (branchId == null || !mounted) return;
+    }
 
     final double? balance = await showOpenShiftDialog(context);
     if (balance == null || !mounted) return;
 
-    final String? error = await shifts.open(balance);
+    final String? error = await shifts.open(balance, branchId: branchId);
     if (!mounted) return;
 
-    _toast(
-      error ?? 'تم بدء الوردية برصيد افتتاحي ${Fmt.money(balance)}',
-    );
+    _toast(error ?? 'تم بدء الوردية برصيد افتتاحي ${Fmt.money(balance)}');
   }
 
   Future<void> _closeShift() async {
-    final CurrentShiftController shifts = context.read<CurrentShiftController>();
+    final CurrentShiftController shifts = context
+        .read<CurrentShiftController>();
 
     // الأرقام بتتقرا من السيرفر قبل ما نعرضها، عشان الكاشير يعدّ الدرج
     // على رقم محدّث مش رقم قديم من أول الوردية.
@@ -241,8 +256,37 @@ class _AppShellState extends State<_AppShellBody> {
       closing == null || closing.isBalanced
           ? 'اتقفلت الوردية والدرج مظبوط'
           : closing.isShort
-              ? 'اتقفلت الوردية — عجز ${Fmt.money(closing.difference.abs())}'
-              : 'اتقفلت الوردية — زيادة ${Fmt.money(closing.difference)}',
+          ? 'اتقفلت الوردية — عجز ${Fmt.money(closing.difference.abs())}'
+          : 'اتقفلت الوردية — زيادة ${Fmt.money(closing.difference)}',
+    );
+  }
+
+  /// إيداع أو سحب من الدرج أثناء الوردية — من غيره أي فلوس بتتشال للخزنة
+  /// بتطلع عجز وقت التقفيل.
+  Future<void> _cashMovement() async {
+    final CurrentShiftController shifts = context
+        .read<CurrentShiftController>();
+
+    await shifts.refreshTotals();
+    if (!mounted || shifts.shift == null) return;
+
+    final CashMovementInput? input = await showCashMovementDialog(
+      context,
+      expectedCash: shifts.totals.expectedCash,
+    );
+    if (input == null || !mounted) return;
+
+    final String? error = await shifts.addCash(
+      isIn: input.isIn,
+      amount: input.amount,
+      reason: input.reason,
+    );
+    if (!mounted) return;
+
+    _toast(
+      error ??
+          '${input.isIn ? 'اتسجل إيداع' : 'اتسجل سحب'} ${Fmt.money(input.amount)}'
+              ' — في الدرج دلوقتي ${Fmt.money(shifts.totals.expectedCash)}',
     );
   }
 
@@ -263,8 +307,8 @@ class _AppShellState extends State<_AppShellBody> {
 
   @override
   Widget build(BuildContext context) {
-    final CurrentShiftController shifts =
-        context.watch<CurrentShiftController>();
+    final CurrentShiftController shifts = context
+        .watch<CurrentShiftController>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -280,18 +324,13 @@ class _AppShellState extends State<_AppShellBody> {
             onToggle: () => setState(() => _collapsed = !_collapsed),
             onNavigate: (String route) => context.go(route),
             onShiftTap: shifts.isOpen ? _closeShift : _openShift,
+            onCashTap: _cashMovement,
           ),
           Expanded(
             child: Column(
               children: <Widget>[
-                _TopBar(
-                  title: _pageTitle,
-                  branch: _branch,
-                  onBranchChanged: (Branch b) => setState(() => _branch = b),
-                ),
-                Expanded(
-                  child: ClipRect(child: widget.child),
-                ),
+                _TopBar(title: _pageTitle),
+                Expanded(child: ClipRect(child: widget.child)),
               ],
             ),
           ),
@@ -316,6 +355,7 @@ class _Sidebar extends StatelessWidget {
     required this.onToggle,
     required this.onNavigate,
     required this.onShiftTap,
+    required this.onCashTap,
   });
 
   final bool collapsed;
@@ -333,6 +373,9 @@ class _Sidebar extends StatelessWidget {
   final ValueChanged<String> onNavigate;
   final VoidCallback onShiftTap;
 
+  /// إيداع أو سحب من الدرج — بيظهر والوردية مفتوحة بس.
+  final VoidCallback onCashTap;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
@@ -341,9 +384,7 @@ class _Sidebar extends StatelessWidget {
       width: width,
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        border: BorderDirectional(
-          end: BorderSide(color: Color(0xFF1E293B)),
-        ),
+        border: BorderDirectional(end: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: Column(
         children: <Widget>[
@@ -484,12 +525,25 @@ class _Sidebar extends StatelessWidget {
     if (collapsed) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: _SidebarIconButton(
-          icon: shiftOpen
-              ? Icons.lock_clock_rounded
-              : Icons.play_circle_outline_rounded,
-          tooltip: shiftOpen ? 'إغلاق الوردية' : 'بدء وردية جديدة',
-          onTap: busy ? null : onShiftTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (shiftOpen) ...<Widget>[
+              _SidebarIconButton(
+                icon: Icons.swap_vert_rounded,
+                tooltip: 'حركة كاش',
+                onTap: busy ? null : onCashTap,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            _SidebarIconButton(
+              icon: shiftOpen
+                  ? Icons.lock_clock_rounded
+                  : Icons.play_circle_outline_rounded,
+              tooltip: shiftOpen ? 'إغلاق الوردية' : 'بدء وردية جديدة',
+              onTap: busy ? null : onShiftTap,
+            ),
+          ],
         ),
       );
     }
@@ -512,8 +566,7 @@ class _Sidebar extends StatelessWidget {
                 width: 7,
                 height: 7,
                 decoration: BoxDecoration(
-                  color:
-                      shiftOpen ? AppColors.success : AppColors.textMuted,
+                  color: shiftOpen ? AppColors.success : AppColors.textMuted,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -544,6 +597,15 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
+          if (shiftOpen) ...<Widget>[
+            _ShiftButton(
+              label: 'حركة كاش',
+              icon: Icons.swap_vert_rounded,
+              highlighted: false,
+              onTap: busy ? null : onCashTap,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           _ShiftButton(
             label: shiftOpen ? 'إغلاق الوردية' : 'بدء وردية',
             icon: shiftOpen
@@ -586,8 +648,8 @@ class _ShiftButtonState extends State<_ShiftButton> {
     final Color background = widget.highlighted
         ? (_hovered ? AppColors.accentDark : AppColors.accent)
         : (_hovered
-            ? Colors.white.withValues(alpha: 0.14)
-            : Colors.white.withValues(alpha: 0.07));
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.07));
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -650,8 +712,8 @@ class _NavTileState extends State<_NavTile> {
     final Color fg = selected
         ? Colors.white
         : _hovered
-            ? const Color(0xFFE2E8F0)
-            : const Color(0xFF94A3B8);
+        ? const Color(0xFFE2E8F0)
+        : const Color(0xFF94A3B8);
 
     final Widget tile = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
@@ -665,8 +727,8 @@ class _NavTileState extends State<_NavTile> {
         color: selected
             ? AppColors.accent.withValues(alpha: 0.16)
             : _hovered
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.transparent,
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.transparent,
         borderRadius: AppRadius.mdAll,
         border: Border.all(
           color: selected
@@ -697,8 +759,7 @@ class _NavTileState extends State<_NavTile> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13.5,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       color: fg,
                       height: 1.3,
                     ),
@@ -790,19 +851,13 @@ class _SidebarIconButtonState extends State<_SidebarIconButton> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.title,
-    required this.branch,
-    required this.onBranchChanged,
-  });
+  const _TopBar({required this.title});
 
   final String title;
-  final Branch branch;
-  final ValueChanged<Branch> onBranchChanged;
 
   @override
   Widget build(BuildContext context) {
-    final Employee user = MockData.currentUser;
+    final AuthUser? user = context.watch<SessionController>().user;
 
     return Container(
       height: 72,
@@ -832,7 +887,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      Fmt.date(DateTime(2026, 8, 13)),
+                      Fmt.date(DateTime.now()),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppText.caption.copyWith(fontSize: 11.5),
@@ -842,18 +897,21 @@ class _TopBar extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.lg),
               const Spacer(),
-              _BranchSelector(
-                branch: branch,
-                onChanged: onBranchChanged,
+              _BranchIndicator(
+                branchName: user?.branchName,
                 showLabel: !minimal,
                 maxLabelWidth: compact ? 120 : 190,
               ),
               const SizedBox(width: AppSpacing.md),
-              const _NotificationsButton(count: MockData.unreadNotifications),
+              const _StockAlertsButton(),
               const SizedBox(width: AppSpacing.md),
               Container(width: 1, height: 32, color: AppColors.border),
               const SizedBox(width: AppSpacing.md),
-              _UserChip(user: user, showDetails: !compact),
+              if (user != null)
+                _AccountMenu(
+                  user: user,
+                  child: _UserChip(user: user, showDetails: !compact),
+                ),
             ],
           );
         },
@@ -862,120 +920,139 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _BranchSelector extends StatelessWidget {
-  const _BranchSelector({
-    required this.branch,
-    required this.onChanged,
+/// الفرع اللي المستخدم شغال عليه.
+///
+/// السيرفر بيقفل كل موظف على فرعه ومدير النظام بيشوف كل الفروع،
+/// فده مؤشر مش اختيار: فرع الموظف بيتغيّر من شاشة الموظفين.
+class _BranchIndicator extends StatelessWidget {
+  const _BranchIndicator({
+    this.branchName,
     this.showLabel = true,
     this.maxLabelWidth = 190,
   });
 
-  final Branch branch;
-  final ValueChanged<Branch> onChanged;
+  /// null لمدير النظام لأنه مش مربوط بفرع.
+  final String? branchName;
   final bool showLabel;
   final double maxLabelWidth;
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<Branch>(
-      tooltip: 'تغيير الفرع',
-      offset: const Offset(0, 48),
-      onSelected: onChanged,
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<Branch>>[
-        for (final Branch b in MockData.branches)
-          PopupMenuItem<Branch>(
-            value: b,
-            height: 52,
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  b.id == branch.id
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  size: 18,
-                  color: b.id == branch.id
-                      ? AppColors.accent
-                      : AppColors.textMuted,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(b.name, style: AppText.bodyMedium),
-                    Text(
-                      b.address,
-                      style: AppText.caption.copyWith(fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md + 2),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: AppRadius.mdAll,
-          border: Border.all(color: AppColors.border),
+    final bool canOpen = context.read<SessionController>().can('branch:view');
+
+    return Tooltip(
+      message: canOpen ? 'إدارة الفروع' : 'فرعك الحالي',
+      child: MouseRegion(
+        cursor: canOpen ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        child: GestureDetector(
+          onTap: canOpen ? () => context.go('/branches') : null,
+          child: _buildChip(),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(
-              Icons.store_rounded,
-              size: 17,
-              color: AppColors.textSecondary,
-            ),
-            if (showLabel) ...<Widget>[
-              const SizedBox(width: AppSpacing.sm),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxLabelWidth),
-                child: Text(
-                  branch.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.bodyMedium.copyWith(fontSize: 13),
-                ),
+      ),
+    );
+  }
+
+  Widget _buildChip() {
+    final String label = branchName ?? 'كل الفروع';
+
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md + 2),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Icon(
+            Icons.store_rounded,
+            size: 17,
+            color: AppColors.textSecondary,
+          ),
+          if (showLabel) ...<Widget>[
+            const SizedBox(width: AppSpacing.sm),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxLabelWidth),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.bodyMedium.copyWith(fontSize: 13),
               ),
-            ],
-            const SizedBox(width: AppSpacing.xs),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 18,
-              color: AppColors.textMuted,
             ),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _NotificationsButton extends StatefulWidget {
-  const _NotificationsButton({required this.count});
-
-  final int count;
+/// تنبيهات المخزون: الأصناف اللي خلصت أو قربت تخلص في فرع المستخدم.
+///
+/// مفيش نظام إشعارات على السيرفر، والتنبيه الوحيد اللي محتاج تصرّف فوري
+/// هو نقص المخزون، فالجرس بيعدّه وبيودّي على شاشة المخزون.
+class _StockAlertsButton extends StatefulWidget {
+  const _StockAlertsButton();
 
   @override
-  State<_NotificationsButton> createState() => _NotificationsButtonState();
+  State<_StockAlertsButton> createState() => _StockAlertsButtonState();
 }
 
-class _NotificationsButtonState extends State<_NotificationsButton> {
+class _StockAlertsButtonState extends State<_StockAlertsButton> {
   bool _hovered = false;
+  int _count = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  /// النواقص في فرع المستخدم (أو كل الفروع لمدير النظام) + المنتجات اللي
+  /// صلاحيتها بتخلص خلال شهر. التنبيه ثانوي، فأي فشل بيسيب العداد صفر.
+  Future<void> _load() async {
+    final SessionController session = context.read<SessionController>();
+    final StoreSettings settings = context.read<SettingsController>().settings;
+    final StockAlertsRepository alerts = StockAlertsRepository(
+      context.read<ApiClient>(),
+    );
+
+    try {
+      // كل نوع تنبيه بيتقفل من الإعدادات، وبيتطلب بصلاحيته بس.
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        session.can('inventory:view') && settings.notifyLowStock
+            ? alerts.fetchLowStock(branchId: session.user?.branchId)
+            : Future<List<LowStockAlert>>.value(<LowStockAlert>[]),
+        session.can('product:view') && settings.notifyExpiry
+            ? alerts.fetchExpiring()
+            : Future<List<ExpiringProduct>>.value(<ExpiringProduct>[]),
+      ]);
+      if (!mounted) return;
+
+      setState(
+        () => _count =
+            (results[0] as List<LowStockAlert>).length +
+            (results[1] as List<ExpiringProduct>).length,
+      );
+    } on ApiException {
+      return;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'الإشعارات',
+      message: _count > 0
+          ? '${Fmt.count(_count)} تنبيه مخزون'
+          : 'مفيش تنبيهات مخزون',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
-          onTap: () {},
+          onTap: () => context.go('/inventory/alerts'),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
             width: 42,
@@ -996,7 +1073,7 @@ class _NotificationsButtonState extends State<_NotificationsButton> {
                   size: 22,
                   color: AppColors.textSecondary,
                 ),
-                if (widget.count > 0)
+                if (_count > 0)
                   PositionedDirectional(
                     top: 8,
                     end: 8,
@@ -1007,12 +1084,11 @@ class _NotificationsButtonState extends State<_NotificationsButton> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.danger,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.pill),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         border: Border.all(color: AppColors.surface, width: 2),
                       ),
                       child: Text(
-                        widget.count > 9 ? '9+' : '${widget.count}',
+                        _count > 9 ? '9+' : '$_count',
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -1031,10 +1107,107 @@ class _NotificationsButtonState extends State<_NotificationsButton> {
   }
 }
 
+/// قايمة الحساب: بيانات المستخدم وتسجيل الخروج.
+class _AccountMenu extends StatelessWidget {
+  const _AccountMenu({required this.user, required this.child});
+
+  final AuthUser user;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'حسابك',
+      offset: const Offset(0, 52),
+      onSelected: (String value) async {
+        if (value == 'logout') {
+          await context.read<SessionController>().logout();
+          return;
+        }
+
+        if (value == 'logout_all') {
+          final String? error = await context
+              .read<SessionController>()
+              .logoutEverywhere();
+          if (error == null || !context.mounted) return;
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error), width: 420));
+          return;
+        }
+
+        if (value == 'password') {
+          final bool? changed = await showChangePasswordDialog(context);
+          if (changed != true || !context.mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('اتغيرت كلمة السر'), width: 360),
+          );
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          enabled: false,
+          height: 56,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(user.name, style: AppText.bodyMedium),
+              Text(
+                '@${user.username} • ${user.roleLabel}',
+                style: AppText.caption.copyWith(fontSize: 11.5),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'password',
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.password_rounded, size: 18),
+              SizedBox(width: AppSpacing.md),
+              Text('تغيير كلمة السر'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'logout_all',
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.devices_other_rounded, size: 18),
+              SizedBox(width: AppSpacing.md),
+              Flexible(
+                child: Text(
+                  'خروج من كل الأجهزة',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.logout_rounded, size: 18, color: AppColors.danger),
+              SizedBox(width: AppSpacing.md),
+              Text('تسجيل الخروج', style: TextStyle(color: AppColors.danger)),
+            ],
+          ),
+        ),
+      ],
+      child: child,
+    );
+  }
+}
+
 class _UserChip extends StatefulWidget {
   const _UserChip({required this.user, this.showDetails = true});
 
-  final Employee user;
+  final AuthUser user;
   final bool showDetails;
 
   @override
@@ -1097,7 +1270,7 @@ class _UserChipState extends State<_UserChip> {
                     style: AppText.bodyMedium.copyWith(fontSize: 13.5),
                   ),
                   Text(
-                    widget.user.role,
+                    widget.user.roleLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppText.caption.copyWith(fontSize: 11),

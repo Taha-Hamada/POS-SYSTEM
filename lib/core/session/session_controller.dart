@@ -18,7 +18,7 @@ enum SessionStatus {
 /// فمفيش شاشة تانية محتاجة تعرف حاجة عن التوكنات.
 class SessionController extends ChangeNotifier {
   SessionController(this._api, {SessionStorage? storage})
-      : _storage = storage ?? SessionStorage() {
+    : _storage = storage ?? SessionStorage() {
     // لما السيرفر يرفض التوكن ومحاولة التجديد تفشل، بنرجّع المستخدم لشاشة الدخول.
     _api.onUnauthorized = _onSessionLost;
   }
@@ -61,7 +61,10 @@ class SessionController extends ChangeNotifier {
     }
   }
 
-  Future<bool> login({required String username, required String password}) async {
+  Future<bool> login({
+    required String username,
+    required String password,
+  }) async {
     _busy = true;
     _error = null;
     notifyListeners();
@@ -88,9 +91,46 @@ class SessionController extends ChangeNotifier {
     await _clear();
   }
 
+  /// خروج من كل الأجهزة: السيرفر بيلغي كل التوكنات القديمة، وإحنا بنخرج هنا
+  /// كمان. بيرجّع رسالة الخطأ، أو null لو نجح.
+  Future<String?> logoutEverywhere() async {
+    try {
+      await _api.post('/auth/logout-all');
+      await _clear();
+      return null;
+    } on ApiException catch (exception) {
+      return exception.message;
+    }
+  }
+
+  /// بيغيّر كلمة السر. السيرفر بيسقط كل الجلسات القديمة وبيرجّع توكنات
+  /// جديدة، فبنثبّتها هنا عشان الجهاز ده يفضل داخل.
+  ///
+  /// بيرجّع رسالة الخطأ، أو null لو نجح.
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final ApiResponse response = await _api.post(
+        '/auth/change-password',
+        body: <String, String>{
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+
+      await _adopt(response.object);
+      return null;
+    } on ApiException catch (exception) {
+      return exception.message;
+    }
+  }
+
   /// بياخد رد الدخول (مستخدم + توكنات) ويثبّته في كل مكان.
   Future<void> _adopt(Map<String, dynamic> payload) async {
-    final Map<String, dynamic> tokens = payload['tokens'] as Map<String, dynamic>;
+    final Map<String, dynamic> tokens =
+        payload['tokens'] as Map<String, dynamic>;
     final String access = tokens['accessToken'] as String;
     final String refresh = tokens['refreshToken'] as String;
 

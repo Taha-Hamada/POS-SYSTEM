@@ -63,9 +63,10 @@ void main() {
     return true;
   }
 
+  // منتج بسعر، عشان منتج بصفر يطلّع فاتورة بصفر ويكسر حسابات الباقي والخصم.
   Product sellable() => session.products.firstWhere(
-        (Product p) => p.trackStock && p.available > 20,
-      );
+    (Product p) => p.trackStock && p.price > 0 && p.available > 20,
+  );
 
   test('الكتالوج والإعدادات بيتحمّلوا مع بعض', () {
     if (skip()) return;
@@ -100,8 +101,9 @@ void main() {
     expect(invoice.total, greaterThan(0));
     expect(invoice.changeDue, greaterThan(0));
 
-    final Product after =
-        session.products.firstWhere((Product p) => p.id == target.id);
+    final Product after = session.products.firstWhere(
+      (Product p) => p.id == target.id,
+    );
     expect(after.stock, before - 2, reason: 'المخزون لازم ينقص بالمباع');
   });
 
@@ -150,8 +152,11 @@ void main() {
       throwsA(isA<ApiException>()),
     );
 
-    expect(session.active.lines.length, linesBefore,
-        reason: 'الرفض ملازمش يضيّع السلة');
+    expect(
+      session.active.lines.length,
+      linesBefore,
+      reason: 'الرفض ملازمش يضيّع السلة',
+    );
   });
 
   test('الآجل من غير عميل بيترفض برسالة واضحة', () async {
@@ -183,12 +188,12 @@ void main() {
       final String? error = await session.holdActive(label: 'ترابيزة 5');
       expect(error, isNull);
 
-      final Product after =
-          session.products.firstWhere((Product p) => p.id == target.id);
+      final Product after = session.products.firstWhere(
+        (Product p) => p.id == target.id,
+      );
 
       expect(after.stock, stockBefore, reason: 'التعليق مبيخصمش');
-      expect(after.reserved, greaterThanOrEqualTo(2),
-          reason: 'التعليق بيحجز');
+      expect(after.reserved, greaterThanOrEqualTo(2), reason: 'التعليق بيحجز');
       expect(session.heldCount, greaterThan(0));
     });
 
@@ -208,8 +213,9 @@ void main() {
       expect(session.active.lines, isNotEmpty);
       expect(session.active.lines.first.product.id, target.id);
 
-      final Product after =
-          session.products.firstWhere((Product p) => p.id == target.id);
+      final Product after = session.products.firstWhere(
+        (Product p) => p.id == target.id,
+      );
       expect(after.reserved, reservedBefore, reason: 'الاسترجاع بيفك الحجز');
     });
 
@@ -227,8 +233,9 @@ void main() {
 
       expect(session.held.any((HeldInvoice h) => h.id == held.id), isFalse);
 
-      final Product after =
-          session.products.firstWhere((Product p) => p.id == target.id);
+      final Product after = session.products.firstWhere(
+        (Product p) => p.id == target.id,
+      );
       expect(after.reserved, reservedBefore);
     });
   });
@@ -263,15 +270,156 @@ void main() {
     });
   });
 
+  group('العروض ومستويات العملاء', () {
+    Future<ApiClient> adminApi() async {
+      final ApiClient admin = ApiClient();
+      await SessionController(
+        admin,
+      ).login(username: 'admin', password: 'Admin@12345');
+      return admin;
+    }
+
+    test('خصم العرض في الكاشير بيطابق اللي السيرفر حصّله', () async {
+      if (skip()) return;
+
+      final ApiClient admin = await adminApi();
+      final Product target = sellable();
+      final DateTime now = DateTime.now();
+
+      final ApiResponse created = await admin.post(
+        '/promotions',
+        body: <String, dynamic>{
+          'name': 'عرض اختبار ${now.millisecondsSinceEpoch}',
+          'type': 'buy_x_get_y',
+          'buyQuantity': 2,
+          'getQuantity': 1,
+          'scope': 'products',
+          'products': <String>[target.id],
+          'startsAt': now
+              .subtract(const Duration(hours: 1))
+              .toUtc()
+              .toIso8601String(),
+          'endsAt': now.add(const Duration(days: 1)).toUtc().toIso8601String(),
+        },
+      );
+      final String promotionId = created.object['id'] as String;
+
+      try {
+        await session.load();
+        expect(session.promotions.any((p) => p.id == promotionId), isTrue);
+
+        session.active
+          ..addProduct(target)
+          ..addProduct(target)
+          ..addProduct(target);
+
+        // تلات قطع = مجموعة كاملة، فقطعة منهم مجانية.
+        expect(session.active.promotionDiscount, target.price);
+
+        final double shown = session.active.total;
+        final CompletedInvoice invoice = await session.checkout(<PaymentInput>[
+          PaymentInput(method: 'cash', amount: shown),
+        ]);
+
+        expect(invoice.total, shown, reason: 'الكاشير شاف خصم غير اللي اتحسب');
+      } finally {
+        await admin.patch(
+          '/promotions/$promotionId/active',
+          body: <String, bool>{'isActive': false},
+        );
+        admin.dispose();
+      }
+    });
+
+    test('خصم مستوى العميل بيتحسب زي السيرفر', () async {
+      if (skip()) return;
+
+      final ApiClient admin = await adminApi();
+      final List<dynamic> originalTiers =
+          (await admin.get('/settings')).object['loyaltyTiers']
+              as List<dynamic>;
+
+      final Customer customer = (await session.searchCustomers(
+        '',
+      )).firstWhere((Customer c) => c.totalPurchases >= 1);
+
+      // حدود مؤقتة بتخلّي أي عميل اشترى قبل كده فضي بخصم 5%.
+      await admin.patch(
+        '/settings',
+        body: <String, dynamic>{
+          'loyaltyTiers': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'key': 'silver',
+              'name': 'فضي',
+              'minPurchases': 1,
+              'discountPercent': 5,
+              'benefits': <String>[],
+            },
+            <String, dynamic>{
+              'key': 'gold',
+              'name': 'ذهبي',
+              'minPurchases': 1000000000,
+              'discountPercent': 7,
+              'benefits': <String>[],
+            },
+            <String, dynamic>{
+              'key': 'platinum',
+              'name': 'بلاتيني',
+              'minPurchases': 2000000000,
+              'discountPercent': 12,
+              'benefits': <String>[],
+            },
+          ],
+        },
+      );
+
+      try {
+        await session.load();
+
+        final Customer fresh = (await session.searchCustomers(
+          customer.phone,
+        )).firstWhere((Customer c) => c.id == customer.id);
+        expect(fresh.tier, 'silver');
+
+        session.active
+          ..addProduct(sellable())
+          ..addProduct(sellable())
+          ..setCustomer(fresh)
+          ..setDiscount(
+            const CartDiscount(type: DiscountType.percent, value: 10),
+          );
+
+        expect(session.active.tierDiscount, greaterThan(0));
+
+        final double shown = session.active.total;
+        final CompletedInvoice invoice = await session.checkout(<PaymentInput>[
+          PaymentInput(method: 'cash', amount: shown),
+        ]);
+
+        expect(invoice.total, shown, reason: 'خصم المستوى اختلف عن السيرفر');
+      } finally {
+        await admin.patch(
+          '/settings',
+          body: <String, dynamic>{'loyaltyTiers': originalTiers},
+        );
+        admin.dispose();
+      }
+    });
+  });
+
   test('البحث في الكتالوج بيشتغل بالاسم والكود', () {
     if (skip()) return;
 
     final Product target = session.products.first;
 
-    expect(session.search(target.name).map((Product p) => p.id),
-        contains(target.id));
-    expect(session.search(target.sku).map((Product p) => p.id),
-        contains(target.id));
+    expect(
+      session.search(target.name).map((Product p) => p.id),
+      contains(target.id),
+    );
+    expect(
+      session.search(target.sku).map((Product p) => p.id),
+      contains(target.id),
+    );
     expect(session.search('لا-يوجد-كده-أبدا'), isEmpty);
   });
 

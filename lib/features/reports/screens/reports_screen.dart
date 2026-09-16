@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/models/store_settings.dart';
+import '../../../core/printing/document_output.dart';
+import '../../../core/printing/print_job.dart';
 import '../../../core/session/auth_user.dart';
 import '../../../core/session/session_controller.dart';
-import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/screen_header.dart';
@@ -12,8 +14,7 @@ import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/reports_controller.dart';
 import '../data/reports_repository.dart';
-import '../models/report_period.dart';
-import '../models/report_type.dart';
+import '../export/report_export.dart';
 import '../widgets/report_content.dart';
 import '../widgets/reports_list.dart';
 import '../widgets/reports_toolbar.dart';
@@ -51,12 +52,18 @@ class _ReportsScreenState extends State<ReportsScreen>
     super.dispose();
   }
 
-  void _export(String format) {
-    showPlainSnackBar(
+  /// بيصدّر التقرير المعروض بنفس الفترة والفرع المختارين.
+  Future<void> _export(SavedFileType type) {
+    final ReportTable table = reportTableOf(_reports);
+    final StoreSettings store = storeSettingsOf(context);
+
+    return saveDocument(
       context,
-      'جارٍ تصدير «${_reports.type.label}» بصيغة $format '
-      'عن ${_reports.period.label} (تجريبي)',
-      width: 520,
+      name: safeFileName(table.fileName),
+      type: type,
+      build: () async => type == SavedFileType.excel
+          ? buildReportExcel(table)
+          : buildReportPdf(table, store),
     );
   }
 
@@ -82,12 +89,12 @@ class _ReportsScreenState extends State<ReportsScreen>
                   label: 'تصدير Excel',
                   icon: Icons.table_view_outlined,
                   tone: SecondaryButtonTone.success,
-                  onPressed: () => _export('Excel'),
+                  onPressed: () => _export(SavedFileType.excel),
                 ),
                 PrimaryButton(
                   label: 'تصدير PDF',
                   icon: Icons.picture_as_pdf_outlined,
-                  onPressed: () => _export('PDF'),
+                  onPressed: () => _export(SavedFileType.pdf),
                 ),
               ],
             ),

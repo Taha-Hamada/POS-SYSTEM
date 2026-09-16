@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/roles_permissions_controller.dart';
+import '../models/permission_groups.dart';
 
 /// عنوان قسم صلاحيات مع عدّاده وزرار تفعيل/إلغاء الكل.
 class PermissionGroupHeader extends StatelessWidget {
   const PermissionGroupHeader({super.key, required this.group});
 
-  final PermissionGroup group;
+  final PermissionGroupDef group;
 
   @override
   Widget build(BuildContext context) {
-    final RolesPermissionsController roles =
-        context.watch<RolesPermissionsController>();
+    final RolesPermissionsController roles = context
+        .watch<RolesPermissionsController>();
     final bool allOn = roles.isGroupAllOn(group);
 
     return Container(
@@ -56,14 +56,15 @@ class PermissionGroupHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          TextButton.icon(
-            onPressed: () => roles.toggleGroup(group, !allOn),
-            icon: Icon(
-              allOn ? Icons.remove_done_rounded : Icons.done_all_rounded,
-              size: 16,
+          if (roles.editable)
+            TextButton.icon(
+              onPressed: () => roles.toggleGroup(group, !allOn),
+              icon: Icon(
+                allOn ? Icons.remove_done_rounded : Icons.done_all_rounded,
+                size: 16,
+              ),
+              label: Text(allOn ? 'إلغاء الكل' : 'تفعيل الكل'),
             ),
-            label: Text(allOn ? 'إلغاء الكل' : 'تفعيل الكل'),
-          ),
         ],
       ),
     );

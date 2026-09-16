@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/promotion.dart';
 import '../../../theme/app_theme.dart';
 import '../models/promotion_type_color.dart';
 

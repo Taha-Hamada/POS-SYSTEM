@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/promotion.dart';
 import '../../../theme/app_theme.dart';
 import '../models/promotion_type_color.dart';
 
@@ -12,7 +12,7 @@ class PromotionDurationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool expired = promotion.status == PromotionStatus.expired;
+    final bool live = promotion.status == PromotionStatus.active;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -24,9 +24,9 @@ class PromotionDurationBar extends StatelessWidget {
             FractionallySizedBox(
               widthFactor: promotion.elapsedRatio,
               child: Container(
-                color: expired
-                    ? AppColors.borderStrong
-                    : promotion.type.color.withValues(alpha: 0.7),
+                color: live
+                    ? promotion.type.color.withValues(alpha: 0.7)
+                    : AppColors.borderStrong,
               ),
             ),
           ],

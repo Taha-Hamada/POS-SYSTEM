@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../theme/app_theme.dart';
 import '../controllers/settings_controller.dart';
 import 'setting_switch.dart';
 import 'settings_panel.dart';
 
-/// قسم إعدادات الإشعارات.
+/// قسم التنبيهات — بيتحكم في جرس الشريط العلوي.
 class NotificationsSettingsSection extends StatelessWidget {
   const NotificationsSettingsSection({super.key});
 
@@ -15,35 +16,38 @@ class NotificationsSettingsSection extends StatelessWidget {
 
     return SettingsPanel(
       children: <Widget>[
+        Row(
+          children: <Widget>[
+            const Icon(
+              Icons.notifications_active_outlined,
+              size: 16,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'التنبيهات بتظهر في جرس الشريط العلوي لكل المستخدمين، '
+                'وبتتحفظ على السيرفر. مفيش إيميل أو رسايل لسه.',
+                style: AppText.caption.copyWith(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
         SettingSwitch(
           title: 'تنبيه نقص المخزون',
-          subtitle: 'إشعار لما صنف يوصل لنقطة إعادة الطلب',
+          subtitle: 'الأصناف اللي وصلت لنقطة إعادة الطلب أو خلصت',
           value: settings.notifyLowStock,
-          onChanged: settings.setNotifyLowStock,
+          onChanged: settings.canEdit ? settings.setNotifyLowStock : (_) {},
         ),
         SettingSwitch(
-          title: 'التقرير اليومي',
-          subtitle: 'ملخص المبيعات على الإيميل كل يوم 11 م',
-          value: settings.notifyDailyReport,
-          onChanged: settings.setNotifyDailyReport,
-        ),
-        SettingSwitch(
-          title: 'تنبيه إغلاق الوردية',
-          subtitle: 'إشعار للمدير عند وجود فرق في الدرج',
-          value: settings.notifyShiftClose,
-          onChanged: settings.setNotifyShiftClose,
-        ),
-        const SettingSwitch(
-          title: 'تنبيه انتهاء الصلاحية',
-          subtitle: 'قبل انتهاء صلاحية الأصناف بـ30 يوم',
-          value: true,
-          onChanged: _ignore,
+          title: 'تنبيه قرب انتهاء الصلاحية',
+          subtitle: 'المنتجات اللي صلاحيتها بتخلص خلال شهر',
+          value: settings.notifyExpiry,
+          onChanged: settings.canEdit ? settings.setNotifyExpiry : (_) {},
           isLast: true,
         ),
       ],
     );
   }
 }
-
-/// مفتاح لسه مش مربوط بحالة — بيفضل ثابت زي الأصل.
-void _ignore(bool _) {}

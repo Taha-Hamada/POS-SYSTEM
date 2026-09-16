@@ -47,6 +47,12 @@ class InventoryHeader extends StatelessWidget {
           ),
         ),
         SecondaryButton(
+          label: 'التنبيهات',
+          icon: Icons.notification_important_outlined,
+          onPressed: () => context.go('/inventory/alerts'),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        SecondaryButton(
           label: 'تحويل مخزون',
           icon: Icons.swap_horiz_rounded,
           onPressed: () => _openTransferDialog(context),

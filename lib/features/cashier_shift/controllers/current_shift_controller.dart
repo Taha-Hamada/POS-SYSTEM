@@ -52,12 +52,14 @@ class CurrentShiftController extends ChangeNotifier with LoadState {
   }
 
   /// بيفتح وردية. بيرجّع رسالة الخطأ لو فشل، و`null` لو نجح.
-  Future<String?> open(double openingBalance) async {
+  ///
+  /// [branchId] بيتبعت للحساب اللي مش مربوط بفرع، وإلا بيتاخد فرع المستخدم.
+  Future<String?> open(double openingBalance, {String? branchId}) async {
     final ApiException? failure = await runAction(() async {
       _apply(
         await _repository.open(
           openingBalance: openingBalance,
-          branchId: branchId,
+          branchId: branchId ?? this.branchId,
         ),
       );
     });

@@ -4,7 +4,6 @@ import 'package:pos_system/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_backend.dart';
-import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/features/purchase_orders/screens/receive_goods_dialog.dart';
 
 const Size _desktop = Size(1600, 950);
@@ -207,7 +206,7 @@ void main() {
 
       expect(find.text('قائمة الموظفين'), findsOneWidget);
       expect(find.text('آخر دخول'), findsOneWidget);
-      expect(find.text(MockData.employees.first.name), findsWidgets);
+      expect(find.text('سارة الكاشير'), findsWidgets);
     });
 
     testWidgets('شاشة الصلاحيات بتبدّل الأدوار وتحفظ التغييرات', (

@@ -15,6 +15,7 @@ class SettingsController extends ChangeNotifier {
 
   StoreSettings _settings = const StoreSettings();
   bool _loaded = false;
+  bool _disposed = false;
 
   StoreSettings get settings => _settings;
   bool get isLoaded => _loaded;
@@ -25,6 +26,8 @@ class SettingsController extends ChangeNotifier {
   Future<void> load() async {
     try {
       final ApiResponse response = await _api.get('/settings');
+      // الـShell ممكن يتقفل (تسجيل خروج) والطلب لسه راجع.
+      if (_disposed) return;
       _settings = StoreSettings.fromJson(response.object);
       _loaded = true;
       notifyListeners();
@@ -38,5 +41,11 @@ class SettingsController extends ChangeNotifier {
     _settings = settings;
     _loaded = true;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

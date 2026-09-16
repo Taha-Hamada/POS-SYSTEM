@@ -65,25 +65,47 @@ class ShiftRepository {
     required bool isIn,
     required double amount,
     required String reason,
-  }) =>
-      _api.post(
-        '/shifts/$id/cash',
-        body: <String, dynamic>{
-          'direction': isIn ? 'in' : 'out',
-          'amount': amount,
-          'reason': reason,
-        },
-      );
+  }) => _api.post(
+    '/shifts/$id/cash',
+    body: <String, dynamic>{
+      'direction': isIn ? 'in' : 'out',
+      'amount': amount,
+      'reason': reason,
+    },
+  );
 
   Future<ShiftSnapshot> fetchById(String id) async {
     final ApiResponse response = await _api.get('/shifts/$id');
     return _snapshotFrom(response.object);
   }
 
+  /// سجل الورديات — السيرفر بيقصره على فرع المستخدم لو مربوط بفرع.
+  Future<({List<Shift> items, int total})> fetchPage({
+    DateTime? from,
+    String? status,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final ApiResponse response = await _api.get(
+      '/shifts',
+      query: <String, dynamic>{
+        'page': page,
+        'limit': limit,
+        'from': from?.toUtc().toIso8601String(),
+        'status': status,
+      },
+    );
+
+    return (
+      items: response.list.map(Shift.fromJson).toList(),
+      total: response.total,
+    );
+  }
+
   ShiftSnapshot _snapshotFrom(Map<String, dynamic> json) => (
-        shift: Shift.fromJson(json['shift'] as Map<String, dynamic>),
-        totals: ShiftTotals.fromJson(
-          (json['totals'] as Map<String, dynamic>?) ?? <String, dynamic>{},
-        ),
-      );
+    shift: Shift.fromJson(json['shift'] as Map<String, dynamic>),
+    totals: ShiftTotals.fromJson(
+      (json['totals'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+    ),
+  );
 }

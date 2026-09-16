@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/employees_list_controller.dart';
@@ -13,18 +12,17 @@ class EmployeesStatCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EmployeesListController employees =
-        context.watch<EmployeesListController>();
+    final EmployeesListController employees = context
+        .watch<EmployeesListController>();
 
     return Row(
       children: <Widget>[
         Expanded(
           child: StatCard(
             title: 'إجمالي الموظفين',
-            value: Fmt.count(MockData.employees.length),
+            value: Fmt.count(employees.totalCount),
             icon: Icons.badge_outlined,
             iconColor: AppColors.accent,
-            changePercent: 0,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -34,7 +32,6 @@ class EmployeesStatCards extends StatelessWidget {
             value: Fmt.count(employees.activeCount),
             icon: Icons.how_to_reg_outlined,
             iconColor: AppColors.success,
-            changePercent: 4.5,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -44,8 +41,6 @@ class EmployeesStatCards extends StatelessWidget {
             value: Fmt.moneyRounded(employees.todaySales),
             icon: Icons.trending_up_rounded,
             iconColor: AppColors.info,
-            changeLabel: 'مقارنة بأمس',
-            changePercent: 11.8,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -56,7 +51,6 @@ class EmployeesStatCards extends StatelessWidget {
             icon: Icons.payments_outlined,
             iconColor: AppColors.warning,
             higherIsBetter: false,
-            changePercent: 2.1,
           ),
         ),
       ],

@@ -15,9 +15,7 @@ class VariantsTableHeader extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.md),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
       ),
       child: Row(
         children: <Widget>[

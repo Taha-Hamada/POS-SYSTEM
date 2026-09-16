@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
+import '../models/permission_groups.dart';
 
 /// سطر صلاحية واحدة مع الـSwitch بتاعها.
 class PermissionRow extends StatefulWidget {
@@ -13,10 +13,12 @@ class PermissionRow extends StatefulWidget {
     required this.onChanged,
   });
 
-  final Permission permission;
+  final PermissionDef permission;
   final bool value;
   final bool isLast;
-  final ValueChanged<bool> onChanged;
+
+  /// null لما الدور مبيتعدّلش أو المستخدم مالوش صلاحية التعديل.
+  final ValueChanged<bool>? onChanged;
 
   @override
   State<PermissionRow> createState() => _PermissionRowState();
@@ -27,12 +29,14 @@ class _PermissionRowState extends State<PermissionRow> {
 
   @override
   Widget build(BuildContext context) {
+    final bool enabled = widget.onChanged != null;
+
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () => widget.onChanged(!widget.value),
+        onTap: enabled ? () => widget.onChanged!(!widget.value) : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 130),
           padding: const EdgeInsets.symmetric(
@@ -40,7 +44,9 @@ class _PermissionRowState extends State<PermissionRow> {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: _hovered ? AppColors.surfaceHover : AppColors.surface,
+            color: _hovered && enabled
+                ? AppColors.surfaceHover
+                : AppColors.surface,
             border: widget.isLast
                 ? null
                 : const Border(bottom: BorderSide(color: AppColors.border)),
@@ -88,9 +94,7 @@ class _PermissionRowState extends State<PermissionRow> {
                 activeTrackColor: AppColors.accent,
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: AppColors.borderStrong,
-                trackOutlineColor: WidgetStateProperty.all(
-                  Colors.transparent,
-                ),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],

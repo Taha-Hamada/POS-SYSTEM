@@ -1,7 +1,9 @@
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/models/category.dart';
 import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
+import '../../../core/models/promotion.dart';
 import '../../../core/models/store_settings.dart';
 import '../models/held_invoice.dart';
 
@@ -53,6 +55,19 @@ class PosRepository {
     return StoreSettings.fromJson(response.object);
   }
 
+  /// العروض الشغالة دلوقتي عشان الكاشير يعرض نفس خصم السيرفر.
+  ///
+  /// اللي معندوش صلاحية عرض العروض بيبيع عادي، والسيرفر برضه هيطبّق العرض.
+  Future<List<Promotion>> fetchLivePromotions() async {
+    try {
+      final ApiResponse response = await _api.get('/promotions/live');
+      return response.list.map(Promotion.fromJson).toList();
+    } on ApiException catch (exception) {
+      if (exception.isForbidden) return <Promotion>[];
+      rethrow;
+    }
+  }
+
   /// مسح باركود — بيرجّع null لو مفيش منتج بالكود ده.
   Future<Product?> findByBarcode(String barcode, {String? branchId}) async {
     final ApiResponse response = await _api.get(
@@ -66,7 +81,11 @@ class PosRepository {
   Future<List<Customer>> searchCustomers(String query) async {
     final ApiResponse response = await _api.get(
       '/customers',
-      query: <String, dynamic>{'search': query, 'limit': 20, 'isActive': 'true'},
+      query: <String, dynamic>{
+        'search': query,
+        'limit': 20,
+        'isActive': 'true',
+      },
     );
 
     return response.list.map(Customer.fromJson).toList();
@@ -152,11 +171,11 @@ class InvoiceLineInput {
   final double? discountValue;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'product': productId,
-        'quantity': quantity,
-        if (discountType != null) 'discountType': discountType,
-        if (discountValue != null) 'discountValue': discountValue,
-      };
+    'product': productId,
+    'quantity': quantity,
+    if (discountType != null) 'discountType': discountType,
+    if (discountValue != null) 'discountValue': discountValue,
+  };
 }
 
 class PaymentInput {
@@ -165,8 +184,10 @@ class PaymentInput {
   final String method;
   final double amount;
 
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'method': method, 'amount': amount};
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'method': method,
+    'amount': amount,
+  };
 }
 
 class DiscountInput {
@@ -176,8 +197,10 @@ class DiscountInput {
   final String type;
   final double value;
 
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'type': type, 'value': value};
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'type': type,
+    'value': value,
+  };
 }
 
 /// فاتورة اتعتمدت — الأرقام دي جاية من السيرفر.
@@ -207,7 +230,9 @@ class CompletedInvoice {
       itemsCount: lines.fold<int>(
         0,
         (int sum, dynamic line) =>
-            sum + (((line as Map<String, dynamic>)['quantity'] as num?)?.toInt() ?? 0),
+            sum +
+            (((line as Map<String, dynamic>)['quantity'] as num?)?.toInt() ??
+                0),
       ),
     );
   }

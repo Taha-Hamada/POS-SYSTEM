@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/status_badge.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
+import 'loyalty_tier_card_header.dart';
 
 /// شارة مستوى العميل في جدول الترتيب.
 class LoyaltyTierPill extends StatelessWidget {
-  const LoyaltyTierPill({super.key, required this.tier});
+  const LoyaltyTierPill({super.key, required this.tierKey, required this.name});
 
-  /// null = العميل لسه ماوصلش لأي مستوى
-  final LoyaltyTierInfo? tier;
+  /// regular = العميل لسه ماوصلش لأي مستوى
+  final String tierKey;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
-    if (tier == null) {
+    if (tierKey == 'regular') {
       return const StatusBadge(
         label: 'بدون مستوى',
         tone: StatusTone.neutral,
@@ -28,16 +29,16 @@ class LoyaltyTierPill extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: tier!.gradient),
+        gradient: LinearGradient(colors: tierGradient(tierKey)),
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(tier!.icon, size: 12, color: Colors.white),
+          Icon(tierIcon(tierKey), size: 12, color: Colors.white),
           const SizedBox(width: 5),
           Text(
-            tier!.name,
+            name,
             style: const TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,

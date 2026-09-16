@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_exception.dart';
+import '../../../core/printing/print_preferences.dart';
+import '../../invoices/printing/receipt_printer.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
@@ -22,8 +24,8 @@ class CartActions extends StatelessWidget {
   const CartActions({super.key});
 
   Future<void> _holdInvoice(BuildContext context) async {
-    final SalesSessionController session =
-        context.read<SalesSessionController>();
+    final SalesSessionController session = context
+        .read<SalesSessionController>();
 
     final String? error = await session.holdActive();
     if (!context.mounted) return;
@@ -55,8 +57,8 @@ class CartActions extends StatelessWidget {
 
   Future<void> _pay(BuildContext context) async {
     final CartController cart = context.read<CartController>();
-    final SalesSessionController session =
-        context.read<SalesSessionController>();
+    final SalesSessionController session = context
+        .read<SalesSessionController>();
 
     final PaymentResult? result = await showPaymentDialog(
       context: context,
@@ -68,12 +70,10 @@ class CartActions extends StatelessWidget {
 
     try {
       // السيرفر بيعيد حساب الفاتورة ويخصم المخزون، وبيرجّع رقمها الرسمي.
-      final CompletedInvoice invoice = await session.checkout(
-        <PaymentInput>[
-          for (final PaymentEntry entry in result.entries)
-            PaymentInput(method: entry.method.apiValue, amount: entry.amount),
-        ],
-      );
+      final CompletedInvoice invoice = await session.checkout(<PaymentInput>[
+        for (final PaymentEntry entry in result.entries)
+          PaymentInput(method: entry.method.apiValue, amount: entry.amount),
+      ]);
 
       if (!context.mounted) return;
 
@@ -83,6 +83,11 @@ class CartActions extends StatelessWidget {
             ? 'اتسجّلت الفاتورة ${invoice.number} — الباقي ${Fmt.money(invoice.changeDue)}'
             : 'اتسجّلت الفاتورة ${invoice.number}',
       );
+
+      // الإيصال بيتطبع بعد ما الفاتورة اتسجلت؛ فشل الطباعة مبيلغيش البيعة.
+      if (await PrintPreferences.autoPrintReceipt() && context.mounted) {
+        await printInvoiceReceipt(context, invoiceId: invoice.id);
+      }
     } on ApiException catch (exception) {
       if (!context.mounted) return;
 

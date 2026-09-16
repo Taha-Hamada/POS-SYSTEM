@@ -72,6 +72,51 @@ class ApiClient {
 
   Future<ApiResponse> delete(String path) => _send('DELETE', path);
 
+  /// رفع ملف واحد multipart — صور المنتجات.
+  Future<ApiResponse> upload(
+    String path, {
+    required String field,
+    required List<int> bytes,
+    required String filename,
+    bool allowRetry = true,
+  }) async {
+    final Uri uri = _buildUri(path, null);
+
+    http.Response response;
+    try {
+      final http.MultipartRequest request = http.MultipartRequest('POST', uri)
+        ..files.add(
+          http.MultipartFile.fromBytes(field, bytes, filename: filename),
+        );
+      if (_accessToken != null) {
+        request.headers['Authorization'] = 'Bearer $_accessToken';
+      }
+
+      final http.StreamedResponse streamed = await _http
+          .send(request)
+          .timeout(ApiConfig.timeout);
+      response = await http.Response.fromStream(streamed);
+    } on TimeoutException {
+      throw const ApiException.timeout();
+    } catch (_) {
+      throw const ApiException.network();
+    }
+
+    if (response.statusCode == 401 && allowRetry && _refreshToken != null) {
+      if (await _refreshSession()) {
+        return upload(
+          path,
+          field: field,
+          bytes: bytes,
+          filename: filename,
+          allowRetry: false,
+        );
+      }
+    }
+
+    return _parse(response);
+  }
+
   // ── التنفيذ ────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> _send(

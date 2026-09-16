@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
@@ -40,6 +41,11 @@ class ReturnsScreen extends StatelessWidget {
                   title: 'المرتجعات',
                   subtitle: 'استرجاع أصناف من فاتورة مبيعات سابقة',
                   actions: <Widget>[
+                    SecondaryButton(
+                      label: 'سجل المرتجعات',
+                      icon: Icons.history_rounded,
+                      onPressed: () => context.go('/returns/history'),
+                    ),
                     if (returns.hasInvoice)
                       SecondaryButton(
                         label: 'فاتورة جديدة',

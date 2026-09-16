@@ -22,9 +22,9 @@ class ProductVariant {
       size.isEmpty && color.isEmpty && sku.isEmpty && price.isEmpty;
 
   ProductVariantInput toInput() => ProductVariantInput(
-        size: size,
-        color: color,
-        sku: sku,
-        priceOverride: double.tryParse(price.trim()),
-      );
+    size: size,
+    color: color,
+    sku: sku,
+    priceOverride: double.tryParse(price.trim()),
+  );
 }

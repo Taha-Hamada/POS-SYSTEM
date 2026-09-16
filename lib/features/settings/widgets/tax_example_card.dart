@@ -42,10 +42,10 @@ class TaxExampleCard extends StatelessWidget {
                 Text(
                   settings.taxIncluded
                       ? 'السعر المعروض 100 ج.م (منها '
-                          '${Fmt.money(100 - 100 / (1 + rate / 100))} ضريبة)'
+                            '${Fmt.money(100 - 100 / (1 + rate / 100))} ضريبة)'
                       : 'السعر المعروض 100 ج.م + '
-                          '${Fmt.money(100 * rate / 100)} ضريبة = '
-                          '${Fmt.money(100 * (1 + rate / 100))}',
+                            '${Fmt.money(100 * rate / 100)} ضريبة = '
+                            '${Fmt.money(100 * (1 + rate / 100))}',
                   style: AppText.caption.copyWith(fontSize: 12.5),
                 ),
               ],

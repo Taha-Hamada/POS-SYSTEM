@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/branch.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../controllers/employees_list_controller.dart';
 
 /// فلتر الفرع في شاشة الموظفين.
@@ -11,8 +11,8 @@ class EmployeesBranchDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EmployeesListController employees =
-        context.watch<EmployeesListController>();
+    final EmployeesListController employees = context
+        .watch<EmployeesListController>();
 
     return AppDropdown<String?>(
       value: employees.branchId,
@@ -25,7 +25,7 @@ class EmployeesBranchDropdown extends StatelessWidget {
           label: 'كل الفروع',
           icon: Icons.apps_rounded,
         ),
-        for (final Branch b in MockData.branches)
+        for (final Branch b in employees.branches)
           AppDropdownItem<String?>(value: b.id, label: b.name),
       ],
     );

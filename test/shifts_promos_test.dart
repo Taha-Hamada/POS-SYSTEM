@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pos_system/features/returns/controllers/returns_controller.dart';
 
 import 'support/fake_backend.dart';
-import 'package:pos_system/mock_data/mock_data.dart';
 import 'package:pos_system/features/cashier_shift/screens/open_shift_dialog.dart';
 
 const Size _desktop = Size(1600, 950);
@@ -210,9 +209,8 @@ void main() {
       expect(find.text('بلاتيني'), findsWidgets);
       expect(find.text('أعلى العملاء نقاطًا'), findsOneWidget);
 
-      // أعلى عميل نقاطًا لازم يكون أول صف
-      final Customer top = MockData.topCustomersByPoints.first;
-      expect(find.text(top.name), findsOneWidget);
+      // أعلى عميل نقاطًا في الباك اند المزيّف
+      expect(find.text('محمد أحمد'), findsOneWidget);
 
       // تغيير معدّل الكسب بيحدّث المثال لحظيًا
       await tester.enterText(find.byType(TextField).first, '2');

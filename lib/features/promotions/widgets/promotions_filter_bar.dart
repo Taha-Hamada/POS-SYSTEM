@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../mock_data/mock_data.dart';
+import '../../../core/models/promotion.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/promotions_controller.dart';
@@ -15,17 +15,14 @@ class PromotionsFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final PromotionsController promotions =
-        context.watch<PromotionsController>();
+    final PromotionsController promotions = context
+        .watch<PromotionsController>();
 
     return Row(
       children: <Widget>[
         Text('كل العروض', style: AppText.sectionTitle),
         const SizedBox(width: AppSpacing.md),
-        Text(
-          '(${Fmt.count(promotions.visibleCount)})',
-          style: AppText.caption,
-        ),
+        Text('(${Fmt.count(promotions.visibleCount)})', style: AppText.caption),
         const SizedBox(width: AppSpacing.xl),
         for (final PromotionStatus s in PromotionStatus.values) ...<Widget>[
           PromotionStatusPill(

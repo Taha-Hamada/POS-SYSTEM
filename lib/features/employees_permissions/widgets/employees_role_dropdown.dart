@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/user_role.dart';
 import '../../../core/widgets/app_dropdown.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/employees_list_controller.dart';
 
@@ -12,11 +12,11 @@ class EmployeesRoleDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EmployeesListController employees =
-        context.watch<EmployeesListController>();
+    final EmployeesListController employees = context
+        .watch<EmployeesListController>();
 
     return AppDropdown<String?>(
-      value: employees.roleId,
+      value: employees.role,
       width: 180,
       icon: Icons.shield_outlined,
       onChanged: employees.setRole,
@@ -26,12 +26,12 @@ class EmployeesRoleDropdown extends StatelessWidget {
           label: 'كل الأدوار',
           icon: Icons.apps_rounded,
         ),
-        for (final Role r in MockData.roles)
+        for (final UserRole r in UserRole.values)
           AppDropdownItem<String?>(
-            value: r.id,
-            label: r.name,
+            value: r.apiValue,
+            label: r.label,
             icon: r.icon,
-            trailing: Fmt.count(r.employeesCount),
+            trailing: Fmt.count(employees.countForRole(r)),
           ),
       ],
     );

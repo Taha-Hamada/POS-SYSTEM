@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/stat_card.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/branches_controller.dart';
+import '../models/branch_stats.dart';
 
 /// البطاقات الإحصائية الأربعة فوق شبكة الفروع.
 class BranchesStatCards extends StatelessWidget {
@@ -13,17 +13,19 @@ class BranchesStatCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BranchesController branches = context.watch<BranchesController>();
+    final BranchesTotals totals = context.select(
+      (BranchesController b) => b.totals,
+    );
 
     return Row(
       children: <Widget>[
         Expanded(
           child: StatCard(
             title: 'عدد الفروع',
-            value: Fmt.count(branches.branchesCount),
+            value: Fmt.count(totals.branches),
             icon: Icons.store_outlined,
             iconColor: AppColors.accent,
-            changeLabel: '${branches.openCount} مفتوح الآن',
+            changeLabel: '${Fmt.count(totals.open)} مفتوح الآن',
             changePercent: 0,
           ),
         ),
@@ -31,10 +33,10 @@ class BranchesStatCards extends StatelessWidget {
         Expanded(
           child: StatCard(
             title: 'مبيعات اليوم — كل الفروع',
-            value: Fmt.moneyRounded(branches.todayTotal),
+            value: Fmt.moneyRounded(totals.todaySales),
             icon: Icons.trending_up_rounded,
             iconColor: AppColors.success,
-            changePercent: 11.3,
+            changePercent: totals.todayChange,
             changeLabel: 'مقارنة بأمس',
           ),
         ),
@@ -42,20 +44,20 @@ class BranchesStatCards extends StatelessWidget {
         Expanded(
           child: StatCard(
             title: 'إجمالي الموظفين',
-            value: Fmt.count(MockData.employees.length),
+            value: Fmt.count(totals.employees),
             icon: Icons.badge_outlined,
             iconColor: AppColors.info,
-            changePercent: 4.5,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: StatCard(
             title: 'مبيعات الشهر',
-            value: Fmt.moneyRounded(branches.monthTotal),
+            value: Fmt.moneyRounded(totals.monthSales),
             icon: Icons.calendar_month_outlined,
             iconColor: AppColors.warning,
-            changePercent: 16.8,
+            changePercent: totals.monthChange,
+            changeLabel: 'مقارنة بنفس الفترة من الشهر الماضي',
           ),
         ),
       ],

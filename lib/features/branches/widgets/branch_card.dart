@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/models/branch.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
-import '../../../mock_data/mock_data.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
+import '../models/branch_stats.dart';
 import 'branch_card_header.dart';
 import 'branch_info_row.dart';
 import 'branch_today_sales.dart';
 
 /// بطاقة فرع واحد في الشبكة.
 class BranchCard extends StatefulWidget {
-  const BranchCard({super.key, required this.branch});
+  const BranchCard({
+    super.key,
+    required this.stats,
+    this.onEdit,
+    this.onToggleOpen,
+    this.onDeactivate,
+  });
 
-  final Branch branch;
+  final BranchStats stats;
+
+  /// null لو المستخدم مالوش صلاحية على الإجراء، فبيستخبى.
+  final VoidCallback? onEdit;
+  final VoidCallback? onToggleOpen;
+  final VoidCallback? onDeactivate;
 
   @override
   State<BranchCard> createState() => _BranchCardState();
@@ -24,7 +36,8 @@ class _BranchCardState extends State<BranchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final Branch b = widget.branch;
+    final BranchStats s = widget.stats;
+    final Branch b = s.branch;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -47,21 +60,24 @@ class _BranchCardState extends State<BranchCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            BranchCardHeader(branch: b),
+            BranchCardHeader(
+              branch: b,
+              onToggleOpen: widget.onToggleOpen,
+              onDeactivate: widget.onDeactivate,
+            ),
             const SizedBox(height: AppSpacing.lg),
             BranchInfoRow(
               icon: Icons.location_on_outlined,
-              text: b.address,
+              text: b.address.isEmpty ? 'لا يوجد عنوان مسجّل' : b.address,
             ),
             const SizedBox(height: AppSpacing.sm),
-            BranchInfoRow(
-              icon: Icons.schedule_rounded,
-              text: b.openingHours,
-            ),
+            BranchInfoRow(icon: Icons.schedule_rounded, text: b.openingHours),
             const SizedBox(height: AppSpacing.sm),
             BranchInfoRow(
               icon: Icons.person_outline_rounded,
-              text: '${b.managerName} • ${Fmt.count(b.employeesCount)} موظف',
+              text:
+                  '${b.managerName ?? 'لم يتم تعيين مسؤول'}'
+                  ' • ${Fmt.count(s.employeesCount)} موظف',
             ),
             const Spacer(),
             const Divider(height: 1),
@@ -69,18 +85,19 @@ class _BranchCardState extends State<BranchCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
-                BranchTodaySales(sales: b.todaySales),
+                BranchTodaySales(sales: s.todaySales),
                 const Spacer(),
-                AnimatedOpacity(
-                  opacity: _hovered ? 1 : 0,
-                  duration: const Duration(milliseconds: 150),
-                  child: SecondaryButton(
-                    label: 'التفاصيل',
-                    size: AppButtonSize.small,
-                    tone: SecondaryButtonTone.accent,
-                    onPressed: () {},
+                if (widget.onEdit != null)
+                  AnimatedOpacity(
+                    opacity: _hovered ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: SecondaryButton(
+                      label: 'تعديل',
+                      size: AppButtonSize.small,
+                      tone: SecondaryButtonTone.accent,
+                      onPressed: widget.onEdit,
+                    ),
                   ),
-                ),
               ],
             ),
           ],

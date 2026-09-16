@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/models/customer.dart';
+import '../../../core/models/store_settings.dart';
+import '../../../core/printing/document_output.dart';
+import '../../../core/printing/print_job.dart';
+import '../printing/customer_statement_pdf.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/not_found_state.dart';
@@ -51,6 +55,26 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen>
     super.dispose();
   }
 
+  /// كشف الحساب بيتبني من الحركات والفواتير المحمّلة في الملف.
+  Future<void> _statement() async {
+    final Customer? customer = _profile.customer;
+    if (customer == null) return;
+
+    final StoreSettings store = storeSettingsOf(context);
+
+    await saveDocument(
+      context,
+      name: safeFileName('كشف حساب ${customer.name}'),
+      type: SavedFileType.pdf,
+      build: () => buildCustomerStatementPdf(
+        customer: customer,
+        ledger: _profile.ledger,
+        invoices: _profile.invoices,
+        store: store,
+      ),
+    );
+  }
+
   Future<void> _collect() async {
     final Customer? customer = _profile.customer;
     if (customer == null) return;
@@ -60,8 +84,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen>
       return;
     }
 
-    final double? amount =
-        await showCollectPaymentDialog(context, debt: customer.debt);
+    final double? amount = await showCollectPaymentDialog(
+      context,
+      debt: customer.debt,
+    );
     if (amount == null || !mounted) return;
 
     final String? error = await _profile.recordPayment(amount: amount);
@@ -118,7 +144,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen>
                     SecondaryButton(
                       label: 'كشف حساب PDF',
                       icon: Icons.picture_as_pdf_outlined,
-                      onPressed: () {},
+                      onPressed: p.isLoading ? null : _statement,
                     ),
                     PrimaryButton(
                       label: 'تحصيل دفعة',

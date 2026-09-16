@@ -32,9 +32,7 @@ class RolePermissionsProgress extends StatelessWidget {
                   FractionallySizedBox(
                     widthFactor: ratio.clamp(0, 1),
                     child: Container(
-                      color: active
-                          ? AppColors.accent
-                          : AppColors.borderStrong,
+                      color: active ? AppColors.accent : AppColors.borderStrong,
                     ),
                   ),
                 ],

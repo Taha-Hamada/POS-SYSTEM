@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/shift.dart';
+import '../../../core/models/store_settings.dart';
+import '../../../core/printing/print_job.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/shift_controller.dart';
 import '../widgets/close_shift_footer.dart';
@@ -16,10 +18,16 @@ Future<double?> showCloseShiftDialog(
   required Shift shift,
   required ShiftTotals totals,
 }) {
+  // الحوار فوق الـShell، فبنديله إعدادات المتجر عشان تقرير الوردية.
+  final StoreSettings store = storeSettingsOf(context);
+
   return showDialog<double>(
     context: context,
     barrierColor: AppColors.primary.withValues(alpha: 0.55),
-    builder: (_) => CloseShiftDialog(shift: shift, totals: totals),
+    builder: (_) => Provider<StoreSettings>.value(
+      value: store,
+      child: CloseShiftDialog(shift: shift, totals: totals),
+    ),
   );
 }
 

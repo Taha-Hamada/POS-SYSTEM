@@ -6,34 +6,81 @@ import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/add_branch_controller.dart';
 
-/// أزرار الإلغاء والإضافة في حوار الفرع.
+/// أزرار الإلغاء والحفظ في حوار الفرع، ورسالة السيرفر لو رفض.
 class AddBranchActions extends StatelessWidget {
-  const AddBranchActions({super.key});
+  const AddBranchActions({super.key, required this.onSubmit});
+
+  final BranchSubmit onSubmit;
+
+  Future<void> _submit(BuildContext context) async {
+    final AddBranchController form = context.read<AddBranchController>();
+
+    final bool saved = await form.submit(onSubmit);
+    if (saved && context.mounted) Navigator.of(context).pop(true);
+  }
 
   @override
   Widget build(BuildContext context) {
     final AddBranchController form = context.watch<AddBranchController>();
 
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Expanded(
-          child: SecondaryButton(
-            label: 'إلغاء',
-            expanded: true,
-            onPressed: () => Navigator.of(context).pop(),
+        if (form.error != null) ...<Widget>[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.dangerSoft,
+              borderRadius: AppRadius.mdAll,
+            ),
+            child: Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 18,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    form.error!,
+                    style: AppText.caption.copyWith(color: AppColors.danger),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          flex: 2,
-          child: PrimaryButton(
-            label: 'إضافة الفرع',
-            icon: Icons.check_rounded,
-            expanded: true,
-            onPressed: form.isValid
-                ? () => Navigator.of(context).pop(form.build())
-                : null,
-          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: SecondaryButton(
+                label: 'إلغاء',
+                expanded: true,
+                onPressed: form.saving
+                    ? null
+                    : () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 2,
+              child: PrimaryButton(
+                label: form.saving
+                    ? 'جاري الحفظ…'
+                    : form.isEditing
+                    ? 'حفظ التعديلات'
+                    : 'إضافة الفرع',
+                icon: Icons.check_rounded,
+                expanded: true,
+                onPressed: form.isValid && !form.saving
+                    ? () => _submit(context)
+                    : null,
+              ),
+            ),
+          ],
         ),
       ],
     );

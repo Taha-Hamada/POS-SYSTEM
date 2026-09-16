@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/api/api_config.dart';
 import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
 
@@ -11,11 +12,14 @@ class ProductNameCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? image = ApiConfig.mediaUrl(product.imageUrl);
+
     return Row(
       children: <Widget>[
         Container(
           width: 40,
           height: 40,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
@@ -30,11 +34,17 @@ class ProductNameCell extends StatelessWidget {
               color: product.accentColor.withValues(alpha: 0.25),
             ),
           ),
-          child: Icon(
-            product.categoryIcon,
-            size: 19,
-            color: product.accentColor,
-          ),
+          child: image == null
+              ? Icon(product.categoryIcon, size: 19, color: product.accentColor)
+              : Image.network(
+                  image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Icon(
+                    product.categoryIcon,
+                    size: 19,
+                    color: product.accentColor,
+                  ),
+                ),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
