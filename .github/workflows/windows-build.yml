@@ -8,6 +8,13 @@ on:
     tags: ['v*']
   # وتقدر تشغّله يدوي من تبويب Actions
   workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: >-
+          عنوان الباك اند من غير /api/v1 (مثال http://192.168.1.5:5000).
+          سيبه فاضي لو السيرفر شغال على نفس الجهاز.
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -39,8 +46,17 @@ jobs:
       - name: Test
         run: flutter test
 
+      # من غير عنوان، التطبيق بيكلّم http://localhost:5000 زي ما هو مكتوب
+      # في ApiConfig.
       - name: Build Windows release
-        run: flutter build windows --release
+        shell: pwsh
+        run: |
+          $url = "${{ github.event.inputs.api_base_url }}"
+          if ([string]::IsNullOrWhiteSpace($url)) {
+            flutter build windows --release
+          } else {
+            flutter build windows --release --dart-define=API_BASE_URL=$url
+          }
 
       # الناتج بيطلع في build/windows/x64/runner/Release
       - name: Package as zip
@@ -48,6 +64,42 @@ jobs:
         run: |
           $out = "build/windows/x64/runner/Release"
           if (-not (Test-Path $out)) { throw "مجلد الـRelease مش موجود: $out" }
+
+          # مكتبات تشغيل C++ لازم تمشي مع البرنامج، وإلا الجهاز اللي معندهوش
+          # Visual C++ Redistributable مش هيفتحه.
+          $crt = Get-ChildItem -Path `
+            "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT" `
+            -Directory -ErrorAction SilentlyContinue | Select-Object -Last 1
+
+          if ($crt) {
+            foreach ($dll in @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')) {
+              $file = Join-Path $crt.FullName $dll
+              if (Test-Path $file) { Copy-Item $file -Destination $out -Force }
+            }
+            Write-Host "اتنسخت مكتبات التشغيل من $($crt.FullName)"
+          } else {
+            Write-Warning "مالقيتش مكتبات VC++ — الجهاز محتاج Visual C++ Redistributable"
+          }
+
+          @"
+          نظام نقاط البيع — نسخة ويندوز
+          ================================
+          1) شغّل الباك اند الأول على نفس الجهاز:
+               cd pos_system_backend
+               npm install
+               npm run seed   (أول مرة بس)
+               npm run dev
+             لازم يكون MongoDB شغال، والسيرفر بيسمع على http://localhost:5000
+
+          2) افتح pos_system.exe من نفس الفولدر ده (سيبه كامل زي ما هو،
+             الملفات جنبه ضرورية).
+
+          3) الدخول: admin / Admin@12345
+
+          لو الباك اند على جهاز تاني، شغّل الـworkflow من تبويب Actions
+          واكتب عنوانه في خانة api_base_url وهيتبني بيه.
+          "@ | Set-Content -Path "$out/اقرأني.txt" -Encoding UTF8
+
           Compress-Archive -Path "$out/*" -DestinationPath "pos_system_windows.zip" -Force
 
       - name: Upload artifact
