@@ -20,7 +20,7 @@ void main() {
         sku: id.toUpperCase(),
         price: price,
         cost: price / 2,
-        stock: stock,
+        stock: stock.toDouble(),
         minStock: 5,
         unit: 'قطعة',
         colorIndex: 0,

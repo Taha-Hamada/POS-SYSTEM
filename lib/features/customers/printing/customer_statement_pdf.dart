@@ -57,7 +57,6 @@ Future<Uint8List> buildCustomerStatementPdf({
                     bold: true,
                     color: customer.hasDebt ? PdfColors.red800 : null,
                   ),
-                  PdfKit.kv('حد الائتمان', Fmt.money(customer.creditLimit)),
                   PdfKit.kv(
                     'إجمالي المشتريات',
                     Fmt.money(customer.totalPurchases),

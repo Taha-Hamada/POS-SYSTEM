@@ -296,8 +296,6 @@ class ShiftsHistoryScreen extends StatelessWidget {
         row('المبيعات', Fmt.money(t.salesTotal)),
         row('عدد الفواتير', Fmt.count(t.invoicesCount)),
         row('مبيعات كاش', Fmt.money(t.cashSales)),
-        if (t.cardSales > 0) row('مبيعات بطاقة', Fmt.money(t.cardSales)),
-        if (t.walletSales > 0) row('مبيعات محفظة', Fmt.money(t.walletSales)),
         if (t.creditSales > 0) row('مبيعات آجل', Fmt.money(t.creditSales)),
         if (t.returnsTotal > 0)
           row('المرتجعات', Fmt.money(t.returnsTotal), color: AppColors.danger),

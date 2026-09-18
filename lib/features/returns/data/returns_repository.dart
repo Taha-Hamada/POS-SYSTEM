@@ -53,7 +53,7 @@ class ReturnLineInput {
   });
 
   final String invoiceLineId;
-  final int quantity;
+  final double quantity;
 
   /// الصنف رجع سليم ولا تالف. التالف مبيرجعش للمخزون.
   final bool restock;

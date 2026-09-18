@@ -12,6 +12,7 @@ class Fmt {
   static final NumberFormat _money = NumberFormat('#,##0.00', 'en_US');
   static final NumberFormat _moneyCompactInt = NumberFormat('#,##0', 'en_US');
   static final NumberFormat _int = NumberFormat('#,##0', 'en_US');
+  static final NumberFormat _qty = NumberFormat('#,##0.###', 'en_US');
   static final NumberFormat _percent = NumberFormat('#,##0.0', 'en_US');
   static final DateFormat _date = DateFormat('yyyy/MM/dd', 'en_US');
   static final DateFormat _time = DateFormat('hh:mm a', 'en_US');
@@ -38,6 +39,12 @@ class Fmt {
   }
 
   static String count(num value) => _int.format(value);
+
+  /// كمية ممكن تكون بكسور: 3 و1.5 و0.25 — من غير أصفار زايدة.
+  static String qty(num value) {
+    if (value == value.roundToDouble()) return _int.format(value);
+    return _qty.format(value);
+  }
 
   /// +12.4% أو -3.1%
   static String changePercent(double value) {

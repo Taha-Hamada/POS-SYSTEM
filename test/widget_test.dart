@@ -157,12 +157,15 @@ void main() {
       // أسماء المنتجات جاية من الباك اند المزيّف.
       expect(find.text('بيبسي كانز'), findsOneWidget);
 
-      await tester.tap(find.text('غير نشطة'));
+      // المنتج المتوقّف بيفضل في «الكل» بشارته — مفيش تبويب خاص بيه.
+      expect(find.text('شيبسي جبنة'), findsOneWidget);
+      expect(find.text('غير نشط'), findsOneWidget);
+
+      await tester.tap(find.text('منخفضة المخزون'));
       await tester.pumpAndSettle();
 
-      expect(find.text('شيبسي جبنة'), findsOneWidget);
+      expect(find.text('مياه معدنية'), findsOneWidget);
       expect(find.text('بيبسي كانز'), findsNothing);
-      expect(find.text('غير نشط'), findsOneWidget);
     });
 
     testWidgets('الفرز بالضغط على عمود الكمية شغال', (
@@ -230,10 +233,11 @@ void main() {
       expect(find.text('تحويل مخزون'), findsOneWidget);
       expect(find.text('بدء جرد'), findsOneWidget);
 
-      // أعمدة الجدول
+      // أعمدة الجدول — «المحجوزة» و«المتاحة» اتشالوا مع تعليق الفواتير،
+      // مكانش فيه حاجة بتحجز رصيد غيره.
       expect(find.text('الكمية الفعلية'), findsOneWidget);
-      expect(find.text('المحجوزة'), findsOneWidget);
-      expect(find.text('المتاحة'), findsOneWidget);
+      expect(find.text('المحجوزة'), findsNothing);
+      expect(find.text('المتاحة'), findsNothing);
     });
 
     testWidgets('فلتر الحالة بيقلّل عدد السجلات', (WidgetTester tester) async {

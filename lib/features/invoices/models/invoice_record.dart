@@ -119,8 +119,6 @@ class InvoicePayment {
 
   String get methodLabel => switch (method) {
     'cash' => 'كاش',
-    'card' => 'بطاقة',
-    'wallet' => 'محفظة',
     'credit' => 'آجل',
     _ => method,
   };

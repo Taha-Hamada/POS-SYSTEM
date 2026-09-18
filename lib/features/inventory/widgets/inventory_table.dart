@@ -10,11 +10,9 @@ import 'stock_movements_dialog.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/inventory_controller.dart';
 import 'inventory_table_footer.dart';
-import 'stock_available_cell.dart';
 import 'stock_branch_cell.dart';
 import 'stock_last_movement_cell.dart';
 import 'stock_product_cell.dart';
-import 'stock_reserved_cell.dart';
 
 /// جدول أرصدة المخزون.
 class InventoryTable extends StatelessWidget {
@@ -30,20 +28,6 @@ class InventoryTable extends StatelessWidget {
       numeric: true,
       tooltip: 'الرصيد الموجود فعليًا على الرف',
     ),
-    AppTableColumn(
-      'المحجوزة',
-      size: ColumnSize.S,
-      sortable: true,
-      numeric: true,
-      tooltip: 'كمية محجوزة لطلبات لم تُسلَّم بعد',
-    ),
-    AppTableColumn(
-      'المتاحة',
-      size: ColumnSize.S,
-      sortable: true,
-      numeric: true,
-      tooltip: 'الفعلية − المحجوزة',
-    ),
     AppTableColumn('الحالة', size: ColumnSize.M),
     AppTableColumn('آخر حركة', size: ColumnSize.M, sortable: true),
   ];
@@ -53,8 +37,6 @@ class InventoryTable extends StatelessWidget {
       StockProductCell(record: r),
       StockBranchCell(name: r.branchName),
       TableCells.count(r.onHand),
-      StockReservedCell(reserved: r.reserved),
-      StockAvailableCell(available: r.available),
       // الحالة على الرصيد الفعلي وحد الطلب المحسوب على السيرفر.
       StatusBadge.stock(stock: r.onHand, minStock: r.minStock, compact: true),
       StockLastMovementCell(date: r.lastMovement),
@@ -77,7 +59,7 @@ class InventoryTable extends StatelessWidget {
       rows: <AppTableRow>[
         for (final StockRecord r in inventory.rows)
           AppTableRow(
-            highlightColor: r.available <= 0
+            highlightColor: r.onHand <= 0
                 ? AppColors.dangerSoft.withValues(alpha: 0.5)
                 : null,
             onTap: () => showStockMovementsDialog(

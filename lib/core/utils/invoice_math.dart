@@ -18,7 +18,7 @@ class PricedLine {
   });
 
   final double unitPrice;
-  final int quantity;
+  final double quantity;
   final bool isTaxable;
 
   /// خصم السطر بالجنيه، محسوب قبل ما يوصل هنا.

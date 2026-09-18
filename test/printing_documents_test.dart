@@ -97,7 +97,7 @@ void main() {
       invoicesCount: 12,
       cashSales: 1900,
       expectedCash: 2400,
-      byMethod: <String, double>{'card': 500},
+      byMethod: <String, double>{'credit': 500},
     );
 
     expect(

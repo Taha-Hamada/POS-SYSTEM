@@ -7,15 +7,15 @@ class TransferLine {
   /// رصيد الصنف في الفرع المُرسِل.
   final StockRecord record;
 
-  int quantity;
+  double quantity;
 
   String get productId => record.productId;
   String get name => record.productName;
   String get sku => record.sku;
   String get unit => record.unit;
 
-  /// المتاح للتحويل — المحجوز للفواتير المعلّقة مطروح منه.
-  int get available => record.available;
+  /// المتاح للتحويل — رصيد الفرع المُرسِل.
+  double get available => record.onHand;
 
   bool get exceedsAvailable => quantity > available;
 

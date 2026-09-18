@@ -60,8 +60,6 @@ class ReturnRecord {
 
   String get refundMethodLabel => switch (refundMethod) {
     'cash' => 'كاش',
-    'card' => 'بطاقة',
-    'wallet' => 'محفظة',
     'credit' => 'من حساب العميل',
     _ => refundMethod,
   };

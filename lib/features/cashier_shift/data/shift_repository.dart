@@ -102,6 +102,18 @@ class ShiftRepository {
     );
   }
 
+  /// آخر وردية اتقفلت — بنقترح عدّها كرصيد افتتاحي للوردية الجديدة،
+  /// لأن ده الكاش اللي فضل في الدرج فعلًا.
+  Future<Shift?> fetchLastClosed() async {
+    final ApiResponse response = await _api.get(
+      '/shifts',
+      query: <String, dynamic>{'limit': 1, 'status': 'closed'},
+    );
+
+    final List<Map<String, dynamic>> items = response.list;
+    return items.isEmpty ? null : Shift.fromJson(items.first);
+  }
+
   ShiftSnapshot _snapshotFrom(Map<String, dynamic> json) => (
     shift: Shift.fromJson(json['shift'] as Map<String, dynamic>),
     totals: ShiftTotals.fromJson(

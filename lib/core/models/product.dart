@@ -26,7 +26,6 @@ class Product {
     this.isTaxable = true,
     this.expiryDate,
     this.imageUrl,
-    this.reserved = 0,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -46,8 +45,8 @@ class Product {
       price: (json['price'] as num?)?.toDouble() ?? 0,
       cost: (json['cost'] as num?)?.toDouble() ?? 0,
       // الرصيد بيتحسب للفرع المطلوب وبيتلزق جنب المنتج في الرد.
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
-      reserved: (json['reserved'] as num?)?.toInt() ?? 0,
+      // الرصيد ممكن يكون بكسور للأصناف اللي بتتباع بالكيلو أو اللتر.
+      stock: (json['stock'] as num?)?.toDouble() ?? 0,
       minStock: (json['effectiveMinStock'] ?? json['minStock'] as num?) is num
           ? ((json['effectiveMinStock'] ?? json['minStock']) as num).toInt()
           : 0,
@@ -64,7 +63,7 @@ class Product {
 
   /// بيستخدم لما رد السيرفر ميكونش شايل كل الحقول، زي تعطيل منتج:
   /// الرد بيرجّع المنتج من غير رصيد الفرع، فبنحتفظ بالرصيد اللي عندنا.
-  Product copyWith({bool? isActive, int? stock, int? reserved}) => Product(
+  Product copyWith({bool? isActive, double? stock}) => Product(
         id: id,
         name: name,
         sku: sku,
@@ -75,7 +74,6 @@ class Product {
         price: price,
         cost: cost,
         stock: stock ?? this.stock,
-        reserved: reserved ?? this.reserved,
         minStock: minStock,
         trackStock: trackStock,
         isTaxable: isTaxable,
@@ -94,8 +92,7 @@ class Product {
   final String unit;
   final double price;
   final double cost;
-  final int stock;
-  final int reserved;
+  final double stock;
   final int minStock;
   final bool trackStock;
   final bool isTaxable;
@@ -103,9 +100,6 @@ class Product {
   final DateTime? expiryDate;
   final String? imageUrl;
   final int colorIndex;
-
-  /// الرصيد اللي ينفع يتباع دلوقتي — المحجوز للفواتير المعلّقة مطروح منه.
-  int get available => stock - reserved;
 
   Color get accentColor =>
       AppColors.productPalette[colorIndex % AppColors.productPalette.length];

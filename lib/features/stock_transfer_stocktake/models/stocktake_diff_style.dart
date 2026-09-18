@@ -23,7 +23,7 @@ class StocktakeDiffStyle {
       );
     }
 
-    final int diff = line.difference;
+    final double diff = line.difference;
     if (diff < 0) {
       return const StocktakeDiffStyle(
         color: AppColors.danger,

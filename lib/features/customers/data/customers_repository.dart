@@ -73,7 +73,6 @@ class CustomersRepository {
     required String name,
     required String phone,
     String? email,
-    double? creditLimit,
   }) async {
     final ApiResponse response = await _api.post(
       '/customers',
@@ -81,7 +80,6 @@ class CustomersRepository {
         'name': name,
         'phone': phone,
         if (email != null && email.isNotEmpty) 'email': email,
-        'creditLimit': ?creditLimit,
       },
     );
 

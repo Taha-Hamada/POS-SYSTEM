@@ -11,14 +11,16 @@ import 'package:pos_system/core/models/product.dart';
 import 'package:pos_system/core/session/session_controller.dart';
 import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
 import 'package:pos_system/features/categories/data/categories_repository.dart';
+import 'package:pos_system/features/inventory/data/inventory_repository.dart';
 import 'package:pos_system/features/inventory/data/stock_alerts_repository.dart';
 import 'package:pos_system/features/pos_sale/controllers/sales_session_controller.dart';
 import 'package:pos_system/features/pos_sale/data/pos_repository.dart';
+import 'package:pos_system/features/product_profile/controllers/product_profile_controller.dart';
 import 'package:pos_system/features/products_list/data/products_repository.dart';
 import 'package:pos_system/features/returns/data/returns_history_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// الأقسام وتعديل الأسعار والتنبيهات وسجل المرتجعات ووردية مدير النظام
+/// الأقسام وتعديل أسعار المنتجات والتنبيهات وسجل المرتجعات ووردية مدير النظام
 /// على الباك اند الحقيقي.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -78,7 +80,7 @@ void main() {
     expect(removal.deleted, isTrue);
   });
 
-  test('تعديل الأسعار الجماعي بالنسبة وبالمبلغ', () async {
+  test('تعديل سعر منتج من تفاصيله بيتحفظ على السيرفر', () async {
     if (skip()) return;
 
     final ProductsRepository products = ProductsRepository(api);
@@ -86,28 +88,66 @@ void main() {
 
     final Product product = await products.create(
       name: 'منتج أسعار ${unique()}',
-      sku: 'BULK-${unique()}',
+      sku: 'PRC-${unique()}',
       categoryId: categories.first.id,
       price: 100,
       cost: 50,
     );
 
     try {
-      final ({int matched, int modified}) byPercent = await products
-          .bulkUpdatePrices(
-            productIds: <String>[product.id],
-            percentage: true,
-            value: 10,
-          );
-      expect(byPercent.modified, 1);
-      expect((await products.fetchForEdit(product.id)).product.price, 110);
-
-      await products.bulkUpdatePrices(
-        productIds: <String>[product.id],
-        percentage: false,
-        value: -15,
+      final ProductProfileController profile = ProductProfileController(
+        products,
+        InventoryRepository(api),
+        productId: product.id,
+        vsync: const TestVSync(),
       );
-      expect((await products.fetchForEdit(product.id)).product.price, 95);
+
+      await profile.load();
+      expect(profile.hasFailed, isFalse, reason: profile.errorMessage);
+      expect(profile.product!.price, 100);
+      expect(profile.isDirty, isFalse);
+
+      profile.priceController.text = '135.5';
+      profile.fieldChanged();
+      expect(profile.isDirty, isTrue);
+      expect(profile.problem, isNull);
+
+      expect(await profile.save(), isNull);
+      expect(profile.isDirty, isFalse);
+
+      // بنقرا من السيرفر من جديد عشان نتأكد إن السعر اتخزن مش في الذاكرة بس.
+      expect((await products.fetchForEdit(product.id)).product.price, 135.5);
+
+      // السيرفر بيرفض السعر الأقل من التكلفة، والشاشة بتمسكها قبل ما تبعت.
+      profile.priceController.text = '10';
+      profile.fieldChanged();
+      expect(profile.problem, 'التكلفة أعلى من سعر البيع');
+      expect(profile.canSave, isFalse);
+
+      profile.discardChanges();
+      expect(profile.priceController.text, '135.5');
+
+      // الباركود بيتحط وبيتشال من نفس الشاشة.
+      profile.barcodeController.text = '6221031234567';
+      profile.fieldChanged();
+      expect(await profile.save(), isNull);
+      expect(
+        (await products.fetchForEdit(product.id)).product.barcode,
+        '6221031234567',
+      );
+
+      profile.barcodeController.text = '';
+      profile.fieldChanged();
+      expect(await profile.save(), isNull);
+      expect((await products.fetchForEdit(product.id)).product.barcode, isNull);
+
+      // الإيقاف والتفعيل من نفس الشاشة.
+      expect(await profile.toggleActive(), isNull);
+      expect(profile.product!.isActive, isFalse);
+      expect(await profile.toggleActive(), isNull);
+      expect(profile.product!.isActive, isTrue);
+
+      profile.dispose();
     } finally {
       await products.setActiveState(product.id, isActive: false);
     }
@@ -164,7 +204,7 @@ void main() {
       await session.load();
 
       final Product target = session.products.firstWhere(
-        (Product p) => p.trackStock && p.available > 5,
+        (Product p) => p.trackStock && p.stock > 5,
       );
       session.active.addProduct(target);
 

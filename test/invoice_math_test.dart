@@ -11,7 +11,7 @@ void main() {
     double discount = 0,
   }) => PricedLine(
     unitPrice: price,
-    quantity: qty,
+    quantity: qty.toDouble(),
     isTaxable: taxable,
     discountAmount: discount,
   );

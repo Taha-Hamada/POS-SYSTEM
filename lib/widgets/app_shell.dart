@@ -202,7 +202,14 @@ class _AppShellState extends State<_AppShellBody> {
       if (branchId == null || !mounted) return;
     }
 
-    final double? balance = await showOpenShiftDialog(context);
+    // الدرج بيفضل فيه اللي اتعدّ آخر وردية، فبنقترحه بدل رقم ثابت.
+    final double? carriedOver = await shifts.lastClosedCount();
+    if (!mounted) return;
+
+    final double? balance = await showOpenShiftDialog(
+      context,
+      carriedOver: carriedOver,
+    );
     if (balance == null || !mounted) return;
 
     final String? error = await shifts.open(balance, branchId: branchId);

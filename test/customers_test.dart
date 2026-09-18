@@ -144,7 +144,6 @@ void main() {
     final String? error = await customers.addCustomer(
       name: 'عميل اختبار',
       phone: phone,
-      creditLimit: 500,
     );
 
     expect(error, isNull);

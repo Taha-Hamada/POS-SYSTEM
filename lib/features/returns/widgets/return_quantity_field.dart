@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../theme/app_theme.dart';
+import '../../../utils/formatters.dart';
 
 /// خانة الكمية المرتجعة — بتتعطّل لو الصنف مش متحدد.
 class ReturnQuantityField extends StatefulWidget {
@@ -12,9 +13,9 @@ class ReturnQuantityField extends StatefulWidget {
     required this.onChanged,
   });
 
-  final int initialQuantity;
+  final double initialQuantity;
   final bool enabled;
-  final ValueChanged<int> onChanged;
+  final ValueChanged<double> onChanged;
 
   @override
   State<ReturnQuantityField> createState() => _ReturnQuantityFieldState();
@@ -22,7 +23,7 @@ class ReturnQuantityField extends StatefulWidget {
 
 class _ReturnQuantityFieldState extends State<ReturnQuantityField> {
   late final TextEditingController _controller =
-      TextEditingController(text: '${widget.initialQuantity}');
+      TextEditingController(text: Fmt.qty(widget.initialQuantity));
 
   @override
   void dispose() {
@@ -38,11 +39,11 @@ class _ReturnQuantityFieldState extends State<ReturnQuantityField> {
         controller: _controller,
         enabled: widget.enabled,
         textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.digitsOnly,
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
         ],
-        onChanged: (String v) => widget.onChanged(int.tryParse(v) ?? 0),
+        onChanged: (String v) => widget.onChanged(double.tryParse(v) ?? 0),
         style: AppText.amountSm.copyWith(fontSize: 13.5),
         decoration: InputDecoration(
           isDense: true,

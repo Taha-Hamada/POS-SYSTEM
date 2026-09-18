@@ -39,6 +39,17 @@ class CurrentShiftController extends ChangeNotifier with LoadState {
 
   Future<void> retry() => load();
 
+  /// الكاش اللي فضل في الدرج آخر وردية — بيتقترح كرصيد افتتاحي.
+  /// بيرجّع null لو مفيش ورديات قبل كده أو السيرفر مش راد.
+  Future<double?> lastClosedCount() async {
+    try {
+      final Shift? last = await _repository.fetchLastClosed();
+      return last?.closing?.countedCash;
+    } on ApiException {
+      return null;
+    }
+  }
+
   /// بيعيد قراءة الأرقام من السيرفر — بعد بيعة أو مرتجع.
   Future<void> refreshTotals() async {
     final String? id = _shift?.id;

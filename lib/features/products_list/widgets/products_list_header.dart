@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/session/session_controller.dart';
-import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/products_list_controller.dart';
-import '../data/products_repository.dart';
 import '../models/products_filter.dart';
-import 'bulk_price_dialog.dart';
 import 'products_category_dropdown.dart';
 import 'products_search_field.dart';
 
@@ -33,27 +29,6 @@ Future<void> openOverProducts(BuildContext context, String location) async {
 /// الشريط العلوي: العنوان والعدّاد، البحث، الفئة، والأزرار.
 class ProductsListHeader extends StatelessWidget {
   const ProductsListHeader({super.key});
-
-  Future<void> _bulkPrices(BuildContext context) async {
-    final ProductsListController products = context
-        .read<ProductsListController>();
-
-    final int? modified = await showBulkPriceDialog(
-      context,
-      products: products,
-      repository: ProductsRepository(context.read<ApiClient>()),
-    );
-    if (modified == null || !context.mounted) return;
-
-    await products.load();
-    if (!context.mounted) return;
-
-    showAppSnackBar(
-      context,
-      'اتعدّل سعر ${Fmt.count(modified)} منتج',
-      width: 420,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,13 +75,6 @@ class ProductsListHeader extends StatelessWidget {
                   openOverProducts(context, '/products/categories'),
             ),
             if (session.can('product:manage')) ...<Widget>[
-              const SizedBox(width: AppSpacing.md),
-              SecondaryButton(
-                label: 'تعديل الأسعار',
-                icon: Icons.price_change_outlined,
-                tone: SecondaryButtonTone.accent,
-                onPressed: () => _bulkPrices(context),
-              ),
               const SizedBox(width: AppSpacing.md),
               PrimaryButton(
                 label: 'إضافة منتج',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
+import '../../../utils/formatters.dart';
 
 /// تبويب فاتورة واحدة في شريط الفواتير المفتوحة.
 class InvoiceTab extends StatefulWidget {
@@ -14,7 +15,7 @@ class InvoiceTab extends StatefulWidget {
   });
 
   final int number;
-  final int itemsCount;
+  final double itemsCount;
   final bool selected;
   final VoidCallback onTap;
 
@@ -81,7 +82,7 @@ class _InvoiceTabState extends State<InvoiceTab> {
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
-                    '${widget.itemsCount}',
+                    Fmt.qty(widget.itemsCount),
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,

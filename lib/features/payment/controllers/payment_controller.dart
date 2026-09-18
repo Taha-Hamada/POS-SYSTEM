@@ -63,9 +63,26 @@ class PaymentController extends ChangeNotifier {
   /// موجب = لسه فاضل، سالب = الباقي للعميل
   double get remainingAfter => total - paid;
 
+  /// الباقي بيطلع من درج الكاش بس — الفيزا والمحفظة والآجل بتتخصم بالمبلغ
+  /// اللي اتكتب بالظبط، والسيرفر بيرفض أي زيادة فيهم.
   double get change => remainingAfter < 0 ? -remainingAfter : 0;
 
-  bool get isCovered => remainingAfter <= 0.005;
+  double get _nonCashPaid {
+    final double committedNonCash = _entries
+        .where((PaymentEntry e) => e.method != PaymentMethod.cash)
+        .fold<double>(0, (double s, PaymentEntry e) => s + e.amount);
+
+    return committedNonCash +
+        (_method == PaymentMethod.cash ? 0 : currentAmount);
+  }
+
+  /// زيادة مش من الكاش — الفاتورة مش هتعدّي بيها.
+  double get nonCashOverpay {
+    final double over = _nonCashPaid - total;
+    return over > 0.005 ? over : 0;
+  }
+
+  bool get isCovered => remainingAfter <= 0.005 && nonCashOverpay == 0;
 
   bool get canSplit =>
       currentAmount > 0 && remainingAfter > 0.005 && _entries.length < 3;
@@ -113,6 +130,10 @@ class PaymentController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// أقصى مبلغ مسموح للطريقة الحالية — الكاش بس هو اللي بيزيد عن المتبقي.
+  double get maxForCurrentMethod =>
+      _method == PaymentMethod.cash ? double.infinity : remainingBefore;
 
   /// يثبّت المبلغ الحالي كدفعة ويفتح دفعة جديدة بالمتبقي.
   void addAnotherMethod() {

@@ -8,7 +8,6 @@ import 'package:pos_system/core/session/session_controller.dart';
 import 'package:pos_system/features/pos_sale/controllers/sales_session_controller.dart';
 import 'package:pos_system/features/pos_sale/data/pos_repository.dart';
 import 'package:pos_system/features/pos_sale/models/cart_discount.dart';
-import 'package:pos_system/features/pos_sale/models/held_invoice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// دورة البيع كاملة على الباك اند الحقيقي.
@@ -43,12 +42,6 @@ void main() {
     if (!backendUp) return;
     session = SalesSessionController(PosRepository(api));
     await session.load();
-
-    // فواتير معلّقة فاضلة من اختبار قبله بتفضل حاجزة رصيد،
-    // فبنفضّيها عشان كل اختبار يبدأ من حالة معروفة.
-    for (final HeldInvoice held in session.held.toList()) {
-      await session.deleteHeld(held);
-    }
   });
 
   tearDown(() {
@@ -65,7 +58,7 @@ void main() {
 
   // منتج بسعر، عشان منتج بصفر يطلّع فاتورة بصفر ويكسر حسابات الباقي والخصم.
   Product sellable() => session.products.firstWhere(
-    (Product p) => p.trackStock && p.price > 0 && p.available > 20,
+    (Product p) => p.trackStock && p.price > 0 && p.stock > 20,
   );
 
   test('الكتالوج والإعدادات بيتحمّلوا مع بعض', () {
@@ -88,7 +81,7 @@ void main() {
     if (skip()) return;
 
     final Product target = sellable();
-    final int before = target.stock;
+    final double before = target.stock;
 
     session.active.addProduct(target);
     session.active.addProduct(target);
@@ -175,71 +168,6 @@ void main() {
     }
   });
 
-  group('الفواتير المعلّقة', () {
-    test('التعليق بيحجز الرصيد مش بيخصمه', () async {
-      if (skip()) return;
-
-      final Product target = sellable();
-      final int stockBefore = target.stock;
-
-      session.active.addProduct(target);
-      session.active.addProduct(target);
-
-      final String? error = await session.holdActive(label: 'ترابيزة 5');
-      expect(error, isNull);
-
-      final Product after = session.products.firstWhere(
-        (Product p) => p.id == target.id,
-      );
-
-      expect(after.stock, stockBefore, reason: 'التعليق مبيخصمش');
-      expect(after.reserved, greaterThanOrEqualTo(2), reason: 'التعليق بيحجز');
-      expect(session.heldCount, greaterThan(0));
-    });
-
-    test('الاسترجاع بيفك الحجز ويرجّع الأصناف', () async {
-      if (skip()) return;
-
-      final Product target = sellable();
-      final int reservedBefore = target.reserved;
-
-      session.active.addProduct(target);
-      await session.holdActive();
-
-      final HeldInvoice held = session.held.first;
-      final String? error = await session.restore(held);
-
-      expect(error, isNull);
-      expect(session.active.lines, isNotEmpty);
-      expect(session.active.lines.first.product.id, target.id);
-
-      final Product after = session.products.firstWhere(
-        (Product p) => p.id == target.id,
-      );
-      expect(after.reserved, reservedBefore, reason: 'الاسترجاع بيفك الحجز');
-    });
-
-    test('إلغاء المعلّقة بيفك حجزها', () async {
-      if (skip()) return;
-
-      final Product target = sellable();
-      final int reservedBefore = target.reserved;
-
-      session.active.addProduct(target);
-      await session.holdActive();
-
-      final HeldInvoice held = session.held.first;
-      await session.deleteHeld(held);
-
-      expect(session.held.any((HeldInvoice h) => h.id == held.id), isFalse);
-
-      final Product after = session.products.firstWhere(
-        (Product p) => p.id == target.id,
-      );
-      expect(after.reserved, reservedBefore);
-    });
-  });
-
   group('العملاء', () {
     test('البحث بيرجّع عملاء حقيقيين', () async {
       if (skip()) return;
@@ -253,10 +181,7 @@ void main() {
       if (skip()) return;
 
       final List<Customer> customers = await session.searchCustomers('');
-      final Customer customer = customers.firstWhere(
-        (Customer c) => c.creditLimit > 0,
-        orElse: () => customers.first,
-      );
+      final Customer customer = customers.first;
 
       session.active
         ..addProduct(sellable())
@@ -349,15 +274,15 @@ void main() {
     expect(session.search('لا-يوجد-كده-أبدا'), isEmpty);
   });
 
-  test('مسح باركود بيلاقي المنتج', () {
+  test('مسح باركود بيلاقي المنتج محليًا ومن السيرفر', () async {
     if (skip()) return;
 
     final Product target = session.products.firstWhere(
       (Product p) => p.barcode != null && p.barcode!.isNotEmpty,
     );
 
-    expect(session.productByBarcode(target.barcode!)?.id, target.id);
-    expect(session.productByBarcode('0000000000'), isNull);
+    expect((await session.productByBarcode(target.barcode!))?.id, target.id);
+    expect(await session.productByBarcode('0000000000'), isNull);
   });
 }
 

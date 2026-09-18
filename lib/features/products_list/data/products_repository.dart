@@ -211,32 +211,6 @@ class ProductsRepository {
     return Product.fromJson(response.object);
   }
 
-  /// تعديل سعر جماعي بنسبة أو بمبلغ — على منتجات محددة أو قسم كامل.
-  ///
-  /// السيرفر بيقرّب لخانتين ومبينزّلش السعر تحت الصفر في التعديل بالمبلغ.
-  Future<({int matched, int modified})> bulkUpdatePrices({
-    List<String>? productIds,
-    String? categoryId,
-    required bool percentage,
-    required double value,
-  }) async {
-    final ApiResponse response = await _api.patch(
-      '/products/bulk-prices',
-      body: <String, dynamic>{
-        if (productIds != null && productIds.isNotEmpty)
-          'productIds': productIds,
-        'category': ?categoryId,
-        'mode': percentage ? 'percentage' : 'fixed',
-        'value': value,
-      },
-    );
-
-    return (
-      matched: (response.object['matched'] as num?)?.toInt() ?? 0,
-      modified: (response.object['modified'] as num?)?.toInt() ?? 0,
-    );
-  }
-
   Future<Product> setActiveState(String id, {required bool isActive}) async {
     final ApiResponse response = await _api.patch(
       '/products/$id/active',

@@ -8,18 +8,19 @@ class StocktakeLine {
   final StockRecord record;
 
   /// null = لسه ماتجردش
-  int? actualQuantity;
+  double? actualQuantity;
 
   String get productId => record.productId;
   String get name => record.productName;
   String get sku => record.sku;
   String get unit => record.unit;
 
-  int get systemQuantity => record.onHand;
+  double get systemQuantity => record.onHand;
 
   bool get isCounted => actualQuantity != null;
 
-  int get difference => (actualQuantity ?? systemQuantity) - systemQuantity;
+  double get difference =>
+      (actualQuantity ?? systemQuantity) - systemQuantity;
 
   double get valueDifference => difference * record.cost;
 

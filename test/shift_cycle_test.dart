@@ -8,7 +8,12 @@ import 'package:pos_system/core/session/session_controller.dart';
 import 'package:pos_system/features/cashier_shift/controllers/current_shift_controller.dart';
 import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
 import 'package:pos_system/features/pos_sale/controllers/sales_session_controller.dart';
+import 'package:pos_system/features/invoices/data/invoices_repository.dart';
 import 'package:pos_system/features/pos_sale/data/pos_repository.dart';
+import 'package:pos_system/features/returns/controllers/returns_controller.dart';
+import 'package:pos_system/features/returns/data/returns_repository.dart';
+import 'package:pos_system/features/returns/models/return_line.dart';
+import 'package:pos_system/features/returns/models/returnable_invoice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// دورة الوردية كاملة على الباك اند الحقيقي: فتح، بيع، حركات درج، تقفيل.
@@ -155,7 +160,7 @@ void main() {
       await sales.load();
 
       final Product target = sales.products.firstWhere(
-        (Product p) => p.trackStock && p.available > 5,
+        (Product p) => p.trackStock && p.stock > 5,
       );
 
       sales.active.addProduct(target);
@@ -167,9 +172,161 @@ void main() {
 
       expect(shifts.totals.invoicesCount, 1);
       expect(shifts.totals.salesTotal, invoice.total);
-      expect(shifts.totals.cashSales, 5000,
-          reason: 'المدفوع كاش بيتسجّل بالكامل');
-      expect(shifts.totals.expectedCash, 500 + 5000);
+
+      // الباقي بيرجع للعميل من نفس الدرج، فاللي دخل فعلًا هو قيمة الفاتورة
+      // مش المبلغ اللي الكاشير استلمه.
+      expect(invoice.changeDue, closeTo(5000 - invoice.total, 0.01));
+      expect(shifts.totals.cashSales, closeTo(invoice.total, 0.01),
+          reason: 'الكاش المحصّل = المدفوع ناقص الباقي');
+      expect(shifts.totals.expectedCash, closeTo(500 + invoice.total, 0.01));
+
+      sales.dispose();
+    });
+  });
+
+  group('الباقي والمرتجعات', () {
+    test('الباقي اللي بيترد للعميل مبيفضلش في الدرج', () async {
+      if (skip()) return;
+
+      await shifts.open(1000);
+
+      final SalesSessionController sales =
+          SalesSessionController(PosRepository(api));
+      await sales.load();
+
+      final Product target = sales.products.firstWhere(
+        (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
+      );
+      sales.active.addProduct(target);
+
+      final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+        PaymentInput(method: 'cash', amount: 500),
+      ]);
+
+      await shifts.refreshTotals();
+
+      expect(invoice.changeDue, greaterThan(0), reason: 'لازم يبقى فيه باقي');
+      expect(shifts.totals.expectedCash, closeTo(1000 + invoice.total, 0.02),
+          reason: 'الدرج بياخد قيمة الفاتورة مش المبلغ المستلم');
+
+      sales.dispose();
+    });
+
+    test('المرتجع الكاش بينزل من الدرج بنفس المبلغ', () async {
+      if (skip()) return;
+
+      await shifts.open(1000);
+
+      final SalesSessionController sales =
+          SalesSessionController(PosRepository(api));
+      await sales.load();
+
+      final Product target = sales.products.firstWhere(
+        (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
+      );
+      sales.active
+        ..addProduct(target)
+        ..addProduct(target);
+
+      final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+        PaymentInput(method: 'cash', amount: 500),
+      ]);
+
+      await shifts.refreshTotals();
+      final double afterSale = shifts.totals.expectedCash;
+
+      final ReturnsController returns =
+          ReturnsController(ReturnsRepository(api));
+      await returns.search(invoice.number);
+
+      final ReturnLine line = returns.lines.first;
+      returns
+        ..setLineSelected(line, true)
+        ..setReturnQuantity(line, 2)
+        ..setReason('اختبار');
+
+      final CompletedReturn? created = await returns.submit();
+      expect(created, isNotNull, reason: returns.error);
+
+      await shifts.refreshTotals();
+
+      expect(afterSale - shifts.totals.expectedCash,
+          closeTo(created!.cashRefund, 0.02));
+      expect(shifts.totals.expectedCash, closeTo(1000, 0.02),
+          reason: 'البيع والمرتجع بيلغوا بعض');
+
+      returns.dispose();
+      sales.dispose();
+    });
+  });
+
+  group('الوردية المقفولة', () {
+    test('أرقام التقفيل بتتخزّن كاملة مش بعضها', () async {
+      if (skip()) return;
+
+      await shifts.open(1000);
+
+      final SalesSessionController sales =
+          SalesSessionController(PosRepository(api));
+      await sales.load();
+      sales.active.addProduct(
+        sales.products.firstWhere(
+          (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
+        ),
+      );
+      await sales.checkout(<PaymentInput>[
+        PaymentInput(method: 'cash', amount: 500),
+      ]);
+
+      final String id = shifts.shift!.id;
+      await shifts.addCash(isIn: true, amount: 60, reason: 'إيداع اختبار');
+      await shifts.close(countedCash: 0);
+
+      // بنقرا الوردية المقفولة من السيرفر زي ما شاشة السجل بتعمل.
+      final ShiftSnapshot snapshot =
+          await ShiftRepository(api).fetchById(id);
+
+      expect(snapshot.shift.closing, isNotNull);
+      expect(snapshot.totals.cashSales, greaterThan(0),
+          reason: 'مبيعات الكاش كانت بتتعرض صفر بعد التقفيل');
+      expect(snapshot.totals.cashIn, 60);
+      expect(snapshot.totals.expectedCash, greaterThan(0));
+
+      sales.dispose();
+    });
+
+    test('إلغاء فاتورة من وردية مقفولة بيترفض', () async {
+      if (skip()) return;
+
+      await shifts.open(1000);
+
+      final SalesSessionController sales =
+          SalesSessionController(PosRepository(api));
+      await sales.load();
+      sales.active.addProduct(
+        sales.products.firstWhere(
+          (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
+        ),
+      );
+      final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+        PaymentInput(method: 'cash', amount: 500),
+      ]);
+
+      await shifts.close(countedCash: 0);
+      await shifts.open(1000);
+
+      // الكاش بيخرج من الدرج الحالي، فالإلغاء ممنوع والمرتجع هو الحل.
+      final InvoicesRepository invoices = InvoicesRepository(api);
+
+      String? error;
+      try {
+        await invoices.voidInvoice(invoice.id, reason: 'اختبار');
+      } on ApiException catch (e) {
+        error = e.message;
+      }
+
+      expect(error, isNotNull, reason: 'المفروض يترفض');
+      expect(error, contains('مرتجع'));
 
       sales.dispose();
     });

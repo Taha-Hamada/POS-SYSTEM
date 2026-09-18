@@ -10,14 +10,13 @@ import '../../../core/models/product.dart';
 import '../../../core/models/promotion.dart';
 import '../../../core/models/store_settings.dart';
 import '../data/pos_repository.dart';
-import '../models/cart_discount.dart';
-import '../models/held_invoice.dart';
+import '../models/cart_line.dart';
 import 'cart_controller.dart';
 
-/// بيدير شاشة الكاشير كلها: الكتالوج، التبويبات المفتوحة، والمعلّقات.
+/// بيدير شاشة الكاشير كلها: الكتالوج والتبويبات المفتوحة.
 ///
-/// التبويبات مسوّدات محلية في الذاكرة؛ التعليق والاعتماد بيروحوا للسيرفر،
-/// عشان الفاتورة المعلّقة تحجز رصيدها والمعتمدة تخصمه فعلًا.
+/// التبويبات مسوّدات محلية في الذاكرة، والاعتماد بس هو اللي بيروح للسيرفر
+/// ويخصم المخزون.
 class SalesSessionController extends ChangeNotifier with LoadState {
   SalesSessionController(this._repository, {this.branchId});
 
@@ -25,7 +24,6 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   final String? branchId;
 
   final List<CartController> _carts = <CartController>[];
-  List<HeldInvoice> _held = <HeldInvoice>[];
 
   List<Product> _products = <Product>[];
   List<Category> _categories = <Category>[];
@@ -38,9 +36,6 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   UnmodifiableListView<CartController> get carts =>
       UnmodifiableListView<CartController>(_carts);
 
-  UnmodifiableListView<HeldInvoice> get held =>
-      UnmodifiableListView<HeldInvoice>(_held);
-
   UnmodifiableListView<Product> get products =>
       UnmodifiableListView<Product>(_products);
 
@@ -51,7 +46,6 @@ class SalesSessionController extends ChangeNotifier with LoadState {
 
   int get activeIndex => _activeIndex;
   CartController get active => _carts[_activeIndex];
-  int get heldCount => _held.length;
 
   /// آخر تبويب مبيتقفلش — لازم يفضل فيه فاتورة واحدة على الأقل.
   bool get canCloseTabs => _carts.length > 1;
@@ -65,15 +59,13 @@ class SalesSessionController extends ChangeNotifier with LoadState {
         _repository.fetchProducts(branchId: branchId),
         _repository.fetchCategories(),
         _repository.fetchSettings(),
-        _repository.fetchHeld(),
         _repository.fetchLivePromotions(),
       ]);
 
       _products = results[0] as List<Product>;
       _categories = results[1] as List<Category>;
       _settings = results[2] as StoreSettings;
-      _held = results[3] as List<HeldInvoice>;
-      _promotions = results[4] as List<Promotion>;
+      _promotions = results[3] as List<Promotion>;
 
       if (_carts.isEmpty) {
         _carts.add(_newCart());
@@ -100,23 +92,18 @@ class SalesSessionController extends ChangeNotifier with LoadState {
   UnmodifiableListView<Promotion> get promotions =>
       UnmodifiableListView<Promotion>(_promotions);
 
-  /// بيعدّل رصيد المنتجات محليًا بعد عملية غيّرته.
+  /// بيعدّل رصيد المنتجات محليًا بعد بيعة خصمته.
   ///
   /// إعادة تحميل الكتالوج كله بعد كل بيعة كانت بتعمل طلبات كتير من غير داعي:
-  /// إحنا عارفين الكميات اللي اتغيّرت، فبنطبّق الفرق على النسخة اللي عندنا.
-  void _applyStockDeltas(
-    Map<String, int> soldOrReserved, {
-    required bool reserve,
-  }) {
-    if (soldOrReserved.isEmpty) return;
+  /// إحنا عارفين الكميات اللي اتباعت، فبنطبّق الفرق على النسخة اللي عندنا.
+  void _applySoldQuantities(Map<String, double> sold) {
+    if (sold.isEmpty) return;
 
     _products = _products.map((Product p) {
-      final int delta = soldOrReserved[p.id] ?? 0;
+      final double delta = sold[p.id] ?? 0;
       if (delta == 0 || !p.trackStock) return p;
 
-      return reserve
-          ? p.copyWith(reserved: (p.reserved + delta).clamp(0, p.stock))
-          : p.copyWith(stock: p.stock - delta);
+      return p.copyWith(stock: p.stock - delta);
     }).toList();
 
     notifyListeners();
@@ -132,13 +119,13 @@ class SalesSessionController extends ChangeNotifier with LoadState {
     }
   }
 
-  /// كميات كل منتج في سلة، بالشكل اللي [_applyStockDeltas] بيستقبله.
-  Map<String, int> _quantitiesOf(CartController cart) {
-    final Map<String, int> quantities = <String, int>{};
+  /// كميات كل منتج في سلة، بالشكل اللي [_applySoldQuantities] بيستقبله.
+  Map<String, double> _quantitiesOf(CartController cart) {
+    final Map<String, double> quantities = <String, double>{};
 
-    for (final dynamic line in cart.lines) {
-      quantities[line.product.id as String] =
-          (quantities[line.product.id] ?? 0) + (line.quantity as int);
+    for (final CartLine line in cart.lines) {
+      quantities[line.product.id] =
+          (quantities[line.product.id] ?? 0) + line.quantity;
     }
 
     return quantities;
@@ -159,8 +146,14 @@ class SalesSessionController extends ChangeNotifier with LoadState {
     }).toList();
   }
 
-  Product? productByBarcode(String barcode) {
+  /// بيدوّر على الكود في الكتالوج المحمّل، وبعدين على السيرفر.
+  ///
+  /// الكتالوج بيتحمّل مرة واحدة أول ما الشاشة تفتح، فالمنتج اللي اتضاف أو
+  /// اتعدّل باركوده بعد كده مكانش بيتلاقي خالص. اللقية الجديدة بتتضاف
+  /// للكتالوج عشان المسحة اللي بعدها تبقى محلية.
+  Future<Product?> productByBarcode(String barcode) async {
     final String code = barcode.trim();
+    if (code.isEmpty) return null;
 
     for (final Product p in _products) {
       if (p.barcode == code || p.sku.toLowerCase() == code.toLowerCase()) {
@@ -168,7 +161,20 @@ class SalesSessionController extends ChangeNotifier with LoadState {
       }
     }
 
-    return null;
+    try {
+      final Product? found = await _repository.findByBarcode(
+        code,
+        branchId: branchId,
+      );
+      if (found == null || !found.isActive) return null;
+
+      _products = <Product>[..._products, found];
+      notifyListeners();
+      return found;
+    } on ApiException {
+      // السيرفر مش راد — بنقول مفيش منتج بدل ما نكسر المسح.
+      return null;
+    }
   }
 
   // ── التبويبات ────────────────────────────────────────────────────────────
@@ -192,100 +198,11 @@ class SalesSessionController extends ChangeNotifier with LoadState {
     notifyListeners();
   }
 
-  // ── التعليق والاسترجاع ───────────────────────────────────────────────────
-  /// بيعلّق الفاتورة النشطة على السيرفر ويقفل تبويبها.
-  /// بيرجّع رسالة الخطأ لو فشل، و`null` لو نجح.
-  Future<String?> holdActive({String? label}) async {
-    if (active.isEmpty) return null;
-
-    final Map<String, int> quantities = _quantitiesOf(active);
-
-    final ApiException? failure = await runAction(() async {
-      final HeldInvoice heldInvoice = await _repository.hold(
-        lines: active.toInvoiceLines(),
-        customerId: active.customer.isWalkIn ? null : active.customer.id,
-        discount: active.toDiscountInput(),
-        label: label ?? 'فاتورة ${active.number}',
-      );
-
-      _held = <HeldInvoice>[heldInvoice, ..._held];
-      _closeOrClearActive();
-    });
-
-    // التعليق بيحجز رصيد، فالمتاح للبيع بيقل بنفس الكمية.
-    if (failure == null) _applyStockDeltas(quantities, reserve: true);
-
-    return failure?.message;
-  }
-
-  /// بيرجّع فاتورة معلّقة في تبويب، وبيشيل حجزها من السيرفر.
-  ///
-  /// الاسترجاع بيمسح الفاتورة من السيرفر ويرجّع أصنافها للسلة المحلية،
-  /// فلو الكاشير سابها من غير دفع، بيقدر يعلّقها من جديد.
-  Future<String?> restore(HeldInvoice invoice) async {
-    final ApiException? failure = await runAction(() async {
-      await _repository.discardHeld(invoice.id);
-      _held = _held.where((HeldInvoice h) => h.id != invoice.id).toList();
-
-      final List<({Product product, int quantity})> restored =
-          <({Product product, int quantity})>[];
-
-      for (final HeldInvoiceLine line in invoice.lines) {
-        final Product? product = _findProduct(line.productId);
-        if (product == null) continue;
-        restored.add((product: product, quantity: line.quantity));
-      }
-
-      // لو التبويب الحالي فاضي بنستخدمه بدل ما نفتح تبويب زيادة.
-      final CartController target = active.isEmpty ? active : _openTab();
-      target.restoreFrom(restored, discount: const CartDiscount.none());
-    });
-
-    if (failure == null) {
-      _applyStockDeltas(_heldQuantities(invoice), reserve: true);
-    }
-
-    return failure?.message;
-  }
-
-  Future<String?> deleteHeld(HeldInvoice invoice) async {
-    final ApiException? failure = await runAction(() async {
-      await _repository.discardHeld(invoice.id);
-      _held = _held.where((HeldInvoice h) => h.id != invoice.id).toList();
-    });
-
-    if (failure == null) {
-      _applyStockDeltas(_heldQuantities(invoice), reserve: true);
-    }
-
-    return failure?.message;
-  }
-
-  /// كميات فاتورة معلّقة بالسالب — إلغاؤها أو استرجاعها بيفك حجزها.
-  Map<String, int> _heldQuantities(HeldInvoice invoice) => <String, int>{
-    for (final HeldInvoiceLine line in invoice.lines)
-      line.productId: -line.quantity,
-  };
-
-  CartController _openTab() {
-    final CartController cart = _newCart();
-    _carts.add(cart);
-    _activeIndex = _carts.length - 1;
-    return cart;
-  }
-
-  Product? _findProduct(String id) {
-    for (final Product p in _products) {
-      if (p.id == id) return p;
-    }
-    return null;
-  }
-
   // ── الاعتماد ─────────────────────────────────────────────────────────────
   /// بيبعت الفاتورة للسيرفر ويرجّعها بأرقامه هو.
   /// بيرمي [ApiException] لو رفضها، عشان الشاشة تعرض السبب زي ما هو.
   Future<CompletedInvoice> checkout(List<PaymentInput> payments) async {
-    final Map<String, int> quantities = _quantitiesOf(active);
+    final Map<String, double> quantities = _quantitiesOf(active);
 
     final CompletedInvoice invoice = await _repository.checkout(
       lines: active.toInvoiceLines(),
@@ -294,7 +211,7 @@ class SalesSessionController extends ChangeNotifier with LoadState {
       discount: active.toDiscountInput(),
     );
 
-    _applyStockDeltas(quantities, reserve: false);
+    _applySoldQuantities(quantities);
     _closeOrClearActive();
     notifyListeners();
 

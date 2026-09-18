@@ -125,8 +125,6 @@ class ShiftTotals {
 
   double methodTotal(String method) => byMethod[method] ?? 0;
 
-  double get cardSales => methodTotal('card');
-  double get walletSales => methodTotal('wallet');
   double get creditSales => methodTotal('credit');
 }
 

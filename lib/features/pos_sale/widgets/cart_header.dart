@@ -45,7 +45,7 @@ class CartHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
-                '${Fmt.count(cart.itemsCount)} صنف',
+                '${Fmt.qty(cart.itemsCount)} صنف',
                 style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,

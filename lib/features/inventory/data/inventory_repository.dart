@@ -1,6 +1,7 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/data/branches_repository.dart';
 import '../../../core/models/branch.dart';
+import '../models/product_branch_stock.dart';
 import '../models/stock_record.dart';
 
 /// صفحة من سجلات المخزون مع عددها الكلي.
@@ -96,11 +97,18 @@ class InventoryRepository {
     return response.list.map(StockMovement.fromJson).toList();
   }
 
+  /// رصيد منتج واحد موزّع على الفروع — بتستخدمه شاشة تفاصيل المنتج.
+  Future<List<ProductBranchStock>> fetchBranchStock(String productId) async {
+    final ApiResponse response = await _api.get('/inventory/product/$productId');
+
+    return response.list.map(ProductBranchStock.fromJson).toList();
+  }
+
   /// تسوية يدوية — [delta] هو الفرق مش الرصيد النهائي.
   Future<void> adjust({
     required String productId,
     required String branchId,
-    required int delta,
+    required double delta,
     String? note,
   }) =>
       _api.post(
@@ -114,10 +122,10 @@ class InventoryRepository {
       );
 
   /// جرد — بنبعت الرصيد المعدود والسيرفر بيحسب الفرق.
-  Future<int> stocktake({
+  Future<double> stocktake({
     required String productId,
     required String branchId,
-    required int countedQuantity,
+    required double countedQuantity,
     String? note,
   }) async {
     final ApiResponse response = await _api.post(
@@ -130,14 +138,14 @@ class InventoryRepository {
       },
     );
 
-    return (response.object['delta'] as num?)?.toInt() ?? 0;
+    return (response.object['delta'] as num?)?.toDouble() ?? 0;
   }
 
   Future<void> transfer({
     required String productId,
     required String fromBranchId,
     required String toBranchId,
-    required int quantity,
+    required double quantity,
     String? note,
   }) =>
       _api.post(

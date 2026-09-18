@@ -16,7 +16,7 @@ class DraftOrderLine {
   final String unit;
 
   /// رصيد الصنف وقت ما اتضاف للأمر — بيساعد اللي بيطلب يقرر الكمية.
-  final int stock;
+  final double stock;
 
   int quantity;
   double unitCost;

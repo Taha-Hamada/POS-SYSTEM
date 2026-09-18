@@ -14,7 +14,7 @@ class PaymentHeader extends StatelessWidget {
     required this.customerName,
   });
 
-  final int itemsCount;
+  final double itemsCount;
   final String customerName;
 
   @override
@@ -48,7 +48,7 @@ class PaymentHeader extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Flexible(
                 child: Text(
-                  '$customerName • ${Fmt.count(itemsCount)} صنف',
+                  '$customerName • ${Fmt.qty(itemsCount)} صنف',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

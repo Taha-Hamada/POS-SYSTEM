@@ -16,6 +16,7 @@ import '../../features/inventory/screens/inventory_screen.dart';
 import '../../features/login/screens/login_screen.dart';
 import '../../features/login/screens/splash_screen.dart';
 import '../../features/pos_sale/screens/pos_sale_screen.dart';
+import '../../features/product_profile/screens/product_profile_screen.dart';
 import '../../features/products_list/screens/products_list_screen.dart';
 import '../../features/promotions/screens/promotions_screen.dart';
 import '../../features/purchase_orders/screens/create_purchase_order_screen.dart';
@@ -146,6 +147,16 @@ GoRouter createRouter(SessionController session) => GoRouter(
                 AddProductScreen(
                   key: ValueKey<String>(state.pathParameters['id']!),
                   productId: state.pathParameters['id'],
+                ),
+              ),
+            ),
+            // بعد new/categories/:id/edit عشان ماتبلعش مساراتهم.
+            GoRoute(
+              path: ':id',
+              pageBuilder: (_, GoRouterState state) => _page(
+                ProductProfileScreen(
+                  key: ValueKey<String>(state.pathParameters['id']!),
+                  productId: state.pathParameters['id']!,
                 ),
               ),
             ),

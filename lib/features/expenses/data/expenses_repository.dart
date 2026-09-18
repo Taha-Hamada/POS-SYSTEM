@@ -89,10 +89,10 @@ class ExpensesRepository {
     );
   }
 
+  /// المصروف دايمًا كاش — بيخرج من درج الوردية.
   Future<Expense> create({
     required String category,
     required double amount,
-    required PaymentMethod paymentMethod,
     String? branchId,
     DateTime? date,
     String? note,
@@ -102,7 +102,7 @@ class ExpensesRepository {
       body: <String, dynamic>{
         'category': category,
         'amount': amount,
-        'paymentMethod': paymentMethod.apiValue,
+        'paymentMethod': PaymentMethod.cash.apiValue,
         'branch': ?branchId,
         'date': ?date?.toIso8601String(),
         if (note != null && note.isNotEmpty) 'note': note,

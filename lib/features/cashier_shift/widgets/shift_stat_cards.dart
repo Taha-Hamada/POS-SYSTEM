@@ -6,21 +6,35 @@ import '../controllers/shift_controller.dart';
 import '../models/shift_stat.dart';
 import 'shift_mini_stat_card.dart';
 
-/// صف بطاقات إحصائيات الوردية.
+/// بطاقات إحصائيات الوردية.
+///
+/// العدد بيتغيّر حسب اللي فيه قيمة (مرتجعات، مصروفات…)، فبتتلف على أكتر
+/// من سطر بدل ما تتزنق كلها في صف واحد.
 class ShiftStatCards extends StatelessWidget {
   const ShiftStatCards({super.key});
+
+  /// أقصى عدد بطاقات في السطر — أكتر من كده الأرقام بتتقطع.
+  static const int _perRow = 5;
 
   @override
   Widget build(BuildContext context) {
     final List<ShiftStat> stats = context.read<ShiftController>().stats;
 
-    return Row(
-      children: <Widget>[
-        for (int i = 0; i < stats.length; i++) ...<Widget>[
-          Expanded(child: ShiftMiniStatCard(stat: stats[i])),
-          if (i != stats.length - 1) const SizedBox(width: AppSpacing.md),
-        ],
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int perRow = stats.length <= _perRow ? stats.length : _perRow;
+        final double width =
+            (constraints.maxWidth - AppSpacing.md * (perRow - 1)) / perRow;
+
+        return Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: <Widget>[
+            for (final ShiftStat stat in stats)
+              SizedBox(width: width, child: ShiftMiniStatCard(stat: stat)),
+          ],
+        );
+      },
     );
   }
 }

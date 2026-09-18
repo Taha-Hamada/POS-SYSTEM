@@ -10,6 +10,8 @@ import 'package:pos_system/core/models/product.dart';
 import 'package:pos_system/core/models/purchase_order.dart';
 import 'package:pos_system/core/models/supplier.dart';
 import 'package:pos_system/core/session/session_controller.dart';
+import 'package:pos_system/features/inventory/data/inventory_repository.dart';
+import 'package:pos_system/features/inventory/models/product_branch_stock.dart';
 import 'package:pos_system/features/products_list/data/products_repository.dart';
 import 'package:pos_system/features/purchase_orders/controllers/create_purchase_order_controller.dart';
 import 'package:pos_system/features/purchase_orders/controllers/purchase_orders_controller.dart';
@@ -208,7 +210,7 @@ void main() {
       '/products/${catalog[0].id}',
       query: <String, dynamic>{'branch': branchId},
     );
-    final int quantityBefore = Product.fromJson(stockBefore.object).stock;
+    final double quantityBefore = Product.fromJson(stockBefore.object).stock;
 
     final PurchaseOrder received = await repository.receive(
       created.id,
@@ -460,10 +462,117 @@ void main() {
     receive.dispose();
   });
 
+
+  test('الشحن بيتحمّل على حساب المورد مع آخر استلام', () async {
+    if (skip()) return;
+
+    final Product product = catalog.firstWhere(
+      (Product p) => p.cost > 0 && p.cost < p.price,
+    );
+
+    final PurchaseOrder created = await repository.create(
+      supplierId: supplierId,
+      branchId: branchId,
+      lines: <PurchaseLineInput>[
+        (productId: product.id, quantity: 10, unitCost: 5),
+      ],
+      shippingCost: 120,
+    );
+
+    expect(created.total, closeTo(created.subtotal + 120, 0.01));
+
+    await repository.confirm(created.id);
+
+    final Supplier before = await suppliersRepository.fetchOne(supplierId);
+
+    // أول شحنة: الأصناف بس، من غير الشحن.
+    await repository.receive(created.id, lines: <ReceiptLineInput>[
+      (orderLineId: created.lines.first.id, quantity: 4, unitCost: 5),
+    ]);
+    final Supplier mid = await suppliersRepository.fetchOne(supplierId);
+    expect(mid.balanceDue - before.balanceDue, closeTo(20, 0.01));
+
+    // آخر شحنة: الباقي ومعاه الشحن كامل.
+    await repository.receive(created.id, lines: <ReceiptLineInput>[
+      (orderLineId: created.lines.first.id, quantity: 6, unitCost: 5),
+    ]);
+    final Supplier after = await suppliersRepository.fetchOne(supplierId);
+
+    expect(after.balanceDue - before.balanceDue, closeTo(created.total, 0.01),
+        reason: 'المورد بياخد إجمالي الأمر بالشحن مش قيمة الأصناف بس');
+  });
+
+  test('المتوسط المرجح بيتحسب على رصيد كل الفروع', () async {
+    if (skip()) return;
+
+    final List<Branch> branches = await branchesRepository.fetchAll();
+    if (branches.length < 2) {
+      markTestSkipped('محتاج فرعين');
+      return;
+    }
+
+    final Product product = catalog.firstWhere(
+      (Product p) => p.cost > 0 && p.cost < p.price,
+    );
+
+    // الرصيد على كل الفروع قبل الاستلام.
+    final List<ProductBranchStock> rows =
+        await InventoryRepository(api).fetchBranchStock(product.id);
+    final double onHand = rows.fold<double>(
+      0,
+      (double s, ProductBranchStock b) => s + b.quantity,
+    );
+
+    if (onHand <= 0) {
+      markTestSkipped('الصنف مالوش رصيد');
+      return;
+    }
+
+    final double oldCost =
+        Product.fromJson((await api.get('/products/${product.id}')).object).cost;
+
+    // بنستلم في الفرع التاني بسعر أعلى بكتير: لو الحسبة على رصيد الفرع
+    // المستلِم بس، التكلفة هتقفز لسعر الشحنة وتتجاهل الرصيد القديم.
+    final double dearCost = oldCost * 4 + 20;
+    final String otherBranch =
+        branches.firstWhere((Branch b) => b.id != branchId).id;
+
+    final PurchaseOrder created = await repository.create(
+      supplierId: supplierId,
+      branchId: otherBranch,
+      lines: <PurchaseLineInput>[
+        (productId: product.id, quantity: 5, unitCost: dearCost),
+      ],
+    );
+    await repository.confirm(created.id);
+    await repository.receive(created.id, lines: <ReceiptLineInput>[
+      (orderLineId: created.lines.first.id, quantity: 5, unitCost: dearCost),
+    ]);
+
+    final double newCost =
+        Product.fromJson((await api.get('/products/${product.id}')).object).cost;
+    final double fair = (onHand * oldCost + 5 * dearCost) / (onHand + 5);
+
+    expect(newCost, closeTo(fair, 0.02),
+        reason: 'التكلفة حقل على المنتج، فالمتوسط على الرصيد كله');
+    expect(newCost, lessThan(dearCost),
+        reason: 'الرصيد القديم لازم يسحب المتوسط لتحت');
+
+    // رجوع للتكلفة الأصلية عشان ما نسيبش أثر على الداتا.
+    await api.patch(
+      '/products/${product.id}',
+      body: <String, dynamic>{'cost': oldCost},
+    );
+  });
+
   test('الاستلام بالمتوسط المرجح بيحرّك تكلفة الصنف', () async {
     if (skip()) return;
 
-    final Product product = catalog.firstWhere((Product p) => p.cost > 0);
+    // صنف تكلفته أقل من سعره عشان نقدر نرجّع التكلفة بعد الاختبار —
+    // السيرفر بيرفض أي حفظ تكلفته أعلى من سعر البيع.
+    final Product product = catalog.firstWhere(
+      (Product p) => p.cost > 0 && p.cost < p.price,
+    );
 
     // سعر شراء أعلى من التكلفة الحالية عشان الأثر يبان.
     final double higherCost = product.cost * 2 + 5;
@@ -492,6 +601,13 @@ void main() {
       newCost,
       lessThanOrEqualTo(higherCost + 0.01),
       reason: 'المتوسط مينفعش يعدّي سعر الشحنة',
+    );
+
+    // من غير الرجوع ده كل تشغيلة كانت بترفع تكلفة الصنف ~30%، لحد ما تعدّي
+    // سعر بيعه وتقلب قيمة المخزون في التقارير.
+    await api.patch(
+      '/products/${product.id}',
+      body: <String, dynamic>{'cost': product.cost},
     );
   });
 }

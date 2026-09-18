@@ -68,10 +68,13 @@ class _ProductsPanelState extends State<ProductsPanel>
   }
 
   /// مسح باركود: بيضيف الصنف فورًا لو لقاه، عشان الكاشير ميضغطش مرتين.
-  void _onScan(String code) {
+  Future<void> _onScan(String code) async {
     final SalesSessionController session =
         context.read<SalesSessionController>();
-    final Product? found = session.productByBarcode(code);
+
+    // بيدوّر محليًا الأول وبعدين على السيرفر، فممكن ياخد لحظة.
+    final Product? found = await session.productByBarcode(code);
+    if (!mounted) return;
 
     if (found == null) {
       showAppSnackBar(context, 'مفيش منتج بالكود «$code»', isError: true);

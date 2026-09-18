@@ -164,7 +164,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ملف العميل'), findsOneWidget);
-      expect(find.text('الحد الائتماني'), findsOneWidget);
+      // سقف الآجل اتشال — البيع الآجل بقى بأي مبلغ.
+      expect(find.text('الحد الائتماني'), findsNothing);
+      expect(find.text('إجمالي المشتريات'), findsWidgets);
 
       // كشف الحساب — Timeline
       await tester.tap(find.text('كشف الحساب'));

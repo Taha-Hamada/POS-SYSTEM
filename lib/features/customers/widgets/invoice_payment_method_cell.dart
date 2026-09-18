@@ -11,15 +11,11 @@ class InvoicePaymentMethodCell extends StatelessWidget {
 
   IconData get _icon => switch (method) {
         'cash' => Icons.payments_outlined,
-        'card' => Icons.credit_card_rounded,
-        'wallet' => Icons.account_balance_wallet_outlined,
         _ => Icons.schedule_rounded,
       };
 
   String get _label => switch (method) {
         'cash' => 'كاش',
-        'card' => 'بطاقة',
-        'wallet' => 'محفظة',
         'credit' => 'آجل',
         _ => method,
       };

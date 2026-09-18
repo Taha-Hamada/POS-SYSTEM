@@ -14,12 +14,21 @@ class PaymentRemainingChip extends StatelessWidget {
     final PaymentController payment = context.watch<PaymentController>();
     final bool covered = payment.isCovered;
     final double change = payment.change;
+    final double overpay = payment.nonCashOverpay;
 
-    final Color color = covered ? AppColors.success : AppColors.warning;
-    final String label = covered
+    // الزيادة في غير الكاش غلط إدخال مش باقي — مفيش فكّة من الفيزا.
+    final Color color = overpay > 0
+        ? AppColors.danger
+        : covered
+        ? AppColors.success
+        : AppColors.warning;
+
+    final String label = overpay > 0
+        ? 'زيادة مش كاش: ${Fmt.money(overpay)} — قلّلها'
+        : covered
         ? change > 0.005
-            ? 'الباقي للعميل: ${Fmt.money(change)}'
-            : 'المبلغ مكتمل'
+              ? 'الباقي للعميل: ${Fmt.money(change)}'
+              : 'المبلغ مكتمل'
         : 'المتبقي: ${Fmt.money(payment.remainingAfter)}';
 
     return AnimatedContainer(
@@ -37,7 +46,9 @@ class PaymentRemainingChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(
-            covered
+            overpay > 0
+                ? Icons.error_outline_rounded
+                : covered
                 ? Icons.check_circle_rounded
                 : Icons.hourglass_bottom_rounded,
             size: 15,

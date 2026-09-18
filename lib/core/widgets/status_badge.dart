@@ -17,8 +17,8 @@ class StatusBadge extends StatelessWidget {
 
   /// Badge جاهز لحالة المخزون
   factory StatusBadge.stock({
-    required int stock,
-    required int minStock,
+    required num stock,
+    required num minStock,
     bool compact = false,
   }) {
     if (stock <= 0) {

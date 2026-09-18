@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_data_table.dart';
-import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
@@ -12,6 +11,7 @@ import 'product_category_cell.dart';
 import 'product_name_cell.dart';
 import 'product_row_actions.dart';
 import 'product_stock_cell.dart';
+import 'products_list_header.dart';
 import 'products_table_footer.dart';
 
 /// جدول المنتجات بأعمدته وصفوفه.
@@ -73,8 +73,7 @@ class ProductsTable extends StatelessWidget {
         for (final Product p in products.rows)
           AppTableRow(
             cellsBuilder: (bool hovered) => _cells(p, hovered),
-            onTap: () =>
-                showPlainSnackBar(context, 'فتح تفاصيل «${p.name}»'),
+            onTap: () => openOverProducts(context, '/products/${p.id}'),
           ),
       ],
       footer: const ProductsTableFooter(),

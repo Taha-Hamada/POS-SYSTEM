@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_system/core/widgets/app_form_field.dart';
+import 'package:pos_system/features/product_profile/widgets/product_branches_tab.dart';
+import 'package:pos_system/features/product_profile/widgets/product_details_tab.dart';
 import 'package:pos_system/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,21 +10,28 @@ import 'support/fake_backend.dart';
 
 const Size _desktop = Size(1600, 950);
 
-Future<void> _pumpApp(WidgetTester tester) async {
+/// بيرجّع الباك اند المزيّف عشان الاختبار يقدر يتأكد من اللي اتحفظ فيه.
+Future<FakeBackend> _pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = _desktop;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
+
+  final FakeBackend backend = FakeBackend();
+  await tester.pumpWidget(PosSystemApp(api: backend.client()));
   await tester.pumpAndSettle();
+
+  return backend;
 }
 
-Future<void> _openScreen(WidgetTester tester, String navLabel) async {
-  await _pumpApp(tester);
+Future<FakeBackend> _openScreen(WidgetTester tester, String navLabel) async {
+  final FakeBackend backend = await _pumpApp(tester);
   final Finder item = find.text(navLabel).first;
   await tester.ensureVisible(item);
   await tester.pumpAndSettle();
   await tester.tap(item);
   await tester.pumpAndSettle();
+
+  return backend;
 }
 
 /// شاشات تنبيهات المخزون وسجل المرتجعات والأقسام على الباك اند المزيّف.
@@ -94,26 +104,78 @@ void main() {
     expect(find.text('SKU'), findsOneWidget);
   });
 
-  testWidgets('حوار تعديل الأسعار بيعاين السعر الجديد', (
+  testWidgets('الضغط على منتج بيفتح تفاصيله ويعدّل سعره من جوه', (
+    WidgetTester tester,
+  ) async {
+    final FakeBackend backend = await _openScreen(tester, 'المنتجات');
+
+    await tester.tap(find.text('بيبسي كانز'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تفاصيل المنتج'), findsOneWidget);
+    expect(find.text('البيانات'), findsOneWidget);
+    expect(find.text('الأرصدة'), findsOneWidget);
+    expect(find.text('الحركات'), findsOneWidget);
+
+    // شريط الحفظ مبيظهرش غير لما يبقى فيه تعديل فعلي.
+    expect(find.text('حفظ التعديلات'), findsNothing);
+
+    // «سعر البيع» مكتوب في بطاقة الملخّص كمان، فبندوّر على الحقل نفسه.
+    await tester.enterText(
+      find.descendant(
+        of: find.byWidgetPredicate(
+          (Widget w) => w is AppFormField && w.label == 'سعر البيع',
+        ),
+        matching: find.byType(TextField),
+      ),
+      '30',
+    );
+    await tester.pumpAndSettle();
+
+    // شريط الحفظ تحت خالص في التبويب، فلازم ننزّله عشان يتبني.
+    await tester.scrollUntilVisible(
+      find.text('حفظ التعديلات'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(ProductDetailsTab),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('فيه تعديلات لسه ماتحفظتش'), findsOneWidget);
+
+    await tester.tap(find.text('حفظ التعديلات'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('اتحفظت تعديلات المنتج'), findsOneWidget);
+    expect(backend.products.first['price'], 30);
+  });
+
+  testWidgets('تفاصيل المنتج بتعرض أرصدة الفروع وحركات المخزون', (
     WidgetTester tester,
   ) async {
     await _openScreen(tester, 'المنتجات');
 
-    await tester.tap(find.text('تعديل الأسعار'));
+    await tester.tap(find.text('بيبسي كانز'));
     await tester.pumpAndSettle();
 
-    expect(find.text('تعديل الأسعار الجماعي'), findsOneWidget);
+    await tester.tap(find.text('الأرصدة'));
+    await tester.pumpAndSettle();
 
-    await tester.enterText(
+    // اسم الفرع بيبان في القائمة الجانبية كمان، فبندوّر عليه جوه التبويب.
+    expect(
       find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(TextField),
+        of: find.byType(ProductBranchesTab),
+        matching: find.text('الفرع الرئيسي'),
       ),
-      '10',
+      findsOneWidget,
     );
-    await tester.pumpAndSettle();
 
-    expect(find.text('معاينة'), findsOneWidget);
-    expect(find.text('تطبيق التعديل'), findsOneWidget);
+    await tester.tap(find.text('الحركات'));
+    await tester.pumpAndSettle();
+    expect(find.text('رصيد افتتاحي'), findsOneWidget);
   });
 }

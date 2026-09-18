@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/branch.dart';
-import '../../../core/models/payment_method.dart';
 import '../../../core/widgets/app_dropdown.dart';
 import '../../../core/widgets/app_form_field.dart';
 import '../../../core/widgets/labeled_field.dart';
@@ -59,56 +58,26 @@ class AddExpenseFields extends StatelessWidget {
           _CategorySuggestions(categories: form.knownCategories),
         ],
         const SizedBox(height: AppSpacing.lg),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: LabeledField(
-                label: 'طريقة الدفع',
-                child: AppDropdown<PaymentMethod>(
-                  value: form.method,
-                  width: double.infinity,
-                  height: 48,
-                  icon: Icons.payments_outlined,
-                  onChanged: form.setMethod,
-                  items: <AppDropdownItem<PaymentMethod>>[
-                    for (final PaymentMethod m in PaymentMethod.values)
-                      if (m != PaymentMethod.credit)
-                        AppDropdownItem<PaymentMethod>(
-                          value: m,
-                          label: m.label,
-                          icon: m.icon,
-                        ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: LabeledField(
-                label: 'الفرع',
-                child: AppDropdown<String?>(
-                  value: form.branchId,
-                  width: double.infinity,
-                  height: 48,
-                  icon: Icons.store_outlined,
-                  onChanged: form.setBranch,
-                  items: <AppDropdownItem<String?>>[
-                    for (final Branch b in form.branches)
-                      AppDropdownItem<String?>(value: b.id, label: b.name),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        LabeledField(
+          label: 'الفرع',
+          child: AppDropdown<String?>(
+            value: form.branchId,
+            width: double.infinity,
+            height: 48,
+            icon: Icons.store_outlined,
+            onChanged: form.setBranch,
+            items: <AppDropdownItem<String?>>[
+              for (final Branch b in form.branches)
+                AppDropdownItem<String?>(value: b.id, label: b.name),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
-        // الكاش بيخرج من الدرج، فالسيرفر بيربطه بوردية اللي سجّله.
-        if (form.method == PaymentMethod.cash)
-          Text(
-            'المصروف الكاش هيتخصم من درج ورديتك المفتوحة.',
-            style: AppText.caption.copyWith(fontSize: 11.5),
-          ),
+        // كل المصروفات كاش دلوقتي، وبتخرج من درج وردية اللي سجّلها.
+        Text(
+          'المصروف هيتخصم من درج ورديتك المفتوحة.',
+          style: AppText.caption.copyWith(fontSize: 11.5),
+        ),
         const SizedBox(height: AppSpacing.lg),
         AppFormField(
           label: 'ملاحظة',

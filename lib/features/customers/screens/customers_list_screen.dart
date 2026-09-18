@@ -43,7 +43,6 @@ class _CustomersListBody extends StatelessWidget {
       name: data.name,
       phone: data.phone,
       email: data.email,
-      creditLimit: data.creditLimit,
     );
 
     if (!context.mounted) return;

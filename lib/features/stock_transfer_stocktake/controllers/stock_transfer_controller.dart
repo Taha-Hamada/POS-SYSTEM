@@ -40,7 +40,7 @@ class StockTransferController extends ChangeNotifier with LoadState {
 
   /// الأصناف اللي في الفرع المُرسِل وليها رصيد متاح.
   List<StockRecord> get availableStock =>
-      _sourceStock.where((StockRecord r) => r.available > 0).toList();
+      _sourceStock.where((StockRecord r) => r.onHand > 0).toList();
 
   String _branchName(String? id) => _branches
           .where((Branch b) => b.id == id)
@@ -60,8 +60,8 @@ class StockTransferController extends ChangeNotifier with LoadState {
       !isLoading &&
       _lines.every((TransferLine l) => l.quantity > 0 && !l.exceedsAvailable);
 
-  int get totalQuantity =>
-      _lines.fold<int>(0, (int s, TransferLine l) => s + l.quantity);
+  double get totalQuantity =>
+      _lines.fold<double>(0, (double s, TransferLine l) => s + l.quantity);
 
   double get totalValue =>
       _lines.fold<double>(0, (double s, TransferLine l) => s + l.value);
@@ -130,8 +130,8 @@ class StockTransferController extends ChangeNotifier with LoadState {
     notifyListeners();
   }
 
-  void setQuantity(TransferLine line, int quantity) {
-    line.quantity = quantity.clamp(0, line.available);
+  void setQuantity(TransferLine line, double quantity) {
+    line.quantity = quantity.clamp(0, line.available).toDouble();
     notifyListeners();
   }
 

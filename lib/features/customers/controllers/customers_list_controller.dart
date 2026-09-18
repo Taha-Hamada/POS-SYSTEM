@@ -111,14 +111,12 @@ class CustomersListController extends ChangeNotifier with LoadState {
     required String name,
     required String phone,
     String? email,
-    double? creditLimit,
   }) async {
     final ApiException? failure = await runAction(() async {
       final Customer created = await _repository.create(
         name: name,
         phone: phone,
         email: email,
-        creditLimit: creditLimit,
       );
 
       _all = <Customer>[created, ..._all];

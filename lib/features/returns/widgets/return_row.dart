@@ -91,7 +91,8 @@ class _ReturnRowState extends State<ReturnRow> {
                   child: ReturnQuantityField(
                     initialQuantity: line.returnQuantity,
                     enabled: line.selected,
-                    onChanged: (int v) => returns.setReturnQuantity(line, v),
+                    onChanged: (double v) =>
+                        returns.setReturnQuantity(line, v),
                   ),
                 ),
               ),

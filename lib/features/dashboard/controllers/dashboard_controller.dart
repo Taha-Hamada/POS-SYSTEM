@@ -100,18 +100,6 @@ class DashboardController extends ChangeNotifier with LoadState {
           icon: Icons.payments_rounded,
         ),
         PaymentSlice(
-          label: 'بطاقة',
-          value: _data.paymentMethods['card'] ?? 0,
-          color: AppColors.info,
-          icon: Icons.credit_card_rounded,
-        ),
-        PaymentSlice(
-          label: 'محفظة',
-          value: _data.paymentMethods['wallet'] ?? 0,
-          color: AppColors.accent,
-          icon: Icons.account_balance_wallet_rounded,
-        ),
-        PaymentSlice(
           label: 'آجل',
           value: _data.paymentMethods['credit'] ?? 0,
           color: AppColors.warning,

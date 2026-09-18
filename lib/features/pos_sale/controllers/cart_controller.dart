@@ -95,10 +95,13 @@ class CartController extends ChangeNotifier {
   double get tax => totals.taxAmount;
   double get total => totals.total;
 
-  int get itemsCount =>
-      _lines.fold<int>(0, (int sum, CartLine l) => sum + l.quantity);
+  double get itemsCount =>
+      _lines.fold<double>(0, (double sum, CartLine l) => sum + l.quantity);
 
   // ── إجراءات ──────────────────────────────────────────────────────────────
+  /// أقل كمية معتبرة — تحتها بنعتبر السطر اتشال.
+  static const double _epsilon = 0.0005;
+
   /// بيرجّع false لو المنتج نافد — الواجهة هي اللي بتعرض التنبيه.
   bool addProduct(Product product) {
     if (product.isOutOfStock) return false;
@@ -110,21 +113,35 @@ class CartController extends ChangeNotifier {
     if (index == -1) {
       _lines.insert(0, CartLine(product: product));
     } else {
-      // مبنزوّدش فوق المتاح في المخزن، عشان السيرفر ميرفضش الفاتورة كلها بعدين.
+      // مبنزوّدش فوق الرصيد، عشان السيرفر ميرفضش الفاتورة كلها بعدين.
       if (_exceedsStock(_lines[index], 1)) return false;
-      _lines[index].quantity++;
+      _lines[index].quantity += 1;
     }
 
     notifyListeners();
     return true;
   }
 
+  /// بيزوّد أو بينقّص الكمية بمقدار [delta].
   /// بيرجّع false لو الزيادة هتعدّي الرصيد المتاح.
-  bool changeQuantity(CartLine line, int delta) {
+  bool changeQuantity(CartLine line, double delta) {
     if (delta > 0 && _exceedsStock(line, delta)) return false;
 
-    final int next = line.quantity + delta;
-    if (next <= 0) {
+    return setQuantity(line, line.quantity + delta);
+  }
+
+  /// بيحط كمية بعينها — الكاشير بيكتبها بإيده للأصناف اللي بالكيلو.
+  /// بيرجّع false لو الكمية أكبر من الرصيد.
+  bool setQuantity(CartLine line, double quantity) {
+    final double next = _round3(quantity);
+
+    if (line.product.trackStock &&
+        line.product.stock > 0 &&
+        next > line.product.stock) {
+      return false;
+    }
+
+    if (next < _epsilon) {
       _lines.remove(line);
     } else {
       line.quantity = next;
@@ -134,9 +151,12 @@ class CartController extends ChangeNotifier {
     return true;
   }
 
-  bool _exceedsStock(CartLine line, int delta) {
+  /// الكميات بتتقرّب لتلات خانات — كفاية للجرامات ومبتسيبش كسور عائمة غريبة.
+  static double _round3(double value) => (value * 1000).round() / 1000;
+
+  bool _exceedsStock(CartLine line, double delta) {
     if (!line.product.trackStock) return false;
-    return line.quantity + delta > line.product.available;
+    return line.quantity + delta > line.product.stock;
   }
 
   void removeLine(CartLine line) {
@@ -166,14 +186,14 @@ class CartController extends ChangeNotifier {
   /// المنتجات بتتاخد من الكتالوج المحمّل عشان نعرف رصيدها الحالي؛
   /// أي صنف اتشال من الكتالوج بيتجاهل بدل ما يكسر الاسترجاع.
   void restoreFrom(
-    List<({Product product, int quantity})> restored, {
+    List<({Product product, double quantity})> restored, {
     Customer? customer,
     CartDiscount? discount,
   }) {
     _lines
       ..clear()
       ..addAll(<CartLine>[
-        for (final ({Product product, int quantity}) item in restored)
+        for (final ({Product product, double quantity}) item in restored)
           CartLine(product: item.product, quantity: item.quantity),
       ]);
 

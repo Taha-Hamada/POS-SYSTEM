@@ -367,6 +367,49 @@ class FakeBackend {
     <String, dynamic>{'id': 'b2', 'name': 'فرع المعادي', 'code': 'MAAD'},
   ];
 
+  /// رصيد منتج واحد على الفروع — الفرع الرئيسي بس ليه سجل في البيانات دي.
+  List<Map<String, dynamic>> _branchStockFor(String productId) {
+    final Map<String, dynamic> product = products.firstWhere(
+      (Map<String, dynamic> p) => p['id'] == productId,
+      orElse: () => products.first,
+    );
+
+    return <Map<String, dynamic>>[
+      <String, dynamic>{
+        'quantity': product['stock'],
+        'reserved': 0,
+        'minStock': null,
+        'effectiveMinStock': product['minStock'],
+        'available': product['stock'],
+        'lastCountedAt': null,
+        'updatedAt': DateTime.now().toIso8601String(),
+        'branch': <String, dynamic>{'_id': 'b1', 'name': 'الفرع الرئيسي'},
+      },
+    ];
+  }
+
+  /// حركة الرصيد الافتتاحي بس — كفاية عشان التبويب يبان بمحتوى.
+  List<Map<String, dynamic>> _movementsFor(String productId) {
+    final Map<String, dynamic> product = products.firstWhere(
+      (Map<String, dynamic> p) => p['id'] == productId,
+      orElse: () => products.first,
+    );
+
+    return <Map<String, dynamic>>[
+      <String, dynamic>{
+        'id': 'mv-$productId',
+        'product': <String, dynamic>{'id': productId, 'name': product['name']},
+        'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
+        'quantity': product['stock'],
+        'balanceAfter': product['stock'],
+        'reason': 'opening',
+        'note': '',
+        'createdAt': DateTime.now().toIso8601String(),
+        'performedBy': null,
+      },
+    ];
+  }
+
   /// سجلات مخزون مبنية من المنتجات، مع فلترة الحالة زي السيرفر.
   List<Map<String, dynamic>> _stockFor(String? status) {
     final List<Map<String, dynamic>> all = <Map<String, dynamic>>[
@@ -461,7 +504,7 @@ class FakeBackend {
       },
       'paymentMethods': <String, dynamic>{
         'cash': <String, dynamic>{'amount': sales * 0.6, 'count': 10},
-        'card': <String, dynamic>{'amount': sales * 0.4, 'count': 5},
+        'credit': <String, dynamic>{'amount': sales * 0.4, 'count': 5},
       },
       'series': <Map<String, dynamic>>[
         for (int i = days - 1; i >= 0; i -= 1)
@@ -736,7 +779,7 @@ class FakeBackend {
       return _ok(product);
     }
 
-    if (path.endsWith('/products')) {
+    if (path.endsWith('/products') && !path.contains('/suppliers/')) {
       return _page(products);
     }
 
@@ -784,7 +827,7 @@ class FakeBackend {
           'cashSales': 1900,
           'expectedCash': 2900,
           'byMethod': <String, dynamic>{
-            'card': <String, dynamic>{'amount': 500},
+            'credit': <String, dynamic>{'amount': 500},
           },
         },
       });
@@ -924,6 +967,44 @@ class FakeBackend {
       return _ok(created);
     }
 
+    // منتج واحد: القراءة لشاشة التفاصيل والفورم، والـPATCH بيحفظ التعديل.
+    if (path.contains('/products/') && !path.contains('/suppliers/')) {
+      final String id = path.split('/products/').last.split('/').first;
+      final Map<String, dynamic>? stored = products
+          .cast<Map<String, dynamic>?>()
+          .firstWhere(
+            (Map<String, dynamic>? p) => p!['id'] == id,
+            orElse: () => null,
+          );
+
+      if (stored == null) {
+        return _notFound('المنتج غير موجود');
+      }
+
+      if (request.method == 'PATCH') {
+        final Map<String, dynamic> body =
+            jsonDecode(request.body) as Map<String, dynamic>;
+
+        // القسم بيوصل كمعرّف نص، والرد بيرجّعه ككائن زي السيرفر.
+        final Object? category = body['category'];
+        stored.addAll(<String, dynamic>{
+          ...body,
+          'category': category is String
+              ? categories.firstWhere(
+                  (Map<String, dynamic> c) => c['id'] == category,
+                  orElse: () => stored['category'] as Map<String, dynamic>,
+                )
+              : stored['category'],
+        });
+      }
+
+      return _ok(<String, dynamic>{
+        ...stored,
+        'description': stored['description'] ?? '',
+        'variants': stored['variants'] ?? <Map<String, dynamic>>[],
+      });
+    }
+
     if (path.endsWith('/categories')) {
       return _page(categories);
     }
@@ -946,7 +1027,16 @@ class FakeBackend {
     }
 
     if (path.endsWith('/inventory/movements')) {
-      return _page(<Map<String, dynamic>>[]);
+      final String? productId = request.url.queryParameters['product'];
+      if (productId == null) return _page(<Map<String, dynamic>>[]);
+
+      return _page(_movementsFor(productId));
+    }
+
+    // رصيد منتج واحد موزّع على الفروع — تبويب الأرصدة في تفاصيل المنتج.
+    if (path.contains('/inventory/product/')) {
+      final String id = path.split('/inventory/product/').last;
+      return _ok(_branchStockFor(id));
     }
 
     // ‏‎/reports/branches بينتهي بـ‎/branches كمان، فبنستثنيه هنا.
@@ -1779,7 +1869,7 @@ class FakeBackend {
           stock: 4,
           minStock: 20,
         ),
-        // منتج متوقّف — بيغذي تبويب «غير نشطة».
+        // منتج متوقّف — بيغذي شارة «غير نشط» في الجدول.
         product(
           id: 'p3',
           name: 'شيبسي جبنة',

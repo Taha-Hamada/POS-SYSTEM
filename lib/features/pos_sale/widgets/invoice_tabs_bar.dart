@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/sales_session_controller.dart';
-import 'held_invoices_button.dart';
 import 'invoice_tab.dart';
 
 /// شريط الفواتير المفتوحة أعلى السلة + زرار فاتورة جديدة والمعلّقة.
@@ -62,8 +61,6 @@ class InvoiceTabsBar extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          const HeldInvoicesButton(),
         ],
       ),
     );

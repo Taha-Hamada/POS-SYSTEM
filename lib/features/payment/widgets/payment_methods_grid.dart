@@ -6,38 +6,46 @@ import '../controllers/payment_controller.dart';
 import '../../../core/models/payment_method.dart';
 import 'payment_method_card.dart';
 
-/// شبكة 2×2 لطرق الدفع.
+/// شبكة طرق الدفع — صفّين على الأكتر، اتنين في كل صف.
 ///
-/// بدون GridView عشان تفضل قابلة للقياس جوه عمود بارتفاع طبيعي.
+/// بتتبني من [PaymentMethod.values] مش بعدد ثابت، عشان تفضل شغّالة لو
+/// عدد الطرق اتغيّر (زي ما حصل لما الفيزا والمحفظة اتشالوا).
 class PaymentMethodsGrid extends StatelessWidget {
   const PaymentMethodsGrid({super.key});
+
+  static const int _perRow = 2;
 
   @override
   Widget build(BuildContext context) {
     final PaymentController payment = context.watch<PaymentController>();
+    const List<PaymentMethod> methods = PaymentMethod.values;
 
-    Widget card(int index) {
-      final PaymentMethod method = PaymentMethod.values[index];
-      return PaymentMethodCard(
-        method: method,
-        selected: payment.method == method,
-        used: payment.isUsed(method),
-        onTap: () => payment.selectMethod(method),
-      );
-    }
+    Widget card(PaymentMethod method) => PaymentMethodCard(
+      method: method,
+      selected: payment.method == method,
+      used: payment.isUsed(method),
+      onTap: () => payment.selectMethod(method),
+    );
+
+    final int rows = (methods.length + _perRow - 1) ~/ _perRow;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        for (int row = 0; row < 2; row++) ...<Widget>[
+        for (int row = 0; row < rows; row++) ...<Widget>[
           if (row > 0) const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 92,
             child: Row(
               children: <Widget>[
-                for (int col = 0; col < 2; col++) ...<Widget>[
+                for (int col = 0; col < _perRow; col++) ...<Widget>[
                   if (col > 0) const SizedBox(width: AppSpacing.md),
-                  Expanded(child: card(row * 2 + col)),
+                  // الخانة الفاضية في آخر صف بتفضل مساحة عشان العرض ميتغيرش.
+                  Expanded(
+                    child: row * _perRow + col < methods.length
+                        ? card(methods[row * _perRow + col])
+                        : const SizedBox.shrink(),
+                  ),
                 ],
               ],
             ),

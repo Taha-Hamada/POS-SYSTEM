@@ -86,11 +86,12 @@ class _CartItemTileState extends State<CartItemTile> {
                   quantity: line.quantity,
                   onIncrement: () => cart.changeQuantity(line, 1),
                   onDecrement: () => cart.changeQuantity(line, -1),
+                  onTyped: (double value) => cart.setQuantity(line, value),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
-                    '${Fmt.amount(line.product.price)} × ${line.quantity}',
+                    '${Fmt.amount(line.product.price)} × ${Fmt.qty(line.quantity)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppText.caption.copyWith(fontSize: 11.5),

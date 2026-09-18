@@ -10,7 +10,7 @@ import 'invoice_math.dart';
 /// قيمة خصم عرض واحد على سطر — مبتعديش قيمة السطر أبدًا.
 double promotionDiscountFor(
   Promotion promotion, {
-  required int quantity,
+  required double quantity,
   required double unitPrice,
 }) {
   final double gross = round2(unitPrice * quantity);
@@ -22,6 +22,7 @@ double promotionDiscountFor(
           ? gross * promotion.discountPercent / 100
           : 0,
     // كل مجموعة كاملة (اشترِ + مجاني) بتدي القطع المجانية بتاعتها.
+    // الكسور مبتدخلش هنا: نص كيلو مش بياخد قطعة مجانية.
     PromotionType.buyXGetY =>
       (quantity ~/ (promotion.buyQuantity + promotion.getQuantity)) *
           promotion.getQuantity *
@@ -36,7 +37,7 @@ double promotionDiscountFor(
   List<Promotion> promotions, {
   required String productId,
   required String? categoryId,
-  required int quantity,
+  required double quantity,
   required double unitPrice,
 }) {
   Promotion? best;

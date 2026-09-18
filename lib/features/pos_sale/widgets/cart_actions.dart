@@ -19,23 +19,9 @@ import '../data/pos_repository.dart';
 import '../models/cart_discount.dart';
 import 'discount_dialog.dart';
 
-/// أزرار أسفل السلة: تعليق الفاتورة، خصم، والدفع.
+/// أزرار أسفل السلة: خصم والدفع.
 class CartActions extends StatelessWidget {
   const CartActions({super.key});
-
-  Future<void> _holdInvoice(BuildContext context) async {
-    final SalesSessionController session = context
-        .read<SalesSessionController>();
-
-    final String? error = await session.holdActive();
-    if (!context.mounted) return;
-
-    showAppSnackBar(
-      context,
-      error ?? 'اتعلّقت الفاتورة واتحجز رصيدها — ترجّعها من زرار ⏸ فوق السلة',
-      isError: error != null,
-    );
-  }
 
   Future<void> _applyDiscount(BuildContext context) async {
     final CartController cart = context.read<CartController>();
@@ -107,26 +93,11 @@ class CartActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: SecondaryButton(
-                label: 'تعليق الفاتورة',
-                icon: Icons.pause_circle_outline_rounded,
-                expanded: true,
-                onPressed: enabled ? () => _holdInvoice(context) : null,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: SecondaryButton(
-                label: 'خصم',
-                icon: Icons.local_offer_outlined,
-                expanded: true,
-                onPressed: enabled ? () => _applyDiscount(context) : null,
-              ),
-            ),
-          ],
+        SecondaryButton(
+          label: 'خصم',
+          icon: Icons.local_offer_outlined,
+          expanded: true,
+          onPressed: enabled ? () => _applyDiscount(context) : null,
         ),
         const SizedBox(height: AppSpacing.md),
         PrimaryButton(

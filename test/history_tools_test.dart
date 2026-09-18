@@ -79,7 +79,7 @@ void main() {
       await sales.load();
 
       final Product target = sales.products.firstWhere(
-        (Product p) => p.trackStock && p.price > 0 && p.available > 5,
+        (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
       );
       sales.active
         ..addProduct(target)
@@ -157,7 +157,7 @@ void main() {
 
     final StocktakeLine line = stocktake.lines.first;
     final String productId = line.productId;
-    final int original = line.systemQuantity;
+    final double original = line.systemQuantity;
 
     stocktake.setActualQuantity(line, original + 1);
     final StocktakeResult result = await stocktake.submit(note: 'اختبار');

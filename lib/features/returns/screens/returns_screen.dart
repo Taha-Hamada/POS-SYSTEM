@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
-import '../../../core/session/settings_controller.dart';
 import '../data/returns_repository.dart';
 
 import '../../../core/widgets/screen_header.dart';
@@ -24,7 +23,6 @@ class ReturnsScreen extends StatelessWidget {
     return ChangeNotifierProvider<ReturnsController>(
       create: (_) => ReturnsController(
         ReturnsRepository(context.read<ApiClient>()),
-        taxRate: context.read<SettingsController>().taxRate,
       ),
       child: Consumer<ReturnsController>(
         builder: (

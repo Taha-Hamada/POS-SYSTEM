@@ -6,7 +6,6 @@ class Customer {
     required this.phone,
     this.email,
     this.balance = 0,
-    this.creditLimit = 0,
     this.totalPurchases = 0,
     this.ordersCount = 0,
     this.lastVisitAt,
@@ -19,7 +18,6 @@ class Customer {
     phone: json['phone'] as String? ?? '',
     email: json['email'] as String?,
     balance: (json['balance'] as num?)?.toDouble() ?? 0,
-    creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
     totalPurchases: (json['totalPurchases'] as num?)?.toDouble() ?? 0,
     ordersCount: (json['ordersCount'] as num?)?.toInt() ?? 0,
     lastVisitAt: json['lastVisitAt'] == null
@@ -36,7 +34,6 @@ class Customer {
       phone = '',
       email = null,
       balance = 0,
-      creditLimit = 0,
       totalPurchases = 0,
       ordersCount = 0,
       lastVisitAt = null,
@@ -49,7 +46,6 @@ class Customer {
 
   /// موجب = ليه فلوس عندنا، سالب = عليه فلوس آجل.
   final double balance;
-  final double creditLimit;
   final double totalPurchases;
   final int ordersCount;
   final DateTime? lastVisitAt;
@@ -60,12 +56,6 @@ class Customer {
   bool get hasDebt => balance < 0;
 
   double get debt => balance < 0 ? -balance : 0;
-
-  /// الباقي المسموح بيه للبيع الآجل.
-  double get availableCredit =>
-      (creditLimit + (balance < 0 ? balance : 0)).clamp(0, creditLimit);
-
-  bool get canBuyOnCredit => !isWalkIn && availableCredit > 0;
 
   String get initials {
     final List<String> parts = name.trim().split(RegExp(r'\s+'));

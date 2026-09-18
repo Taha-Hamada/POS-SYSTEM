@@ -88,8 +88,6 @@ Future<Uint8List> buildShiftReportPdf({
             size: size,
           ),
           kv('كاش', totals.cashSales),
-          kv('بطاقة', totals.cardSales),
-          kv('محفظة', totals.walletSales),
           kv('آجل', totals.creditSales),
           if (totals.discountTotal > 0) kv('الخصومات', totals.discountTotal),
           if (totals.taxTotal > 0) kv('الضريبة', totals.taxTotal),

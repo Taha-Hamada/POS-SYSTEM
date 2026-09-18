@@ -92,7 +92,7 @@ class TransferLineRow extends StatelessWidget {
               value: line.quantity,
               enabled: editable,
               hasError: line.exceedsAvailable,
-              onChanged: (int v) => transfer.setQuantity(line, v),
+              onChanged: (double v) => transfer.setQuantity(line, v),
             ),
           ),
           Expanded(

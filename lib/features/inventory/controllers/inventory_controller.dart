@@ -163,7 +163,6 @@ class InventoryController extends ChangeNotifier with LoadState {
     return switch (StockSortColumn.values[_sortIndex]) {
       StockSortColumn.product => '${prefix}name',
       StockSortColumn.onHand => '${prefix}quantity',
-      StockSortColumn.available => '${prefix}available',
       _ => null,
     };
   }
@@ -197,7 +196,6 @@ class InventoryController extends ChangeNotifier with LoadState {
       ..sort((StockRecord a, StockRecord b) {
         final int result = switch (StockSortColumn.values[_sortIndex]) {
           StockSortColumn.branch => a.branchName.compareTo(b.branchName),
-          StockSortColumn.reserved => a.reserved.compareTo(b.reserved),
           StockSortColumn.lastMovement =>
             a.lastMovement.compareTo(b.lastMovement),
           _ => 0,
@@ -215,7 +213,7 @@ class InventoryController extends ChangeNotifier with LoadState {
   /// تسوية يدوية. بترجّع رسالة الخطأ لو فشلت.
   Future<String?> adjust({
     required String productId,
-    required int delta,
+    required double delta,
     String? note,
   }) async {
     final String? branch = _branchId;
@@ -236,15 +234,15 @@ class InventoryController extends ChangeNotifier with LoadState {
   }
 
   /// جرد. بترجّع الفرق لو نجح، و`null` لو فشل.
-  Future<int?> stocktake({
+  Future<double?> stocktake({
     required String productId,
-    required int countedQuantity,
+    required double countedQuantity,
     String? note,
   }) async {
     final String? branch = _branchId;
     if (branch == null) return null;
 
-    int? delta;
+    double? delta;
 
     final ApiException? failure = await runAction(() async {
       delta = await _repository.stocktake(
@@ -264,7 +262,7 @@ class InventoryController extends ChangeNotifier with LoadState {
   Future<String?> transfer({
     required String productId,
     required String toBranchId,
-    required int quantity,
+    required double quantity,
     String? note,
   }) async {
     final String? branch = _branchId;

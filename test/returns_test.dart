@@ -8,6 +8,7 @@ import 'package:pos_system/features/cashier_shift/controllers/current_shift_cont
 import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
 import 'package:pos_system/features/pos_sale/controllers/sales_session_controller.dart';
 import 'package:pos_system/features/pos_sale/data/pos_repository.dart';
+import 'package:pos_system/features/pos_sale/models/cart_discount.dart';
 import 'package:pos_system/features/returns/controllers/returns_controller.dart';
 import 'package:pos_system/features/returns/data/returns_repository.dart';
 import 'package:pos_system/features/returns/models/return_line.dart';
@@ -50,7 +51,7 @@ void main() {
   setUp(() async {
     if (!backendUp) return;
 
-    returns = ReturnsController(ReturnsRepository(api), taxRate: 0.14);
+    returns = ReturnsController(ReturnsRepository(api));
     sales = SalesSessionController(PosRepository(api));
     await sales.load();
   });
@@ -72,7 +73,7 @@ void main() {
   /// بيعمل فاتورة جديدة ويرجّع رقمها.
   Future<String> sellOne({int quantity = 4}) async {
     final Product target = sales.products.firstWhere(
-      (Product p) => p.trackStock && p.price > 0 && p.available > quantity + 5,
+      (Product p) => p.trackStock && p.price > 0 && p.stock > quantity + 5,
     );
 
     for (int i = 0; i < quantity; i += 1) {
@@ -248,7 +249,7 @@ void main() {
 
     // منتج بسعر، عشان الرد على الحساب يبقى له قيمة فعلًا.
     final Product target = sales.products.firstWhere(
-      (Product p) => p.trackStock && p.price > 0 && p.available > 5,
+      (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
     );
 
     sales.active
@@ -274,12 +275,154 @@ void main() {
     expect(created!.refundMethod, 'credit');
   });
 
-  test('طرق الرد كلها معروفة للسيرفر', () {
+
+
+  test('فاتورة آجل بترجع كاش: الدين بيتلغي والدرج ما بيتأثرش', () async {
     if (skip()) return;
 
-    expect(
-      kRefundMethods.keys,
-      containsAll(<String>['cash', 'card', 'credit']),
+    final List<dynamic> customers = await sales.searchCustomers('');
+    if (customers.isEmpty) {
+      markTestSkipped('محتاج عملاء');
+      return;
+    }
+
+    final Product target = sales.products.firstWhere(
+      (Product p) => p.trackStock && p.price > 0 && p.stock > 5,
     );
+
+    // بنقيس إجمالي الفاتورة الأول عشان الآجل يتبعت بالمبلغ بالظبط.
+    sales.active
+      ..addProduct(target)
+      ..addProduct(target);
+    final double due = sales.active.total;
+
+    sales.active.setCustomer(customers.first);
+    final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+      PaymentInput(method: 'credit', amount: due),
+    ]);
+
+    expect(invoice.creditAmount, closeTo(due, 0.02));
+
+    await returns.search(invoice.number);
+    final ReturnLine line = returns.lines.first;
+    returns
+      ..setLineSelected(line, true)
+      ..setReturnQuantity(line, 2)
+      ..setReason(kReturnReasons.first)
+      ..setRefundMethod('cash');
+
+    // العميل ماكانش دفع كاش أصلًا، فمفيش كاش يطلع من الدرج.
+    expect(returns.cashRefund, closeTo(0, 0.02));
+    expect(returns.settledOnAccount, closeTo(returns.refundTotal, 0.02));
+
+    final CompletedReturn? created = await returns.submit();
+    expect(created, isNotNull, reason: returns.error);
+    expect(created!.cashRefund, closeTo(0, 0.02),
+        reason: 'مينفعش نديله كاش وهو ماكانش دفع');
+    expect(created.creditRefund, closeTo(created.total, 0.02));
+  });
+
+  test('المعاينة على الشاشة بتطابق اللي السيرفر بيردّه — بخصم فاتورة', () async {
+    if (skip()) return;
+
+    // خصم على مستوى الفاتورة هو اللي كان بيخلّي المعاينة أعلى من الحقيقة.
+    final Product target = sales.products.firstWhere(
+      (Product p) => p.trackStock && p.price > 0 && p.stock > 10,
+    );
+    for (int i = 0; i < 4; i += 1) {
+      sales.active.addProduct(target);
+    }
+    sales.active.setDiscount(
+      const CartDiscount(type: DiscountType.percent, value: 10),
+    );
+
+    final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+      PaymentInput(method: 'cash', amount: 100000),
+    ]);
+
+    await returns.search(invoice.number);
+    final ReturnLine line = returns.lines.first;
+    returns.setLineSelected(line, true);
+    returns.setReturnQuantity(line, 1);
+    returns.setReason('اختبار');
+
+    expect(returns.refundDiscountShare, greaterThan(0),
+        reason: 'نصيب المرتجع من خصم الفاتورة لازم يتخصم');
+
+    final double preview = returns.refundTotal;
+    final CompletedReturn? created = await returns.submit();
+
+    expect(created, isNotNull, reason: returns.error);
+    expect(created!.total, closeTo(preview, 0.02),
+        reason: 'الرقم اللي الكاشير شافه هو اللي اترد');
+  });
+
+  test('المرتجع الكامل بيساوي إجمالي الفاتورة بالظبط', () async {
+    if (skip()) return;
+
+    final Product target = sales.products.firstWhere(
+      (Product p) => p.trackStock && p.price > 0 && p.stock > 10,
+    );
+    for (int i = 0; i < 4; i += 1) {
+      sales.active.addProduct(target);
+    }
+    sales.active.setDiscount(
+      const CartDiscount(type: DiscountType.percent, value: 15),
+    );
+
+    final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+      PaymentInput(method: 'cash', amount: 100000),
+    ]);
+
+    await returns.search(invoice.number);
+    double refunded = 0;
+
+    // على مرتين، عشان نتأكد إن المجموع مبيضيعش في التقريب.
+    for (final int qty in <int>[1, 3]) {
+      final ReturnLine line = returns.lines.first;
+      returns.setLineSelected(line, true);
+      returns.setReturnQuantity(line, qty.toDouble());
+      returns.setReason('اختبار');
+
+      final CompletedReturn? created = await returns.submit();
+      expect(created, isNotNull, reason: returns.error);
+      refunded += created!.total;
+    }
+
+    expect(refunded, closeTo(invoice.total, 0.02),
+        reason: 'مجموع المرتجعات = اللي العميل دفعه');
+  });
+
+  test('الكميات الكسرية بترجع زي ما اتباعت', () async {
+    if (skip()) return;
+
+    final Product target = sales.products.firstWhere(
+      (Product p) => p.trackStock && p.price > 0 && p.stock > 10,
+    );
+    sales.active.addProduct(target);
+    sales.active.setQuantity(sales.active.lines.first, 2.5);
+
+    final CompletedInvoice invoice = await sales.checkout(<PaymentInput>[
+      PaymentInput(method: 'cash', amount: 100000),
+    ]);
+
+    await returns.search(invoice.number);
+    final ReturnLine line = returns.lines.first;
+    expect(line.maxQuantity, closeTo(2.5, 0.001));
+
+    returns.setLineSelected(line, true);
+    returns.setReturnQuantity(line, 1.5);
+    returns.setReason('اختبار');
+
+    final CompletedReturn? created = await returns.submit();
+    expect(created, isNotNull, reason: returns.error);
+    expect(created!.total, closeTo(invoice.total * 1.5 / 2.5, 0.05));
+  });
+
+  test('طرق الرد كاش وآجل بس', () {
+    if (skip()) return;
+
+    // الفيزا والمحفظة اتشالوا من النظام كله.
+    expect(kRefundMethods.keys, unorderedEquals(<String>['cash', 'credit']));
   });
 }

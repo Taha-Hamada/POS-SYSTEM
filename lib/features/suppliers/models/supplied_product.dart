@@ -41,7 +41,7 @@ class SuppliedProduct {
       price: (json['price'] as num?)?.toDouble() ?? 0,
       cost: (json['cost'] as num?)?.toDouble() ?? 0,
       lastUnitCost: (json['lastUnitCost'] as num?)?.toDouble() ?? 0,
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      stock: (json['stock'] as num?)?.toDouble() ?? 0,
       minStock: (json['minStock'] as num?)?.toInt() ?? 0,
       trackStock: json['trackStock'] as bool? ?? true,
       colorIndex: (json['colorIndex'] as num?)?.toInt() ?? 0,
@@ -64,7 +64,7 @@ class SuppliedProduct {
 
   /// آخر سعر شراء اتدفع للمورد ده في الصنف ده.
   final double lastUnitCost;
-  final int stock;
+  final double stock;
   final int minStock;
   final bool trackStock;
   final int colorIndex;

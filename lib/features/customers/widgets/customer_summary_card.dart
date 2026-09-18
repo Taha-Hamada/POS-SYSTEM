@@ -15,7 +15,6 @@ class CustomerSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Customer c = customer;
     final bool isDebtor = c.balance < 0;
-    final double creditLimit = c.creditLimit;
 
     return ProfileSummaryCard(
       name: c.name,
@@ -24,12 +23,6 @@ class CustomerSummaryCard extends StatelessWidget {
       meta: <(IconData, String)>[
         (Icons.phone_outlined, c.phone),
         (Icons.mail_outline_rounded, c.email ?? '—'),
-        (
-          Icons.credit_score_outlined,
-          c.canBuyOnCredit
-              ? 'متاح آجل ${Fmt.moneyRounded(c.availableCredit)}'
-              : 'مفيش آجل متاح',
-        ),
       ],
       stats: <ProfileStat>[
         ProfileStat(
@@ -42,11 +35,6 @@ class CustomerSummaryCard extends StatelessWidget {
                   : AppColors.textPrimary,
           icon: Icons.account_balance_wallet_outlined,
           big: true,
-        ),
-        ProfileStat(
-          label: 'الحد الائتماني',
-          value: Fmt.moneyRounded(creditLimit),
-          icon: Icons.credit_score_outlined,
         ),
         ProfileStat(
           label: 'إجمالي المشتريات',

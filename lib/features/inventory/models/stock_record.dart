@@ -13,7 +13,6 @@ class StockRecord {
     required this.cost,
     required this.price,
     required this.onHand,
-    required this.reserved,
     required this.minStock,
     required this.lastMovement,
     this.categoryName = '—',
@@ -37,8 +36,7 @@ class StockRecord {
       unit: product['unit'] as String? ?? '',
       cost: (product['cost'] as num?)?.toDouble() ?? 0,
       price: (product['price'] as num?)?.toDouble() ?? 0,
-      onHand: (json['quantity'] as num?)?.toInt() ?? 0,
-      reserved: (json['reserved'] as num?)?.toInt() ?? 0,
+      onHand: (json['quantity'] as num?)?.toDouble() ?? 0,
       // حد الطلب الفعلي محسوب على السيرفر: تجاوز الفرع أو حد المنتج.
       minStock: (json['effectiveMinStock'] as num?)?.toInt() ?? 0,
       lastMovement: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
@@ -62,10 +60,7 @@ class StockRecord {
   final double price;
 
   /// الكمية الفعلية على الرف.
-  final int onHand;
-
-  /// كمية محجوزة لفواتير معلّقة.
-  final int reserved;
+  final double onHand;
 
   final int minStock;
   final DateTime lastMovement;
@@ -75,9 +70,6 @@ class StockRecord {
   final String branchName;
 
   IconData get categoryIcon => iconForName(categoryIconName);
-
-  /// المتاح للبيع فعليًا.
-  int get available => (onHand - reserved).clamp(0, onHand);
 
   double get value => cost * onHand;
 
@@ -109,8 +101,8 @@ class StockMovement {
       productName: product is Map<String, dynamic>
           ? product['name'] as String? ?? ''
           : '',
-      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      balanceAfter: (json['balanceAfter'] as num?)?.toInt() ?? 0,
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
+      balanceAfter: (json['balanceAfter'] as num?)?.toDouble() ?? 0,
       reason: json['reason'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
@@ -125,8 +117,8 @@ class StockMovement {
   final String productName;
 
   /// موجب = دخول للمخزن، سالب = خروج منه.
-  final int quantity;
-  final int balanceAfter;
+  final double quantity;
+  final double balanceAfter;
   final String reason;
   final DateTime createdAt;
   final String note;

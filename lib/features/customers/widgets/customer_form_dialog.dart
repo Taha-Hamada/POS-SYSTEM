@@ -7,7 +7,6 @@ typedef NewCustomer = ({
   String name,
   String phone,
   String? email,
-  double creditLimit,
 });
 
 /// حوار إضافة عميل.
@@ -33,14 +32,12 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
   final TextEditingController _name = TextEditingController();
   final TextEditingController _phone = TextEditingController();
   final TextEditingController _email = TextEditingController();
-  final TextEditingController _creditLimit = TextEditingController(text: '0');
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
     _email.dispose();
-    _creditLimit.dispose();
     super.dispose();
   }
 
@@ -51,7 +48,6 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
       name: _name.text.trim(),
       phone: _phone.text.trim(),
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
-      creditLimit: double.tryParse(_creditLimit.text.trim()) ?? 0,
     ));
   }
 
@@ -92,20 +88,6 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
                   final String value = v?.trim() ?? '';
                   if (value.isEmpty) return null;
                   return value.contains('@') ? null : 'بريد غير صالح';
-                },
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextFormField(
-                controller: _creditLimit,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'سقف الآجل',
-                  helperText: 'صفر معناه مفيش بيع آجل للعميل ده',
-                ),
-                validator: (String? v) {
-                  final double? value = double.tryParse(v?.trim() ?? '');
-                  if (value == null || value < 0) return 'رقم غير صالح';
-                  return null;
                 },
               ),
             ],

@@ -14,7 +14,9 @@ class ShiftController extends ChangeNotifier {
     this.openingBalance = 0,
     this.shift,
     ShiftTotals? totals,
-  }) : totals = totals ?? const ShiftTotals();
+    double? suggestedOpening,
+  })  : totals = totals ?? const ShiftTotals(),
+        _entry = AmountEntry(initial: suggestedOpening ?? 0);
 
   /// الرصيد الافتتاحي للوردية المفتوحة.
   final double openingBalance;
@@ -29,7 +31,7 @@ class ShiftController extends ChangeNotifier {
   static const List<double> presets = <double>[500, 1000, 2000, 5000];
 
   /// الرصيد الافتتاحي اللي بيتكتب على الـNumpad
-  final AmountEntry _entry = AmountEntry(initial: 2000);
+  final AmountEntry _entry;
 
   /// العدّ الفعلي اللي دخّله الكاشير
   final TextEditingController countController = TextEditingController();
@@ -39,7 +41,8 @@ class ShiftController extends ChangeNotifier {
 
   double get openingValue => _entry.value;
 
-  bool get isOpeningValid => _entry.value > 0;
+  /// الدرج الفاضي حالة سليمة، فالصفر مقبول — كان ممنوع من غير سبب.
+  bool get isOpeningValid => _entry.value >= 0;
 
   bool isPresetSelected(double value) => _entry.value == value;
 
@@ -92,10 +95,10 @@ class ShiftController extends ChangeNotifier {
           color: AppColors.success,
         ),
         ShiftStat(
-          label: 'بطاقة',
-          value: totals.cardSales,
-          icon: Icons.credit_card_rounded,
-          color: AppColors.info,
+          label: 'آجل',
+          value: totals.creditSales,
+          icon: Icons.schedule_rounded,
+          color: AppColors.warning,
         ),
         ShiftStat(
           label: 'Cash In',
@@ -109,6 +112,22 @@ class ShiftController extends ChangeNotifier {
           icon: Icons.arrow_upward_rounded,
           color: AppColors.danger,
         ),
+        // الاتنين دول بينقّصوا الكاش المتوقع، فمن غيرهم الكاشير مش فاهم
+        // الرقم جه منين. بنعرضهم لما يبقى ليهم قيمة بس.
+        if (totals.cashRefunds > 0)
+          ShiftStat(
+            label: 'مرتجعات كاش',
+            value: totals.cashRefunds,
+            icon: Icons.assignment_return_outlined,
+            color: AppColors.danger,
+          ),
+        if (totals.cashExpenses > 0)
+          ShiftStat(
+            label: 'مصروفات كاش',
+            value: totals.cashExpenses,
+            icon: Icons.receipt_outlined,
+            color: AppColors.danger,
+          ),
       ];
 
   /// بيتنده مع كل تعديل في خانة العدّ الفعلي.

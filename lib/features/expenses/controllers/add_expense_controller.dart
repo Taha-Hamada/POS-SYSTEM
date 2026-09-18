@@ -4,7 +4,6 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
 import '../../../core/models/branch.dart';
 import '../../../core/models/expense.dart';
-import '../../../core/models/payment_method.dart';
 import '../data/expenses_repository.dart';
 
 /// حالة نموذج إضافة مصروف.
@@ -28,12 +27,10 @@ class AddExpenseController extends ChangeNotifier with LoadState {
   final TextEditingController noteController = TextEditingController();
 
   String? _branchId;
-  PaymentMethod _method = PaymentMethod.cash;
 
   List<Branch> get branches => _branches;
 
   String? get branchId => _branchId;
-  PaymentMethod get method => _method;
   String get category => categoryController.text.trim();
 
   double get amount => double.tryParse(amountController.text.trim()) ?? 0;
@@ -58,11 +55,6 @@ class AddExpenseController extends ChangeNotifier with LoadState {
     notifyListeners();
   }
 
-  void setMethod(PaymentMethod method) {
-    _method = method;
-    notifyListeners();
-  }
-
   void fieldChanged([String? _]) => notifyListeners();
 
   /// بيسجّل المصروف على السيرفر. بيرجّعه لو نجح، و`null` لو فشل.
@@ -75,7 +67,6 @@ class AddExpenseController extends ChangeNotifier with LoadState {
       created = await _repository.create(
         category: category,
         amount: amount,
-        paymentMethod: _method,
         branchId: _branchId,
         note: noteController.text.trim(),
       );

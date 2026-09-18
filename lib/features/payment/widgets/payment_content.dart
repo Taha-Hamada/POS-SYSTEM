@@ -13,7 +13,7 @@ class PaymentContent extends StatelessWidget {
     required this.onConfirm,
   });
 
-  final int itemsCount;
+  final double itemsCount;
   final String customerName;
   final VoidCallback onConfirm;
 

@@ -5,7 +5,6 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/promotion.dart';
 import '../../../core/models/store_settings.dart';
-import '../models/held_invoice.dart';
 
 /// كل ما تحتاجه شاشة الكاشير من السيرفر.
 class PosRepository {
@@ -68,14 +67,22 @@ class PosRepository {
     }
   }
 
-  /// مسح باركود — بيرجّع null لو مفيش منتج بالكود ده.
+  /// مسح باركود على السيرفر — بيرجّع null لو مفيش منتج بالكود ده.
+  ///
+  /// بتتستخدم كملاذ أخير لما الكود ميكونش في الكتالوج المحمّل: منتج اتضاف
+  /// من جهاز تاني، أو باركود اتعدّل والشاشة لسه مفتوحة من قبلها.
   Future<Product?> findByBarcode(String barcode, {String? branchId}) async {
-    final ApiResponse response = await _api.get(
-      '/products/barcode/$barcode',
-      query: <String, dynamic>{'branch': branchId},
-    );
+    try {
+      final ApiResponse response = await _api.get(
+        '/products/barcode/$barcode',
+        query: <String, dynamic>{'branch': branchId},
+      );
 
-    return Product.fromJson(response.object);
+      return Product.fromJson(response.object);
+    } on ApiException catch (exception) {
+      if (exception.isNotFound) return null;
+      rethrow;
+    }
   }
 
   Future<List<Customer>> searchCustomers(String query) async {
@@ -128,32 +135,6 @@ class PosRepository {
     return CompletedInvoice.fromJson(response.object);
   }
 
-  /// تعليق فاتورة على السيرفر — بيحجز الرصيد عشان محدش يبيعه.
-  Future<HeldInvoice> hold({
-    required List<InvoiceLineInput> lines,
-    String? customerId,
-    DiscountInput? discount,
-    String? label,
-  }) async {
-    final ApiResponse response = await _api.post(
-      '/invoices/hold',
-      body: <String, dynamic>{
-        'lines': lines.map((InvoiceLineInput l) => l.toJson()).toList(),
-        if (customerId != null && customerId.isNotEmpty) 'customer': customerId,
-        if (discount != null) 'discount': discount.toJson(),
-        if (label != null && label.isNotEmpty) 'label': label,
-      },
-    );
-
-    return HeldInvoice.fromJson(response.object);
-  }
-
-  Future<List<HeldInvoice>> fetchHeld() async {
-    final ApiResponse response = await _api.get('/invoices/held');
-    return response.list.map(HeldInvoice.fromJson).toList();
-  }
-
-  Future<void> discardHeld(String id) => _api.delete('/invoices/held/$id');
 }
 
 /// سطر فاتورة زي ما السيرفر بيستقبله — السعر بيتحدد عنده مش هنا.
@@ -166,7 +147,7 @@ class InvoiceLineInput {
   });
 
   final String productId;
-  final int quantity;
+  final double quantity;
   final String? discountType;
   final double? discountValue;
 

@@ -67,14 +67,12 @@ void main() {
   Future<Expense> record({
     String category = 'اختبار آلي',
     double amount = 25,
-    PaymentMethod method = PaymentMethod.card,
   }) async {
     final List<Branch> branches = await branchesRepository.fetchAll();
 
     return repository.create(
       category: category,
       amount: amount,
-      paymentMethod: method,
       branchId: branches.first.id,
       note: 'مصروف من الاختبارات',
     );
@@ -234,11 +232,7 @@ void main() {
     if (skip()) return;
 
     // مفيش وردية مفتوحة للمدير غالبًا، والمهم إن التسجيل بينجح في الحالتين.
-    final Expense created = await record(
-      category: 'نثريات',
-      amount: 15,
-      method: PaymentMethod.cash,
-    );
+    final Expense created = await record(category: 'نثريات', amount: 15);
 
     expect(created.paymentMethod, PaymentMethod.cash);
     expect(created.status, ExpenseStatus.pending);
@@ -264,7 +258,6 @@ void main() {
     final Expense created = await ExpensesRepository(cashierApi).create(
       category: 'نثريات الوردية',
       amount: 18,
-      paymentMethod: PaymentMethod.cash,
       note: 'من الكاشير',
     );
 

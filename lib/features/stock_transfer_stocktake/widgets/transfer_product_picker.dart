@@ -130,7 +130,7 @@ class _TransferProductPickerState extends State<_TransferProductPicker> {
                           style: AppText.caption.copyWith(fontSize: 11.5),
                         ),
                         trailing: Text(
-                          'متاح ${Fmt.count(results[i].available)}',
+                          'متاح ${Fmt.qty(results[i].onHand)}',
                           style: AppText.caption.copyWith(fontSize: 12),
                         ),
                       ),

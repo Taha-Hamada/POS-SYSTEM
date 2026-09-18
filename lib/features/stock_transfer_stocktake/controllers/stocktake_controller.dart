@@ -139,7 +139,7 @@ class StocktakeController extends ChangeNotifier with LoadState {
     notifyListeners();
   }
 
-  void setActualQuantity(StocktakeLine line, int? quantity) {
+  void setActualQuantity(StocktakeLine line, double? quantity) {
     line.actualQuantity = quantity;
     notifyListeners();
   }

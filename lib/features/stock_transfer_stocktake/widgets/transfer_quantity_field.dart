@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../theme/app_theme.dart';
+import '../../../utils/formatters.dart';
 
 /// حقل كمية صغير بأزرار +/-.
 class TransferQuantityField extends StatefulWidget {
@@ -13,8 +14,8 @@ class TransferQuantityField extends StatefulWidget {
     this.hasError = false,
   });
 
-  final int value;
-  final ValueChanged<int> onChanged;
+  final double value;
+  final ValueChanged<double> onChanged;
   final bool enabled;
   final bool hasError;
 
@@ -24,14 +25,14 @@ class TransferQuantityField extends StatefulWidget {
 
 class _TransferQuantityFieldState extends State<TransferQuantityField> {
   late final TextEditingController _controller =
-      TextEditingController(text: '${widget.value}');
+      TextEditingController(text: Fmt.qty(widget.value));
 
   @override
   void didUpdateWidget(TransferQuantityField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value &&
-        _controller.text != '${widget.value}') {
-      _controller.text = '${widget.value}';
+        _controller.text != Fmt.qty(widget.value)) {
+      _controller.text = Fmt.qty(widget.value);
     }
   }
 
@@ -84,11 +85,13 @@ class _TransferQuantityFieldState extends State<TransferQuantityField> {
               controller: _controller,
               enabled: widget.enabled,
               textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
-              onChanged: (String v) => widget.onChanged(int.tryParse(v) ?? 0),
+              onChanged: (String v) => widget.onChanged(double.tryParse(v) ?? 0),
               style: AppText.amountSm.copyWith(
                 fontSize: 13.5,
                 color: widget.hasError ? AppColors.danger : null,

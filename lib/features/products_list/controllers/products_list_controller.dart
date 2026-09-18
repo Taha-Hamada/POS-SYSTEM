@@ -94,7 +94,6 @@ class ProductsListController extends ChangeNotifier with LoadState {
       ProductsFilter.all => items,
       ProductsFilter.lowStock =>
         items.where((Product p) => p.isLowStock || p.isOutOfStock),
-      ProductsFilter.inactive => items.where((Product p) => !p.isActive),
     };
 
     final List<Product> list = items.toList();
@@ -126,7 +125,6 @@ class ProductsListController extends ChangeNotifier with LoadState {
         ProductsFilter.all => _all.length,
         ProductsFilter.lowStock =>
           _all.where((Product p) => p.isLowStock || p.isOutOfStock).length,
-        ProductsFilter.inactive => _all.where((Product p) => !p.isActive).length,
       };
 
   // ── إجراءات ──────────────────────────────────────────────────────────────

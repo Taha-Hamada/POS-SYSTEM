@@ -4,9 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/core/api/api_client.dart';
 import 'package:pos_system/core/api/api_config.dart';
 import 'package:pos_system/core/api/api_exception.dart';
+import 'package:pos_system/core/data/branches_repository.dart';
+import 'package:pos_system/core/models/branch.dart';
 import 'package:pos_system/core/models/purchase_order.dart';
 import 'package:pos_system/core/models/supplier.dart';
 import 'package:pos_system/core/session/session_controller.dart';
+import 'package:pos_system/features/cashier_shift/controllers/current_shift_controller.dart';
+import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
 import 'package:pos_system/features/purchase_orders/data/purchases_repository.dart';
 import 'package:pos_system/features/suppliers/controllers/supplier_profile_controller.dart';
 import 'package:pos_system/features/suppliers/controllers/suppliers_list_controller.dart';
@@ -232,7 +236,7 @@ void main() {
     );
   });
 
-  test('سداد جزئي بيقلّل المستحق بنفس المبلغ', () async {
+  test('سداد جزئي بيقلّل المستحق وبينزل من الدرج', () async {
     if (skip()) return;
 
     final SuppliersPage due = await repository.fetchPage(hasDue: true, limit: 1);
@@ -248,9 +252,68 @@ void main() {
       return;
     }
 
+    // السداد بيطلع من درج الوردية، فلازم يكون فيه كاش يغطيه.
+    // المدير مش مربوط بفرع، فالوردية محتاجة فرع صريح.
+    final List<Branch> branches = await BranchesRepository(api).fetchAll();
+    final CurrentShiftController shifts = CurrentShiftController(
+      ShiftRepository(api),
+      branchId: branches.first.id,
+    );
+    await shifts.load();
+    if (!shifts.isOpen) {
+      final String? error = await shifts.open(0);
+      expect(error, isNull, reason: error);
+    }
+    final String? funded = await shifts.addCash(
+      isIn: true,
+      amount: payment + 100,
+      reason: 'تمويل اختبار السداد',
+    );
+    expect(funded, isNull, reason: funded);
+
+    final double drawerBefore = shifts.totals.expectedCash;
     final Supplier after = await repository.pay(before.id, amount: payment);
+    await shifts.refreshTotals();
 
     expect(after.balanceDue, closeTo(before.balanceDue - payment, 0.01));
+    expect(shifts.totals.expectedCash, closeTo(drawerBefore - payment, 0.01),
+        reason: 'الفلوس بتخرج من الدرج فعلًا');
+
+    shifts.dispose();
+  });
+
+  test('السداد بأكتر من اللي في الدرج بيترفض', () async {
+    if (skip()) return;
+
+    final SuppliersPage due = await repository.fetchPage(hasDue: true, limit: 1);
+    if (due.items.isEmpty) {
+      markTestSkipped('مفيش مورد عليه مستحقات');
+      return;
+    }
+
+    final List<Branch> branches = await BranchesRepository(api).fetchAll();
+    final CurrentShiftController shifts = CurrentShiftController(
+      ShiftRepository(api),
+      branchId: branches.first.id,
+    );
+    await shifts.load();
+    if (!shifts.isOpen) await shifts.open(0);
+
+    final Supplier supplier = due.items.first;
+    final double tooMuch = shifts.totals.expectedCash + 1000;
+
+    if (tooMuch <= supplier.balanceDue) {
+      await expectLater(
+        repository.pay(supplier.id, amount: tooMuch),
+        throwsA(isA<ApiException>()),
+      );
+
+      final Supplier fresh = await repository.fetchOne(supplier.id);
+      expect(fresh.balanceDue, closeTo(supplier.balanceDue, 0.01),
+          reason: 'المستحق مايتغيرش لو السداد اترفض');
+    }
+
+    shifts.dispose();
   });
 
   test('ملف المورد بيجمع بياناته وأصنافه وأوامره', () async {

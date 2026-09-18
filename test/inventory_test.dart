@@ -6,6 +6,7 @@ import 'package:pos_system/core/api/api_exception.dart';
 import 'package:pos_system/core/session/session_controller.dart';
 import 'package:pos_system/features/inventory/controllers/inventory_controller.dart';
 import 'package:pos_system/features/inventory/data/inventory_repository.dart';
+import 'package:pos_system/features/inventory/models/product_branch_stock.dart';
 import 'package:pos_system/features/inventory/models/stock_record.dart';
 import 'package:pos_system/features/stock_transfer_stocktake/controllers/stock_transfer_controller.dart';
 import 'package:pos_system/features/stock_transfer_stocktake/controllers/stocktake_controller.dart';
@@ -70,7 +71,7 @@ void main() {
     expect(r.productName, isNotEmpty);
     expect(r.sku, isNotEmpty);
     expect(r.categoryName, isNot('—'));
-    expect(r.available, r.onHand - r.reserved);
+    expect(r.onHand, isNotNull);
   });
 
   test('الملخص بيحسب على كل أصناف الفرع', () {
@@ -132,7 +133,7 @@ void main() {
       if (skip()) return;
 
       final StockRecord target = inventory.rows.first;
-      final int before = target.onHand;
+      final double before = target.onHand;
 
       final String? error = await inventory.adjust(
         productId: target.productId,
@@ -145,13 +146,17 @@ void main() {
       final StockRecord after = inventory.rows
           .firstWhere((StockRecord r) => r.productId == target.productId);
       expect(after.onHand, before + 5);
+
+      // من غير الرجوع ده كل تشغيلة كانت بتزوّد الرصيد 5 للأبد، وقيمة
+      // المخزون في التقارير كانت بتنحرف معاها.
+      await inventory.adjust(productId: target.productId, delta: -5);
     });
 
     test('السحب بأكتر من الرصيد بيترفض', () async {
       if (skip()) return;
 
       final StockRecord target = inventory.rows.first;
-      final int before = target.onHand;
+      final double before = target.onHand;
 
       final String? error = await inventory.adjust(
         productId: target.productId,
@@ -180,7 +185,7 @@ void main() {
       // حد أعلى من الرصيد بيخلّي الصنف «ناقص».
       final String? error = await inventory.setMinStock(
         productId: target.productId,
-        minStock: target.onHand + 50,
+        minStock: target.onHand.round() + 50,
       );
 
       expect(error, isNull);
@@ -223,6 +228,53 @@ void main() {
     });
   });
 
+  group('رصيد المنتج على الفروع', () {
+    test('بيرجّع سجل لكل فرع المنتج اتحرّك فيه', () async {
+      if (skip()) return;
+
+      final StockRecord target = inventory.rows.first;
+
+      final List<ProductBranchStock> rows = await repository.fetchBranchStock(
+        target.productId,
+      );
+
+      expect(rows, isNotEmpty);
+
+      final ProductBranchStock here = rows.firstWhere(
+        (ProductBranchStock b) => b.branchId == branchId,
+      );
+
+      // نفس الأرقام اللي جدول المخزون بيعرضها للفرع ده.
+      expect(here.quantity, target.onHand);
+      expect(here.minStock, target.minStock);
+      expect(here.branchName, isNotEmpty);
+
+      for (final ProductBranchStock b in rows) {
+        expect(b.branchId, isNotEmpty);
+        expect(b.quantity, isNotNull);
+      }
+    });
+
+    test('التسوية بتتعكس على رصيد الفرع فورًا', () async {
+      if (skip()) return;
+
+      final StockRecord target = inventory.rows.first;
+      final double before = (await repository.fetchBranchStock(target.productId))
+          .firstWhere((ProductBranchStock b) => b.branchId == branchId)
+          .quantity;
+
+      await inventory.adjust(productId: target.productId, delta: 7);
+
+      final double after = (await repository.fetchBranchStock(target.productId))
+          .firstWhere((ProductBranchStock b) => b.branchId == branchId)
+          .quantity;
+
+      expect(after, before + 7);
+
+      await inventory.adjust(productId: target.productId, delta: -7);
+    });
+  });
+
   group('الجرد', () {
     late StocktakeController stocktake;
 
@@ -259,7 +311,7 @@ void main() {
       if (skip()) return;
 
       final StocktakeLine line = stocktake.lines.first;
-      final int system = line.systemQuantity;
+      final double system = line.systemQuantity;
 
       stocktake.setActualQuantity(line, system - 2);
       expect(line.difference, -2);
@@ -335,13 +387,13 @@ void main() {
           .id;
 
       final StockRecord source = transfer.availableStock
-          .firstWhere((StockRecord r) => r.available > 5);
+          .firstWhere((StockRecord r) => r.onHand > 5);
 
       final StockPage before = await repository.fetchStock(
         branchId: destination,
         limit: 100,
       );
-      final int destBefore = before.items
+      final double destBefore = before.items
           .where((StockRecord r) => r.productId == source.productId)
           .map((StockRecord r) => r.onHand)
           .firstOrNull ??
@@ -362,7 +414,7 @@ void main() {
         branchId: destination,
         limit: 100,
       );
-      final int destAfter = after.items
+      final double destAfter = after.items
           .firstWhere((StockRecord r) => r.productId == source.productId)
           .onHand;
 

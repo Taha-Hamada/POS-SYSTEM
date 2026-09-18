@@ -11,7 +11,7 @@ import '../widgets/payment_success_view.dart';
 Future<PaymentResult?> showPaymentDialog({
   required BuildContext context,
   required double total,
-  required int itemsCount,
+  required double itemsCount,
   required String customerName,
 }) {
   return showDialog<PaymentResult>(
@@ -35,7 +35,7 @@ class PaymentDialog extends StatefulWidget {
   });
 
   final double total;
-  final int itemsCount;
+  final double itemsCount;
   final String customerName;
 
   @override

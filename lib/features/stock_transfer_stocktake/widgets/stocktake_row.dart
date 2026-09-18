@@ -76,7 +76,7 @@ class _StocktakeRowState extends State<StocktakeRow> {
                   value: line.actualQuantity,
                   fillColor:
                       line.isCounted ? style.background : AppColors.surface,
-                  onChanged: (int? v) =>
+                  onChanged: (double? v) =>
                       stocktake.setActualQuantity(line, v),
                 ),
               ),

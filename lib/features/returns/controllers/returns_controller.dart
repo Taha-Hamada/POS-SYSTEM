@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
+import '../../../core/utils/invoice_math.dart';
 import '../data/returns_repository.dart';
 import '../models/return_line.dart';
 import '../models/returnable_invoice.dart';
@@ -19,19 +20,14 @@ const List<String> kReturnReasons = <String>[
 /// طرق ردّ الفلوس، ومعاها الاسم اللي السيرفر بيفهمه.
 const Map<String, String> kRefundMethods = <String, String>{
   'cash': 'كاش',
-  'card': 'بطاقة',
-  'wallet': 'محفظة',
   'credit': 'على حساب العميل',
 };
 
 /// حالة شاشة المرتجعات: الفاتورة المختارة والأصناف المحددة للإرجاع.
 class ReturnsController extends ChangeNotifier with LoadState {
-  ReturnsController(this._repository, {required this.taxRate});
+  ReturnsController(this._repository);
 
   final ReturnsRepository _repository;
-
-  /// نسبة الضريبة من إعدادات المتجر — بتستخدم في معاينة المبلغ بس.
-  final double taxRate;
 
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocus = FocusNode();
@@ -58,18 +54,51 @@ class ReturnsController extends ChangeNotifier with LoadState {
       _lines.isNotEmpty && _lines.every((ReturnLine l) => l.selected);
 
   // ── حسابات الاسترداد ─────────────────────────────────────────────────────
+  //
+  // نفس خطوات `return.service.js` بالظبط: قيمة السطور بالتناسب، ناقص نصيب
+  // المرتجع من خصم الفاتورة، زائد الضريبة المسجّلة على السطور.
+  // قبل كده كانت الشاشة بتضرب في نسبة الضريبة وبتتجاهل خصم الفاتورة، فكانت
+  // بتعرض للكاشير رقم أعلى من اللي بيترد فعلًا.
   double get refundSubtotal => selectedLines.fold<double>(
         0,
         (double s, ReturnLine l) => s + l.refundAmount,
       );
 
-  double get refundTax => refundSubtotal * taxRate;
+  double get refundTax => round2(
+        selectedLines.fold<double>(0, (double s, ReturnLine l) => s + l.refundTax),
+      );
 
-  double get refundTotal => refundSubtotal + refundTax;
+  /// نصيب المرتجع من خصم الفاتورة — بيتخصم من المبلغ المسترد.
+  double get refundDiscountShare {
+    final ReturnableInvoice? inv = _invoice;
+    if (inv == null || inv.invoiceDiscount <= 0 || inv.discountBase <= 0) {
+      return 0;
+    }
 
-  int get returnedUnits => selectedLines.fold<int>(
+    return round2(
+      inv.invoiceDiscount * (round2(refundSubtotal) / inv.discountBase),
+    );
+  }
+
+  double get refundTotal =>
+      round2(round2(refundSubtotal) - refundDiscountShare + refundTax);
+
+  /// الجزء اللي هيتسوّى على حساب العميل مهما كانت طريقة الرد — آجل الفاتورة.
+  double get settledOnAccount {
+    final ReturnableInvoice? inv = _invoice;
+    if (inv == null || inv.creditAmount <= 0 || inv.total <= 0) return 0;
+
+    final double share = round2(inv.creditAmount * (refundTotal / inv.total));
+    return share > refundTotal ? refundTotal : share;
+  }
+
+  /// اللي هيخرج كاش من الدرج فعلًا.
+  double get cashRefund =>
+      _refundMethod == 'cash' ? round2(refundTotal - settledOnAccount) : 0;
+
+  double get returnedUnits => selectedLines.fold<double>(
         0,
-        (int s, ReturnLine l) => s + l.returnQuantity,
+        (double s, ReturnLine l) => s + l.returnQuantity,
       );
 
   bool get canSubmit =>
@@ -160,8 +189,9 @@ class ReturnsController extends ChangeNotifier with LoadState {
   }
 
   /// مينفعش نرجّع أكتر من المتبقي في السطر.
-  void setReturnQuantity(ReturnLine line, int quantity) {
-    line.returnQuantity = quantity.clamp(0, line.maxQuantity);
+  /// الكسور مسموحة للأصناف اللي بتتباع بالكيلو أو اللتر.
+  void setReturnQuantity(ReturnLine line, double quantity) {
+    line.returnQuantity = quantity.clamp(0, line.maxQuantity).toDouble();
     notifyListeners();
   }
 
