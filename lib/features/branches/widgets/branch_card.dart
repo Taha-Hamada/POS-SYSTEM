@@ -4,7 +4,6 @@ import '../../../core/models/branch.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
 import '../../../theme/app_theme.dart';
-import '../../../utils/formatters.dart';
 import '../models/branch_stats.dart';
 import 'branch_card_header.dart';
 import 'branch_info_row.dart';
@@ -72,13 +71,6 @@ class _BranchCardState extends State<BranchCard> {
             ),
             const SizedBox(height: AppSpacing.sm),
             BranchInfoRow(icon: Icons.schedule_rounded, text: b.openingHours),
-            const SizedBox(height: AppSpacing.sm),
-            BranchInfoRow(
-              icon: Icons.person_outline_rounded,
-              text:
-                  '${b.managerName ?? 'لم يتم تعيين مسؤول'}'
-                  ' • ${Fmt.count(s.employeesCount)} موظف',
-            ),
             const Spacer(),
             const Divider(height: 1),
             const SizedBox(height: AppSpacing.md),

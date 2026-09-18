@@ -7,7 +7,6 @@ enum SettingsSection {
   printing,
   devices,
   notifications,
-  users,
 }
 
 extension SettingsSectionInfo on SettingsSection {
@@ -17,7 +16,6 @@ extension SettingsSectionInfo on SettingsSection {
         SettingsSection.printing => 'الطباعة والإيصالات',
         SettingsSection.devices => 'الأجهزة المتصلة',
         SettingsSection.notifications => 'الإشعارات',
-        SettingsSection.users => 'المستخدمون',
       };
 
   String get description => switch (this) {
@@ -26,7 +24,6 @@ extension SettingsSectionInfo on SettingsSection {
         SettingsSection.printing => 'شكل الإيصال وبيانات الطباعة',
         SettingsSection.devices => 'الطابعات والأدراج والقارئات',
         SettingsSection.notifications => 'تنبيهات المخزون والمبيعات',
-        SettingsSection.users => 'حسابات الدخول وكلمات المرور',
       };
 
   IconData get icon => switch (this) {
@@ -35,6 +32,5 @@ extension SettingsSectionInfo on SettingsSection {
         SettingsSection.printing => Icons.print_outlined,
         SettingsSection.devices => Icons.devices_other_rounded,
         SettingsSection.notifications => Icons.notifications_none_rounded,
-        SettingsSection.users => Icons.manage_accounts_outlined,
       };
 }

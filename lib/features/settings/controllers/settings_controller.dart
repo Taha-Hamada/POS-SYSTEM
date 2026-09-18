@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/api/load_state.dart';
-import '../../../core/models/employee.dart';
 import '../../../core/models/store_settings.dart';
-import '../../employees_permissions/data/employees_repository.dart';
 import '../data/settings_repository.dart';
 import '../models/settings_section.dart';
 
@@ -14,7 +12,6 @@ class SettingsController extends ChangeNotifier with LoadState {
     this._repository, {
     required TickerProvider vsync,
     this.canEdit = false,
-    this.employees,
   }) {
     fadeController = AnimationController(
       vsync: vsync,
@@ -24,9 +21,6 @@ class SettingsController extends ChangeNotifier with LoadState {
   }
 
   final SettingsRepository _repository;
-
-  /// null لو المستخدم مايقدرش يشوف الموظفين، فقسم المستخدمين بيقول كده.
-  final EmployeesRepository? employees;
 
   /// من غير صلاحية الإعدادات الشاشة بتبقى للعرض بس.
   final bool canEdit;
@@ -83,24 +77,10 @@ class SettingsController extends ChangeNotifier with LoadState {
   bool get notifyLowStock => _notifyLowStock;
   bool get notifyExpiry => _notifyExpiry;
 
-  // ── المستخدمون ───────────────────────────────────────────────────────────
-  List<Employee> _users = <Employee>[];
-  List<Employee> get users => _users;
-  bool get canViewUsers => employees != null;
-
   // ── التحميل ──────────────────────────────────────────────────────────────
   Future<void> load() async {
     await runLoad(() async {
       _fill(await _repository.fetch());
-
-      final EmployeesRepository? repository = employees;
-      if (repository != null) {
-        try {
-          _users = await repository.fetchAll();
-        } on ApiException {
-          _users = <Employee>[];
-        }
-      }
     });
   }
 
@@ -260,17 +240,6 @@ class SettingsController extends ChangeNotifier with LoadState {
 
     final ApiException? failure = await runAction(() async {
       _fill(await _repository.update(changes));
-    });
-
-    return failure?.message;
-  }
-
-  Future<String?> resetPassword(Employee employee, String password) async {
-    final EmployeesRepository? repository = employees;
-    if (repository == null) return 'مالكش صلاحية على المستخدمين';
-
-    final ApiException? failure = await runAction(() async {
-      await repository.resetPassword(employee.id, password);
     });
 
     return failure?.message;

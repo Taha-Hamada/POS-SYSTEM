@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/profile_summary_card.dart';
-import '../../../core/widgets/status_badge.dart';
 import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
-import '../models/customer_tier_tone.dart';
 
 /// بطاقة ملخّص العميل أعلى الملف.
 class CustomerSummaryCard extends StatelessWidget {
@@ -23,11 +21,6 @@ class CustomerSummaryCard extends StatelessWidget {
       name: c.name,
       subtitle: '${Fmt.count(c.ordersCount)} فاتورة • '
           '${c.lastVisitAt == null ? 'مجاش لسه' : 'آخر زيارة ${Fmt.date(c.lastVisitAt!)}'}',
-      badge: StatusBadge(
-        label: c.tierLabel,
-        tone: c.tier.tierTone,
-        showDot: false,
-      ),
       meta: <(IconData, String)>[
         (Icons.phone_outlined, c.phone),
         (Icons.mail_outline_rounded, c.email ?? '—'),
@@ -54,12 +47,6 @@ class CustomerSummaryCard extends StatelessWidget {
           label: 'الحد الائتماني',
           value: Fmt.moneyRounded(creditLimit),
           icon: Icons.credit_score_outlined,
-        ),
-        ProfileStat(
-          label: 'نقاط الولاء',
-          value: Fmt.count(c.points),
-          color: AppColors.warning,
-          icon: Icons.stars_rounded,
         ),
         ProfileStat(
           label: 'إجمالي المشتريات',

@@ -5,10 +5,8 @@ class Customer {
     required this.name,
     required this.phone,
     this.email,
-    this.tier = 'regular',
     this.balance = 0,
     this.creditLimit = 0,
-    this.points = 0,
     this.totalPurchases = 0,
     this.ordersCount = 0,
     this.lastVisitAt,
@@ -20,10 +18,8 @@ class Customer {
     name: json['name'] as String? ?? '',
     phone: json['phone'] as String? ?? '',
     email: json['email'] as String?,
-    tier: json['tier'] as String? ?? 'regular',
     balance: (json['balance'] as num?)?.toDouble() ?? 0,
     creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
-    points: (json['points'] as num?)?.toInt() ?? 0,
     totalPurchases: (json['totalPurchases'] as num?)?.toDouble() ?? 0,
     ordersCount: (json['ordersCount'] as num?)?.toInt() ?? 0,
     lastVisitAt: json['lastVisitAt'] == null
@@ -39,10 +35,8 @@ class Customer {
       name = 'عميل عابر',
       phone = '',
       email = null,
-      tier = 'regular',
       balance = 0,
       creditLimit = 0,
-      points = 0,
       totalPurchases = 0,
       ordersCount = 0,
       lastVisitAt = null,
@@ -52,12 +46,10 @@ class Customer {
   final String name;
   final String phone;
   final String? email;
-  final String tier;
 
   /// موجب = ليه فلوس عندنا، سالب = عليه فلوس آجل.
   final double balance;
   final double creditLimit;
-  final int points;
   final double totalPurchases;
   final int ordersCount;
   final DateTime? lastVisitAt;
@@ -74,13 +66,6 @@ class Customer {
       (creditLimit + (balance < 0 ? balance : 0)).clamp(0, creditLimit);
 
   bool get canBuyOnCredit => !isWalkIn && availableCredit > 0;
-
-  String get tierLabel => switch (tier) {
-    'platinum' => 'بلاتيني',
-    'gold' => 'ذهبي',
-    'silver' => 'فضي',
-    _ => 'عادي',
-  };
 
   String get initials {
     final List<String> parts = name.trim().split(RegExp(r'\s+'));

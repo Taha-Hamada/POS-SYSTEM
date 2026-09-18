@@ -141,7 +141,6 @@ void main() {
       'id': 'cu-1',
       'name': 'أحمد علي',
       'phone': '01011111111',
-      'tier': 'gold',
       'balance': -350,
       'creditLimit': 1000,
     });

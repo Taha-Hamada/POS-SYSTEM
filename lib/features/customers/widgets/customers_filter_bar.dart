@@ -5,7 +5,6 @@ import '../../../core/widgets/screen_header.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/customers_list_controller.dart';
-import 'customers_tier_dropdown.dart';
 import 'customers_toggle_chip.dart';
 
 /// شريط فوق الجدول: العنوان والعدّاد وفلاتر المدينين والبحث والمجموعة.
@@ -35,8 +34,6 @@ class CustomersFilterBar extends StatelessWidget {
           hint: 'ابحث بالاسم أو الهاتف…',
           onChanged: customers.setQuery,
         ),
-        const SizedBox(width: AppSpacing.md),
-        const CustomersTierDropdown(),
       ],
     );
   }

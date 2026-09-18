@@ -59,15 +59,6 @@ class CustomersRepository {
     return response.list.map(LedgerEntry.fromJson).toList();
   }
 
-  Future<List<LoyaltyEntry>> fetchLoyalty(String id) async {
-    final ApiResponse response = await _api.get(
-      '/customers/$id/loyalty',
-      query: <String, dynamic>{'limit': 50},
-    );
-
-    return response.list.map(LoyaltyEntry.fromJson).toList();
-  }
-
   /// فواتير العميل — بتتقرا من مسار الفواتير مش من العميل.
   Future<List<CustomerInvoice>> fetchInvoices(String id) async {
     final ApiResponse response = await _api.get(
@@ -131,22 +122,4 @@ class CustomersRepository {
     );
   }
 
-  /// استبدال نقط بخصم — بيرجّع العميل بعد الخصم وقيمة الاستبدال.
-  Future<({Customer customer, double valueAmount})> redeemPoints(
-    String id, {
-    required int points,
-  }) async {
-    final ApiResponse response = await _api.post(
-      '/customers/$id/loyalty/redeem',
-      body: <String, int>{'points': points},
-    );
-
-    return (
-      customer: Customer.fromJson(
-        (response.object['customer'] as Map<String, dynamic>?) ??
-            <String, dynamic>{},
-      ),
-      valueAmount: (response.object['valueAmount'] as num?)?.toDouble() ?? 0,
-    );
-  }
 }

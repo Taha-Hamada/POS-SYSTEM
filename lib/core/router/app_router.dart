@@ -11,13 +11,10 @@ import '../../features/returns/screens/returns_history_screen.dart';
 import '../../features/customers/screens/customer_profile_screen.dart';
 import '../../features/customers/screens/customers_list_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
-import '../../features/employees_permissions/screens/employees_list_screen.dart';
-import '../../features/employees_permissions/screens/roles_permissions_screen.dart';
 import '../../features/expenses/screens/expenses_screen.dart';
 import '../../features/inventory/screens/inventory_screen.dart';
 import '../../features/login/screens/login_screen.dart';
 import '../../features/login/screens/splash_screen.dart';
-import '../../features/loyalty/screens/loyalty_screen.dart';
 import '../../features/pos_sale/screens/pos_sale_screen.dart';
 import '../../features/products_list/screens/products_list_screen.dart';
 import '../../features/promotions/screens/promotions_screen.dart';
@@ -128,10 +125,6 @@ GoRouter createRouter(SessionController session) => GoRouter(
           pageBuilder: (_, _) => _page(const PromotionsScreen()),
         ),
         GoRoute(
-          path: '/loyalty',
-          pageBuilder: (_, _) => _page(const LoyaltyScreen()),
-        ),
-        GoRoute(
           path: '/reports',
           pageBuilder: (_, _) => _page(const ReportsScreen()),
         ),
@@ -203,16 +196,6 @@ GoRouter createRouter(SessionController session) => GoRouter(
               pageBuilder: (_, GoRouterState state) => _page(
                 SupplierProfileScreen(supplierId: state.pathParameters['id']!),
               ),
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/employees',
-          pageBuilder: (_, _) => _page(const EmployeesListScreen()),
-          routes: <RouteBase>[
-            GoRoute(
-              path: 'roles',
-              pageBuilder: (_, _) => _page(const RolesPermissionsScreen()),
             ),
           ],
         ),

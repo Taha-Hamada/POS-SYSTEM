@@ -36,8 +36,6 @@ class FakeBackend {
       name: 'محمد أحمد',
       phone: '01001112222',
       balance: -500,
-      tier: 'gold',
-      points: 320,
       orders: 12,
     ),
     _customer(id: 'cu2', name: 'هدى إبراهيم', phone: '01003334444'),
@@ -305,7 +303,6 @@ class FakeBackend {
     'storeName': 'متجر الاختبار',
     'currency': 'EGP',
     'taxRate': 0.14,
-    'pointsPerCurrency': 1,
     'allowNegativeStock': false,
     'requireCustomerForCredit': true,
     'requireOpenShift': false,
@@ -529,31 +526,6 @@ class FakeBackend {
     return closed;
   }
 
-  /// مستويات العضوية الافتراضية زي الباك اند.
-  List<Map<String, dynamic>> loyaltyTiers = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'key': 'silver',
-      'name': 'فضي',
-      'minPurchases': 15000,
-      'discountPercent': 3,
-      'benefits': <String>['خصم 3% تلقائي على كل فاتورة'],
-    },
-    <String, dynamic>{
-      'key': 'gold',
-      'name': 'ذهبي',
-      'minPurchases': 50000,
-      'discountPercent': 7,
-      'benefits': <String>['خصم 7% تلقائي على كل فاتورة'],
-    },
-    <String, dynamic>{
-      'key': 'platinum',
-      'name': 'بلاتيني',
-      'minPurchases': 120000,
-      'discountPercent': 12,
-      'benefits': <String>['خصم 12% تلقائي على كل فاتورة'],
-    },
-  ];
-
   /// عروض من كل حالة. العروض الشغالة على قسم مش موجود في الكتالوج،
   /// عشان مايغيّروش أرقام اختبارات الكاشير.
   late final List<Map<String, dynamic>> promotions = <Map<String, dynamic>>[
@@ -635,118 +607,6 @@ class FakeBackend {
     if (DateTime.parse(p['endsAt'] as String).isBefore(now)) return 'expired';
     return 'active';
   }
-
-  /// الموظفين — مدير نظام من غير فرع وكاشير على الفرع الرئيسي.
-  final List<Map<String, dynamic>> users = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'id': 'u1',
-      'name': 'مستخدم الاختبار',
-      'username': 'tester',
-      'role': 'admin',
-      'branch': null,
-      'phone': '',
-      'salary': 0,
-      'isActive': true,
-      'lastLoginAt': DateTime.now().toIso8601String(),
-    },
-    <String, dynamic>{
-      'id': 'u3',
-      'name': 'سارة الكاشير',
-      'username': 'sara',
-      'role': 'cashier',
-      'branch': <String, dynamic>{'id': 'b1', 'name': 'الفرع الرئيسي'},
-      'phone': '01000000000',
-      'salary': 6000,
-      'isActive': true,
-      'lastLoginAt': null,
-    },
-  ];
-
-  static const List<String> _allPermissions = <String>[
-    'product:view',
-    'product:manage',
-    'category:view',
-    'category:manage',
-    'customer:view',
-    'customer:manage',
-    'supplier:view',
-    'supplier:manage',
-    'invoice:view',
-    'invoice:create',
-    'invoice:void',
-    'invoice:discount',
-    'return:view',
-    'return:manage',
-    'inventory:view',
-    'inventory:adjust',
-    'inventory:transfer',
-    'purchase:view',
-    'purchase:manage',
-    'shift:view',
-    'shift:manage',
-    'expense:view',
-    'expense:manage',
-    'expense:approve',
-    'promotion:view',
-    'promotion:manage',
-    'branch:view',
-    'branch:manage',
-    'user:view',
-    'user:manage',
-    'report:view',
-    'settings:manage',
-  ];
-
-  static const Map<String, List<String>> _defaultRolePermissions =
-      <String, List<String>>{
-        'admin': _allPermissions,
-        'manager': <String>[
-          'invoice:create',
-          'invoice:discount',
-          'report:view',
-        ],
-        'cashier': <String>['invoice:create', 'invoice:view', 'shift:manage'],
-        'accountant': <String>['report:view', 'expense:approve'],
-        'stock_keeper': <String>['inventory:view', 'inventory:adjust'],
-      };
-
-  static const Map<String, String> _roleLabels = <String, String>{
-    'admin': 'مدير النظام',
-    'manager': 'مدير فرع',
-    'cashier': 'كاشير',
-    'accountant': 'محاسب',
-    'stock_keeper': 'أمين مخزن',
-  };
-
-  /// باقات الأدوار بعد تعديلات الاختبار.
-  final Map<String, List<String>> rolePermissions = <String, List<String>>{
-    for (final MapEntry<String, List<String>> e
-        in _defaultRolePermissions.entries)
-      e.key: List<String>.of(e.value),
-  };
-
-  Map<String, dynamic> _catalog() => <String, dynamic>{
-    'roles': <Map<String, dynamic>>[
-      for (final String role in _roleLabels.keys)
-        <String, dynamic>{
-          'value': role,
-          'label': _roleLabels[role],
-          'permissions': rolePermissions[role],
-          'defaultPermissions': _defaultRolePermissions[role],
-          'customized':
-              rolePermissions[role]!.length !=
-              _defaultRolePermissions[role]!.length,
-          'editable': role != 'admin',
-          'usersCount': users
-              .where((Map<String, dynamic> u) => u['role'] == role)
-              .length,
-        },
-    ],
-    'permissions': <Map<String, dynamic>>[
-      for (final String p in _allPermissions)
-        <String, dynamic>{'key': p, 'value': p, 'group': p.split(':').first},
-    ],
-  };
 
   /// المسارات اللي اتطلبت — مفيدة للتأكد إن الشاشة طلبت اللي المفروض تطلبه.
   final List<String> requestedPaths = <String>[];
@@ -830,7 +690,6 @@ class FakeBackend {
         'totals': <String, dynamic>{
           'branches': _branches.length,
           'open': _branches.length,
-          'employees': users.length,
           'todaySales': 1200,
           'yesterdaySales': 1000,
           'monthSales': 25000,
@@ -845,52 +704,12 @@ class FakeBackend {
               'isOpen': true,
               'isActive': true,
               'openingHours': <String, String>{'from': '09:00', 'to': '23:00'},
-              'employeesCount': 1,
               'todaySales': 600,
               'todayInvoices': 4,
               'monthSales': 12500,
             },
         ],
       });
-    }
-
-    if (path.endsWith('/users/catalog')) return _ok(_catalog());
-
-    if (path.contains('/users/roles/')) {
-      final String role = path.split('/').last;
-
-      if (request.method == 'PATCH') {
-        final Map<String, dynamic> body =
-            jsonDecode(request.body) as Map<String, dynamic>;
-        rolePermissions[role] = (body['permissions'] as List<dynamic>)
-            .cast<String>();
-      } else {
-        rolePermissions[role] = List<String>.of(_defaultRolePermissions[role]!);
-      }
-
-      return _ok(_catalog());
-    }
-
-    // صلاحيات موظف بعينه فوق باقة دوره.
-    if (path.endsWith('/permissions') && path.contains('/users/')) {
-      final String id = path.split('/')[path.split('/').length - 2];
-      final Map<String, dynamic> body =
-          jsonDecode(request.body) as Map<String, dynamic>;
-
-      final Map<String, dynamic> user = users.firstWhere(
-        (Map<String, dynamic> u) => u['id'] == id,
-      );
-      user
-        ..['grantedPermissions'] = (body['granted'] as List<dynamic>)
-            .cast<String>()
-        ..['revokedPermissions'] = (body['revoked'] as List<dynamic>)
-            .cast<String>();
-
-      return _ok(user);
-    }
-
-    if (path.endsWith('/users') && request.method == 'GET') {
-      return _page(users);
     }
 
     if (path.endsWith('/auth/logout-all')) {
@@ -925,14 +744,9 @@ class FakeBackend {
       if (request.method == 'PATCH') {
         final Map<String, dynamic> body =
             jsonDecode(request.body) as Map<String, dynamic>;
-        if (body['loyaltyTiers'] != null) {
-          loyaltyTiers = (body['loyaltyTiers'] as List<dynamic>)
-              .cast<Map<String, dynamic>>();
-        }
-        settings = <String, dynamic>{...settings, ...body}
-          ..remove('loyaltyTiers');
+        settings = <String, dynamic>{...settings, ...body};
       }
-      return _ok(<String, dynamic>{...settings, 'loyaltyTiers': loyaltyTiers});
+      return _ok(settings);
     }
 
     // مفيش وردية مفتوحة افتراضيًا؛ الاختبار بيقدر يفتحها بـopenShift().
@@ -1403,7 +1217,6 @@ class FakeBackend {
     }
 
     if (path.endsWith('/ledger')) return _page(_ledger);
-    if (path.endsWith('/loyalty')) return _page(_loyalty);
 
     if (path.endsWith('/customers') && request.method == 'GET') {
       return _page(customers);
@@ -1892,18 +1705,14 @@ class FakeBackend {
     required String name,
     required String phone,
     double balance = 0,
-    String tier = 'regular',
-    int points = 0,
     int orders = 0,
   }) => <String, dynamic>{
     'id': id,
     'name': name,
     'phone': phone,
     'email': null,
-    'tier': tier,
     'balance': balance,
     'creditLimit': 2000,
-    'points': points,
     'totalPurchases': orders * 250,
     'ordersCount': orders,
     'lastVisitAt': DateTime.now().toIso8601String(),
@@ -1919,18 +1728,6 @@ class FakeBackend {
       'createdAt': DateTime.now().toIso8601String(),
       'note': 'فاتورة بيع',
       'branch': <String, dynamic>{'name': 'الفرع الرئيسي'},
-    },
-  ];
-
-  static final List<Map<String, dynamic>> _loyalty = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'id': 'ly1',
-      'type': 'earn',
-      'points': 320,
-      'balanceAfter': 320,
-      'valueAmount': 0,
-      'createdAt': DateTime.now().toIso8601String(),
-      'note': 'نقط فاتورة',
     },
   ];
 

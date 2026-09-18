@@ -39,15 +39,6 @@ class CustomersStatCards extends StatelessWidget {
         const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: StatCard(
-            title: 'عملاء ذهبيون',
-            value: Fmt.count(customers.tierCount('gold')),
-            icon: Icons.workspace_premium_outlined,
-            iconColor: AppColors.warning,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: StatCard(
             title: 'إجمالي المشتريات',
             value: Fmt.moneyRounded(customers.totalPurchases),
             icon: Icons.shopping_bag_outlined,

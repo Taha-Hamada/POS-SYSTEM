@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,37 +93,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('السحب أكبر من الموجود'), findsOneWidget);
-  });
-
-  testWidgets('صلاحيات موظف بعينه بتتحفظ فوق دوره', (
-    WidgetTester tester,
-  ) async {
-    await _pumpApp(tester);
-    await _open(tester, 'الموظفين');
-
-    // أزرار الصف بتبان مع مرور الماوس بس.
-    final TestGesture pointer = await tester.createGesture(
-      kind: PointerDeviceKind.mouse,
-    );
-    await pointer.addPointer(location: Offset.zero);
-    addTearDown(pointer.removePointer);
-    await pointer.moveTo(tester.getCenter(find.text('سارة الكاشير')));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('الصلاحيات').first);
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('صلاحيات '), findsWidgets);
-    expect(find.text('من الدور'), findsWidgets);
-
-    // أول صلاحية مش في باقة الدور بتتزوّد للموظف.
-    await tester.tap(find.text('يمكنه إلغاء فاتورة'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('حفظ'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('اتحفظت صلاحيات'), findsOneWidget);
   });
 
   testWidgets('معاينة الباركود بترسم باركود حقيقي بعد التوليد', (

@@ -14,19 +14,14 @@ import '../models/stock_sort_column.dart';
 /// الفلترة والترقيم بيتعملوا على السيرفر، مش على صفحة محمّلة، عشان عدّاد
 /// «الأصناف الناقصة» يبقى العدد الحقيقي مش اللي ظهر في الصفحة الأولى.
 class InventoryController extends ChangeNotifier with LoadState {
-  InventoryController(this._repository, {required String branchId})
+  /// [branchId] بيبقى null للحساب اللي مش مربوط بفرع (زي مدير النظام)،
+  /// وساعتها الكنترولر بيجيب الفروع ويختار واحد بنفسه.
+  InventoryController(this._repository, {String? branchId})
       : _branchId = branchId; // ignore: prefer_initializing_formals
 
   final InventoryRepository _repository;
 
-  /// المخزون دايمًا لفرع واحد — السيرفر مبيدعمش «كل الفروع».
-  String _branchId;
-
-  String get branchId => _branchId;
-
-  List<StockRecord> _rows = <StockRecord>[];
-  List<Branch> _branches = <Branch>[];
-  InventorySummary _summary = (
+  static const InventorySummary _emptySummary = (
     items: 0,
     units: 0,
     value: 0,
@@ -35,6 +30,16 @@ class InventoryController extends ChangeNotifier with LoadState {
     lowStock: 0,
     nearExpiry: 0,
   );
+
+  /// المخزون دايمًا لفرع واحد — السيرفر مبيدعمش «كل الفروع».
+  /// بيفضل null لحد ما الفروع توصل ونختار منها.
+  String? _branchId;
+
+  String? get branchId => _branchId;
+
+  List<StockRecord> _rows = <StockRecord>[];
+  List<Branch> _branches = <Branch>[];
+  InventorySummary _summary = _emptySummary;
   int _total = 0;
 
   String? _status;
@@ -55,6 +60,19 @@ class InventoryController extends ChangeNotifier with LoadState {
 
   bool get canSwitchBranch => _branches.length > 1;
 
+  /// اسم الفرع المعروض — للهيدر وحوار التحويل.
+  String get branchName => _branches
+      .where((Branch b) => b.id == _branchId)
+      .map((Branch b) => b.name)
+      .firstOrNull ??
+      '';
+
+  /// فيه فرع محدد ننفّذ عليه؟ من غيره السيرفر بيرفض أي طلب مخزون.
+  bool get hasBranch => _branchId != null;
+
+  /// السيرفر مرجّعش ولا فرع — مفيش حاجة نعرضها ومفيش اختيار نقدمه.
+  bool get hasNoBranches => !isLoading && !hasFailed && _branches.isEmpty;
+
   /// العدد الكلي المطابق للفلتر، مش عدد الصف المعروض.
   int get visibleCount => _total;
 
@@ -72,16 +90,34 @@ class InventoryController extends ChangeNotifier with LoadState {
   // ── التحميل ──────────────────────────────────────────────────────────────
   Future<void> load() async {
     await runLoad(() async {
+      // الحساب المش مربوط بفرع محتاج الفروع الأول عشان يختار منها،
+      // فبنجيبها لوحدها قبل أي طلب رصيد بدل ما نبعت طلب ناقص الفرع.
+      if (_branchId == null && _branches.isEmpty) {
+        _branches = await _repository.fetchBranches();
+        _branchId = _defaultBranchId;
+      }
+
+      final String? branch = _branchId;
+
+      // مفيش فروع خالص: بنوقف هنا بدل ما نبعت طلب السيرفر هيرفضه،
+      // والشاشة بتعرض رسالة مفهومة.
+      if (branch == null) {
+        _rows = <StockRecord>[];
+        _total = 0;
+        _summary = _emptySummary;
+        return;
+      }
+
       // الفروع بتتقرا مرة واحدة، والباقي مع كل تغيير فلتر.
       final List<Object> results = await Future.wait(<Future<Object>>[
         _repository.fetchStock(
-          branchId: _branchId,
+          branchId: branch,
           status: _status,
           search: _query.trim().isEmpty ? null : _query.trim(),
           sort: _sortKey,
           limit: 100,
         ),
-        _repository.fetchSummary(_branchId),
+        _repository.fetchSummary(branch),
         if (_branches.isEmpty)
           _repository.fetchBranches()
         else
@@ -96,9 +132,24 @@ class InventoryController extends ChangeNotifier with LoadState {
     });
   }
 
+  /// الفرع الافتراضي للحساب المش مربوط بفرع: الرئيسي لو موجود، وإلا أول واحد.
+  String? get _defaultBranchId {
+    if (_branches.isEmpty) return null;
+
+    return _branches
+            .where((Branch b) => b.isMain)
+            .map((Branch b) => b.id)
+            .firstOrNull ??
+        _branches.first.id;
+  }
+
   Future<void> setBranch(String? id) async {
     if (id == null || id == _branchId) return;
     _branchId = id;
+    // الصفوف كانت بتاعة الفرع القديم، فمبقاش ليها معنى وإحنا بنحمّل.
+    _rows = <StockRecord>[];
+    _summary = _emptySummary;
+    _total = 0;
     notifyListeners();
     await load();
   }
@@ -158,16 +209,22 @@ class InventoryController extends ChangeNotifier with LoadState {
   }
 
   // ── تعديل الرصيد ─────────────────────────────────────────────────────────
+  /// رسالة موحّدة لأي تعديل قبل ما يتحدد فرع.
+  static const String _noBranchMessage = 'حدد الفرع الأول';
+
   /// تسوية يدوية. بترجّع رسالة الخطأ لو فشلت.
   Future<String?> adjust({
     required String productId,
     required int delta,
     String? note,
   }) async {
+    final String? branch = _branchId;
+    if (branch == null) return _noBranchMessage;
+
     final ApiException? failure = await runAction(() async {
       await _repository.adjust(
         productId: productId,
-        branchId: _branchId,
+        branchId: branch,
         delta: delta,
         note: note,
       );
@@ -184,12 +241,15 @@ class InventoryController extends ChangeNotifier with LoadState {
     required int countedQuantity,
     String? note,
   }) async {
+    final String? branch = _branchId;
+    if (branch == null) return null;
+
     int? delta;
 
     final ApiException? failure = await runAction(() async {
       delta = await _repository.stocktake(
         productId: productId,
-        branchId: _branchId,
+        branchId: branch,
         countedQuantity: countedQuantity,
         note: note,
       );
@@ -207,10 +267,13 @@ class InventoryController extends ChangeNotifier with LoadState {
     required int quantity,
     String? note,
   }) async {
+    final String? branch = _branchId;
+    if (branch == null) return _noBranchMessage;
+
     final ApiException? failure = await runAction(() async {
       await _repository.transfer(
         productId: productId,
-        fromBranchId: _branchId,
+        fromBranchId: branch,
         toBranchId: toBranchId,
         quantity: quantity,
         note: note,
@@ -226,10 +289,13 @@ class InventoryController extends ChangeNotifier with LoadState {
     required String productId,
     required int minStock,
   }) async {
+    final String? branch = _branchId;
+    if (branch == null) return _noBranchMessage;
+
     final ApiException? failure = await runAction(() async {
       await _repository.setMinStock(
         productId: productId,
-        branchId: _branchId,
+        branchId: branch,
         minStock: minStock,
       );
     });

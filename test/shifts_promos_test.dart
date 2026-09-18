@@ -197,25 +197,4 @@ void main() {
     });
   });
 
-  group('برنامج الولاء', () {
-    testWidgets('المستويات الثلاثة وجدول أعلى العملاء', (
-      WidgetTester tester,
-    ) async {
-      await _openScreen(tester, 'برنامج الولاء');
-
-      expect(find.text('آلية كسب النقاط'), findsOneWidget);
-      expect(find.text('فضي'), findsWidgets);
-      expect(find.text('ذهبي'), findsWidgets);
-      expect(find.text('بلاتيني'), findsWidgets);
-      expect(find.text('أعلى العملاء نقاطًا'), findsOneWidget);
-
-      // أعلى عميل نقاطًا في الباك اند المزيّف
-      expect(find.text('محمد أحمد'), findsOneWidget);
-
-      // تغيير معدّل الكسب بيحدّث المثال لحظيًا
-      await tester.enterText(find.byType(TextField).first, '2');
-      await tester.pumpAndSettle();
-      expect(find.textContaining('1,000 نقطة'), findsOneWidget);
-    });
-  });
 }

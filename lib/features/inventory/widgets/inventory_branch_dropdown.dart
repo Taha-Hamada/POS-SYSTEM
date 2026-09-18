@@ -17,6 +17,8 @@ class InventoryBranchDropdown extends StatelessWidget {
       value: inventory.branchId,
       width: 240,
       icon: Icons.store_outlined,
+      // الحساب المش مربوط بفرع بيشوف الطلب ده لحد ما الفروع توصل.
+      hint: 'اختر فرع',
       onChanged: inventory.setBranch,
       // مفيش «كل الفروع» لأن المخزون بيتحسب لفرع واحد على السيرفر.
       items: <AppDropdownItem<String?>>[

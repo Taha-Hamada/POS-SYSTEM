@@ -18,19 +18,9 @@ class StocktakeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // الجرد بيتعمل على فرع. الحساب المش مربوط بفرع الكنترولر بيختار له
+    // أول فرع، وبيبدّل بعدها من فلتر الفرع في شريط الأدوات.
     final String? branchId = context.read<SessionController>().user?.branchId;
-
-    // الجرد بيتعمل على فرع، والمدير مش مربوط بفرع.
-    if (branchId == null) {
-      return const Padding(
-        padding: AppSpacing.page,
-        child: EmptyView(
-          title: 'حدد الفرع الأول',
-          description: 'حسابك مش مربوط بفرع، والجرد بيتعمل على فرع واحد.',
-          icon: Icons.store_outlined,
-        ),
-      );
-    }
 
     return ChangeNotifierProvider<StocktakeController>(
       create: (BuildContext context) => StocktakeController(
@@ -59,6 +49,17 @@ class _StocktakeBody extends StatelessWidget {
         child: ErrorView(
           message: stocktake.errorMessage!,
           onRetry: stocktake.retry,
+        ),
+      );
+    }
+
+    if (stocktake.hasNoBranches) {
+      return const Padding(
+        padding: AppSpacing.page,
+        child: EmptyView(
+          title: 'مفيش فروع متاحة',
+          description: 'الجرد بيتعمل على فرع واحد. ضيف فرع من شاشة الفروع الأول.',
+          icon: Icons.store_outlined,
         ),
       );
     }

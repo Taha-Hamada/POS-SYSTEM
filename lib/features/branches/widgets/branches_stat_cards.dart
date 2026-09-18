@@ -43,15 +43,6 @@ class BranchesStatCards extends StatelessWidget {
         const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: StatCard(
-            title: 'إجمالي الموظفين',
-            value: Fmt.count(totals.employees),
-            icon: Icons.badge_outlined,
-            iconColor: AppColors.info,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: StatCard(
             title: 'مبيعات الشهر',
             value: Fmt.moneyRounded(totals.monthSales),
             icon: Icons.calendar_month_outlined,

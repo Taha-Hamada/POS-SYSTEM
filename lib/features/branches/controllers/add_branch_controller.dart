@@ -17,7 +17,6 @@ class AddBranchController extends ChangeNotifier {
     phoneController.text = initial.phone;
     openFromController.text = initial.openFrom;
     openToController.text = initial.openTo;
-    _managerId = initial.managerId;
   }
 
   final bool isEditing;
@@ -35,11 +34,9 @@ class AddBranchController extends ChangeNotifier {
 
   static final RegExp _time = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
 
-  String? _managerId;
   bool _saving = false;
   String? _error;
 
-  String? get managerId => _managerId;
   bool get saving => _saving;
   String? get error => _error;
 
@@ -55,17 +52,11 @@ class AddBranchController extends ChangeNotifier {
 
   void fieldChanged([String? _]) => notifyListeners();
 
-  void setManager(String? id) {
-    _managerId = id;
-    notifyListeners();
-  }
-
   BranchInput build() => BranchInput(
     name: nameController.text.trim(),
     code: codeController.text.trim().toUpperCase(),
     address: addressController.text.trim(),
     phone: phoneController.text.trim(),
-    managerId: _managerId,
     openFrom: openFromController.text.trim(),
     openTo: openToController.text.trim(),
   );

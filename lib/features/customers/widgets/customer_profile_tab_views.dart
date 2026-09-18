@@ -5,7 +5,6 @@ import '../../../core/models/customer.dart';
 import '../controllers/customer_profile_controller.dart';
 import 'customer_invoices_tab.dart';
 import 'customer_ledger_tab.dart';
-import 'customer_loyalty_tab.dart';
 
 /// محتوى تبويبات ملف العميل — الترتيب لازم يطابق [CustomerProfileTab].
 class CustomerProfileTabViews extends StatelessWidget {
@@ -20,7 +19,6 @@ class CustomerProfileTabViews extends StatelessWidget {
       children: <Widget>[
         CustomerInvoicesTab(customer: customer),
         CustomerLedgerTab(customer: customer),
-        CustomerLoyaltyTab(customer: customer),
       ],
     );
   }

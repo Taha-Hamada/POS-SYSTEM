@@ -15,19 +15,21 @@ typedef StocktakeResult = ({int applied, int failed});
 /// الأرصدة بتتجاب من السيرفر، والاعتماد بيبعت الفروق بس — الصف اللي معدود
 /// ومطابق مبيتبعتش، عشان سجل الحركات مايتلوّثش بحركات بصفر.
 class StocktakeController extends ChangeNotifier with LoadState {
-  StocktakeController(this._repository, {required String branchId})
+  /// [branchId] بيبقى null للحساب اللي مش مربوط بفرع (زي مدير النظام)،
+  /// وساعتها الكنترولر بيجيب الفروع ويختار واحد بنفسه.
+  StocktakeController(this._repository, {String? branchId})
       : _branchId = branchId; // ignore: prefer_initializing_formals
 
   final InventoryRepository _repository;
 
   final TextEditingController searchController = TextEditingController();
 
-  String _branchId;
+  String? _branchId;
   String _query = '';
   List<StocktakeLine> _lines = <StocktakeLine>[];
   List<Branch> _branches = <Branch>[];
 
-  String get branchId => _branchId;
+  String? get branchId => _branchId;
   String get query => _query;
   List<StocktakeLine> get lines => _lines;
   List<Branch> get branches => _branches;
@@ -39,13 +41,34 @@ class StocktakeController extends ChangeNotifier with LoadState {
       '';
 
   bool get canSwitchBranch => _branches.length > 1;
+
+  /// فيه فرع بنجرد عليه؟ من غيره السيرفر بيرفض أي ترحيل.
+  bool get hasBranch => _branchId != null;
+
+  /// السيرفر مرجّعش ولا فرع — مفيش حاجة نجردها.
+  bool get hasNoBranches => !isLoading && !hasFailed && _branches.isEmpty;
+
   bool get isEmpty => !isLoading && !hasFailed && _lines.isEmpty;
 
   // ── التحميل ──────────────────────────────────────────────────────────────
   Future<void> load() async {
     await runLoad(() async {
+      // الحساب المش مربوط بفرع محتاج الفروع الأول عشان يختار منها،
+      // فبنجيبها لوحدها قبل أي طلب رصيد بدل ما نبعت طلب ناقص الفرع.
+      if (_branchId == null && _branches.isEmpty) {
+        _branches = await _repository.fetchBranches();
+        _branchId = _defaultBranchId;
+      }
+
+      final String? branch = _branchId;
+
+      if (branch == null) {
+        _lines = <StocktakeLine>[];
+        return;
+      }
+
       final List<Object> results = await Future.wait(<Future<Object>>[
-        _repository.fetchStock(branchId: _branchId, limit: 100),
+        _repository.fetchStock(branchId: branch, limit: 100),
         if (_branches.isEmpty)
           _repository.fetchBranches()
         else
@@ -58,6 +81,17 @@ class StocktakeController extends ChangeNotifier with LoadState {
           .toList();
       _branches = results[1] as List<Branch>;
     });
+  }
+
+  /// الفرع الافتراضي للحساب المش مربوط بفرع: الرئيسي لو موجود، وإلا أول واحد.
+  String? get _defaultBranchId {
+    if (_branches.isEmpty) return null;
+
+    return _branches
+            .where((Branch b) => b.isMain)
+            .map((Branch b) => b.id)
+            .firstOrNull ??
+        _branches.first.id;
   }
 
   Future<void> retry() => load();
@@ -92,8 +126,8 @@ class StocktakeController extends ChangeNotifier with LoadState {
       _lines.where((StocktakeLine l) => l.needsSubmit).toList();
 
   // ── إجراءات ──────────────────────────────────────────────────────────────
-  Future<void> changeBranch(String id) async {
-    if (id == _branchId) return;
+  Future<void> changeBranch(String? id) async {
+    if (id == null || id == _branchId) return;
     _branchId = id;
     _lines = <StocktakeLine>[];
     notifyListeners();
@@ -128,6 +162,9 @@ class StocktakeController extends ChangeNotifier with LoadState {
   ///
   /// الصف اللي يفشل مبيوقفش الباقي، عشان جرد 50 صنف ما يضيعش بسبب صنف واحد.
   Future<StocktakeResult> submit({String? note}) async {
+    final String? branch = _branchId;
+    if (branch == null) return (applied: 0, failed: 0);
+
     final List<StocktakeLine> pending = pendingLines;
     int applied = 0;
     int failed = 0;
@@ -137,7 +174,7 @@ class StocktakeController extends ChangeNotifier with LoadState {
         try {
           await _repository.stocktake(
             productId: line.productId,
-            branchId: _branchId,
+            branchId: branch,
             countedQuantity: line.actualQuantity!,
             note: note,
           );

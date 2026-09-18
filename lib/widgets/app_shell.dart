@@ -112,16 +112,6 @@ const List<NavSection> kNavSections = <NavSection>[
         icon: Icons.local_shipping_outlined,
         route: '/suppliers',
       ),
-      NavItem(
-        label: 'الموظفين',
-        icon: Icons.badge_outlined,
-        route: '/employees',
-      ),
-      NavItem(
-        label: 'برنامج الولاء',
-        icon: Icons.stars_outlined,
-        route: '/loyalty',
-      ),
     ],
   ),
   NavSection(

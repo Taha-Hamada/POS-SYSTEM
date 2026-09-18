@@ -9,7 +9,6 @@ import '../../../core/widgets/async_state_views.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../theme/app_theme.dart';
-import '../../employees_permissions/data/employees_repository.dart';
 import '../controllers/settings_controller.dart';
 import '../data/settings_repository.dart';
 import '../widgets/settings_content.dart';
@@ -36,7 +35,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       SettingsRepository(api),
       vsync: this,
       canEdit: session.can('settings:manage'),
-      employees: session.can('user:view') ? EmployeesRepository(api) : null,
     )..load();
   }
 

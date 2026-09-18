@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/branch.dart';
-import '../../../core/models/employee.dart';
 import '../../../theme/app_theme.dart';
 import '../controllers/add_branch_controller.dart';
 import '../widgets/add_branch_actions.dart';
@@ -16,30 +15,20 @@ import '../widgets/add_branch_header.dart';
 Future<bool?> showAddBranchDialog(
   BuildContext context, {
   required BranchSubmit onSubmit,
-  List<Employee> managers = const <Employee>[],
   Branch? initial,
 }) {
   return showDialog<bool>(
     context: context,
-    builder: (BuildContext context) => AddBranchDialog(
-      onSubmit: onSubmit,
-      managers: managers,
-      initial: initial,
-    ),
+    builder: (BuildContext context) =>
+        AddBranchDialog(onSubmit: onSubmit, initial: initial),
   );
 }
 
 /// حوار إضافة أو تعديل فرع — بيجمّع الهيدر والحقول والأزرار بس.
 class AddBranchDialog extends StatelessWidget {
-  const AddBranchDialog({
-    super.key,
-    required this.onSubmit,
-    this.managers = const <Employee>[],
-    this.initial,
-  });
+  const AddBranchDialog({super.key, required this.onSubmit, this.initial});
 
   final BranchSubmit onSubmit;
-  final List<Employee> managers;
   final Branch? initial;
 
   @override
@@ -57,7 +46,7 @@ class AddBranchDialog extends StatelessWidget {
               children: <Widget>[
                 const AddBranchHeader(),
                 const SizedBox(height: AppSpacing.xl),
-                AddBranchFields(managers: managers),
+                const AddBranchFields(),
                 const SizedBox(height: AppSpacing.xxl),
                 AddBranchActions(onSubmit: onSubmit),
               ],

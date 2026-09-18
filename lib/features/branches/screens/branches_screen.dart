@@ -8,7 +8,6 @@ import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/screen_header.dart';
 import '../../../theme/app_theme.dart';
-import '../../employees_permissions/data/employees_repository.dart';
 import '../controllers/branches_controller.dart';
 import '../data/branch_management_repository.dart';
 import '../models/branch_stats.dart';
@@ -27,7 +26,6 @@ class BranchesScreen extends StatelessWidget {
     final bool? saved = await showAddBranchDialog(
       context,
       initial: existing,
-      managers: branches.managers,
       onSubmit: (BranchInput input) => branches.save(input, existing: existing),
     );
 
@@ -103,11 +101,8 @@ class BranchesScreen extends StatelessWidget {
     final bool canToggle = session.can('branch:view');
 
     return ChangeNotifierProvider<BranchesController>(
-      create: (_) => BranchesController(
-        BranchManagementRepository(api),
-        // اختيار مسؤول الفرع محتاج قايمة الموظفين.
-        canManage && session.can('user:view') ? EmployeesRepository(api) : null,
-      )..load(),
+      create: (_) =>
+          BranchesController(BranchManagementRepository(api))..load(),
       child: Builder(
         builder: (BuildContext context) {
           return Padding(

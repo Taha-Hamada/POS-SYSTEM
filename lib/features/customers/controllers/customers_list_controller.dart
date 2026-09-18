@@ -21,7 +21,6 @@ class CustomersListController extends ChangeNotifier with LoadState {
 
   List<Customer> _all = <Customer>[];
   String _query = '';
-  String? _tier;
   bool _onlyDebtors = false;
   int _sortIndex = 0;
   bool _sortAscending = true;
@@ -29,7 +28,6 @@ class CustomersListController extends ChangeNotifier with LoadState {
   Timer? _searchDebounce;
   List<Customer>? _cachedRows;
 
-  String? get tier => _tier;
   bool get onlyDebtors => _onlyDebtors;
   int get sortIndex => _sortIndex;
   bool get sortAscending => _sortAscending;
@@ -61,18 +59,11 @@ class CustomersListController extends ChangeNotifier with LoadState {
   double get totalPurchases =>
       _all.fold<double>(0, (double s, Customer c) => s + c.totalPurchases);
 
-  int get totalPoints =>
-      _all.fold<int>(0, (int s, Customer c) => s + c.points);
-
-  int tierCount(String tier) =>
-      _all.where((Customer c) => c.tier == tier).length;
-
   // ── الفلترة والفرز ───────────────────────────────────────────────────────
   List<Customer> _computeRows() {
     final String q = _query.trim().toLowerCase();
 
     final List<Customer> list = _all.where((Customer c) {
-      if (_tier != null && c.tier != _tier) return false;
       if (_onlyDebtors && c.balance >= 0) return false;
       if (q.isEmpty) return true;
 
@@ -81,15 +72,11 @@ class CustomersListController extends ChangeNotifier with LoadState {
           (c.email?.toLowerCase().contains(q) ?? false);
     }).toList();
 
-    const List<String> tierOrder = <String>['regular', 'silver', 'gold'];
-
     final CustomersSortColumn column = CustomersSortColumn.values[_sortIndex];
     list.sort((Customer a, Customer b) {
       final int result = switch (column) {
         CustomersSortColumn.name => a.name.compareTo(b.name),
         CustomersSortColumn.phone => a.phone.compareTo(b.phone),
-        CustomersSortColumn.tier =>
-          tierOrder.indexOf(a.tier).compareTo(tierOrder.indexOf(b.tier)),
         CustomersSortColumn.balance => a.balance.compareTo(b.balance),
         // العميل اللي عمره ما جه بيتحط في الآخر بدل ما يتصدّر.
         CustomersSortColumn.lastVisit => (a.lastVisitAt ?? DateTime(1970))
@@ -106,11 +93,6 @@ class CustomersListController extends ChangeNotifier with LoadState {
     _query = value;
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 200), _refresh);
-  }
-
-  void setTier(String? tier) {
-    _tier = tier;
-    _refresh();
   }
 
   void toggleOnlyDebtors() {

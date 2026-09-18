@@ -8,7 +8,6 @@ import 'general_settings_section.dart';
 import 'notifications_settings_section.dart';
 import 'printing_settings_section.dart';
 import 'taxes_settings_section.dart';
-import 'users_settings_section.dart';
 
 /// محتوى القسم المختار — بيتبدّل بأنيميشن Fade.
 class SettingsContent extends StatelessWidget {
@@ -29,7 +28,6 @@ class SettingsContent extends StatelessWidget {
         SettingsSection.printing => const PrintingSettingsSection(),
         SettingsSection.devices => const DevicesSettingsSection(),
         SettingsSection.notifications => const NotificationsSettingsSection(),
-        SettingsSection.users => const UsersSettingsSection(),
       },
     );
   }

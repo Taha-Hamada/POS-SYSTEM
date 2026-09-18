@@ -81,10 +81,7 @@ class SalesSessionController extends ChangeNotifier with LoadState {
         for (final CartController cart in _carts) {
           cart
             ..setTaxRate(_settings.taxRate)
-            ..setPricingRules(
-              promotions: _promotions,
-              tiers: _settings.loyaltyTiers,
-            );
+            ..setPricingRules(promotions: _promotions);
         }
       }
     });
@@ -92,12 +89,11 @@ class SalesSessionController extends ChangeNotifier with LoadState {
 
   Future<void> retry() => load();
 
-  /// كل تبويب جديد بياخد نفس الضريبة والعروض والمستويات.
+  /// كل تبويب جديد بياخد نفس الضريبة والعروض.
   CartController _newCart() => CartController(
     number: _nextNumber++,
     taxRate: _settings.taxRate,
     promotions: _promotions,
-    tiers: _settings.loyaltyTiers,
   );
 
   /// العروض الشغالة دلوقتي — لو اتغيرت وسط اليوم السيرفر هو المرجع وقت الدفع.

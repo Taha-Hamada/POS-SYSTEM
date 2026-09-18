@@ -9,14 +9,12 @@ import 'package:pos_system/core/api/api_exception.dart';
 import 'package:pos_system/core/data/branches_repository.dart';
 import 'package:pos_system/core/models/branch.dart';
 import 'package:pos_system/core/models/category.dart';
-import 'package:pos_system/core/models/employee.dart';
 import 'package:pos_system/core/models/product.dart';
 import 'package:pos_system/core/models/shift.dart';
 import 'package:pos_system/core/models/store_settings.dart';
 import 'package:pos_system/core/session/session_controller.dart';
 import 'package:pos_system/features/cashier_shift/controllers/current_shift_controller.dart';
 import 'package:pos_system/features/cashier_shift/data/shift_repository.dart';
-import 'package:pos_system/features/employees_permissions/data/employees_repository.dart';
 import 'package:pos_system/features/products_list/data/products_repository.dart';
 import 'package:pos_system/features/settings/data/settings_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -153,53 +151,6 @@ void main() {
       expect(cleared.imageUrl, isNull);
     } finally {
       await products.setActiveState(created.id, isActive: false);
-    }
-  });
-
-  test('صلاحيات موظف فوق دوره بتتحفظ وبترجع', () async {
-    if (skip()) return;
-
-    final EmployeesRepository employees = EmployeesRepository(api);
-    final Branch branch = (await BranchesRepository(api).fetchAll()).first;
-    final String suffix = unique();
-
-    final Employee created = await employees.create(
-      name: 'موظف صلاحيات $suffix',
-      username: 'perm$suffix',
-      password: 'Temp@12345',
-      role: 'cashier',
-      branchId: branch.id,
-    );
-
-    try {
-      final Employee updated = await employees.savePermissions(
-        created.id,
-        granted: <String>{'report:view'},
-        revoked: <String>{'invoice:discount'},
-      );
-
-      expect(updated.grantedPermissions, contains('report:view'));
-      expect(updated.revokedPermissions, contains('invoice:discount'));
-
-      // نفس الصلاحية ممنوحة ومسحوبة = رفض من السيرفر.
-      await expectLater(
-        employees.savePermissions(
-          created.id,
-          granted: <String>{'report:view'},
-          revoked: <String>{'report:view'},
-        ),
-        throwsA(isA<ApiException>()),
-      );
-
-      final Employee cleared = await employees.savePermissions(
-        created.id,
-        granted: <String>{},
-        revoked: <String>{},
-      );
-      expect(cleared.grantedPermissions, isEmpty);
-      expect(cleared.revokedPermissions, isEmpty);
-    } finally {
-      await employees.setActive(created.id, isActive: false);
     }
   });
 

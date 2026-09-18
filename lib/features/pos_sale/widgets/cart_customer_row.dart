@@ -81,9 +81,7 @@ class CartCustomerRow extends StatelessWidget {
                     style: AppText.bodyMedium.copyWith(fontSize: 13.5),
                   ),
                   Text(
-                    isWalkIn
-                        ? 'بدون حساب عميل'
-                        : '${customer.phone} • ${customer.tierLabel}',
+                    isWalkIn ? 'بدون حساب عميل' : customer.phone,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppText.caption.copyWith(fontSize: 11),

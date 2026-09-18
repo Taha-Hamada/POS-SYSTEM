@@ -1,5 +1,3 @@
-import 'loyalty_tier.dart';
-
 /// إعدادات المتجر الجاية من الـ API.
 ///
 /// الضريبة والعملة وسياسات البيع بتتقرا مرة واحدة بعد الدخول،
@@ -15,10 +13,6 @@ class StoreSettings {
     this.pricesIncludeTax = false,
     this.receiptFooter = '',
     this.receiptWidthMm = 80,
-    this.pointsPerCurrency = 0,
-    this.currencyPerPoint = 0,
-    this.minPointsToRedeem = 0,
-    this.loyaltyTiers = const <LoyaltyTier>[],
     this.notifyLowStock = true,
     this.notifyExpiry = true,
     this.allowNegativeStock = false,
@@ -46,13 +40,6 @@ class StoreSettings {
     pricesIncludeTax: json['pricesIncludeTax'] as bool? ?? false,
     receiptFooter: json['receiptFooter'] as String? ?? '',
     receiptWidthMm: (json['receiptWidthMm'] as num?)?.toInt() ?? 80,
-    pointsPerCurrency: (json['pointsPerCurrency'] as num?)?.toDouble() ?? 0,
-    currencyPerPoint: (json['currencyPerPoint'] as num?)?.toDouble() ?? 0,
-    minPointsToRedeem: (json['minPointsToRedeem'] as num?)?.toInt() ?? 0,
-    loyaltyTiers: (json['loyaltyTiers'] as List<dynamic>? ?? <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map(LoyaltyTier.fromJson)
-        .toList(growable: false),
     notifyLowStock: notifications['lowStock'] as bool? ?? true,
     notifyExpiry: notifications['expiry'] as bool? ?? true,
     allowNegativeStock: json['allowNegativeStock'] as bool? ?? false,
@@ -73,13 +60,6 @@ class StoreSettings {
 
   /// عرض ورق الإيصال بالملّي (58 أو 80 غالبًا).
   final int receiptWidthMm;
-
-  final double pointsPerCurrency;
-  final double currencyPerPoint;
-  final int minPointsToRedeem;
-
-  /// مستويات العضوية مرتبة تصاعديًا بالحد الأدنى للمشتريات.
-  final List<LoyaltyTier> loyaltyTiers;
 
   /// تنبيهات الجرس: نواقص المخزون والصلاحية القريبة.
   final bool notifyLowStock;

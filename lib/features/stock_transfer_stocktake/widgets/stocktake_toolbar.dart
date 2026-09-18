@@ -19,14 +19,15 @@ class StocktakeToolbar extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        AppDropdown<String>(
+        AppDropdown<String?>(
           value: stocktake.branchId,
           width: 260,
           icon: Icons.store_outlined,
+          hint: 'اختر فرع',
           onChanged: stocktake.changeBranch,
-          items: <AppDropdownItem<String>>[
+          items: <AppDropdownItem<String?>>[
             for (final Branch b in stocktake.branches)
-              AppDropdownItem<String>(
+              AppDropdownItem<String?>(
                 value: b.id,
                 label: b.name,
                 icon: Icons.store_outlined,

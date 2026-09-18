@@ -99,8 +99,7 @@ void main() {
     expect(t.total, 0);
   });
 
-  test('خصم المستوى قبل اليدوي بنفس أرقام السيرفر', () {
-    // نفس المثال اللي اتحسب على invoice.pricing.js في الباك اند: 129.13.
+  test('الخصم اليدوي بالنسبة بنفس أرقام السيرفر', () {
     final InvoiceTotals t = calculateTotals(
       lines: <PricedLine>[
         line(price: 10, qty: 3, discount: 10),
@@ -109,28 +108,22 @@ void main() {
       ],
       taxRate: 0.14,
       invoiceDiscountPercent: 10,
-      tierDiscountPercent: 7,
     );
 
     expect(t.subtotal, 170);
     expect(t.lineDiscountTotal, 23);
-    expect(t.tierDiscount, 10.29);
-    expect(t.manualDiscount, 13.67);
-    expect(t.invoiceDiscount, 23.96);
-    expect(t.taxAmount, 6.09);
-    expect(t.total, 129.13);
+    expect(t.invoiceDiscount, 14.7);
+    expect(t.manualDiscount, 14.7);
   });
 
-  test('الخصم الثابت مبيعديش المتبقي بعد خصم المستوى', () {
+  test('الخصم الثابت مبيعديش الصافي بعد خصومات السطور', () {
     final InvoiceTotals t = calculateTotals(
       lines: <PricedLine>[line(price: 100)],
       taxRate: 0,
       invoiceDiscount: 500,
-      tierDiscountPercent: 10,
     );
 
-    expect(t.tierDiscount, 10);
-    expect(t.manualDiscount, 90);
+    expect(t.manualDiscount, 100);
     expect(t.total, 0);
   });
 

@@ -42,7 +42,6 @@ Future<Uint8List> buildCustomerStatementPdf({
                 children: <pw.Widget>[
                   PdfKit.kv('العميل', customer.name, bold: true),
                   PdfKit.kv('الموبايل', customer.phone),
-                  PdfKit.kv('المستوى', customer.tierLabel),
                 ],
               ),
             ),

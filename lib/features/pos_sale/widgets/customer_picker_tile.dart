@@ -50,12 +50,7 @@ class CustomerPickerTile extends StatelessWidget {
               compact: true,
               showDot: false,
             )
-          : StatusBadge(
-              label: c.tierLabel,
-              tone: StatusTone.neutral,
-              compact: true,
-              showDot: false,
-            ),
+          : null,
     );
   }
 }

@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/models/customer.dart';
-import '../../../core/models/loyalty_tier.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/promotion.dart';
 import '../../../core/utils/invoice_math.dart';
@@ -21,23 +20,19 @@ class CartController extends ChangeNotifier {
     required this.number,
     required double taxRate,
     List<Promotion> promotions = const <Promotion>[],
-    List<LoyaltyTier> tiers = const <LoyaltyTier>[],
   }) // الحقول خاصة والباراميترات المسمّاة مينفعش تبدأ بـ«_».
     // ignore: prefer_initializing_formals
     : _taxRate = taxRate,
        // ignore: prefer_initializing_formals
-       _promotions = promotions,
-       // ignore: prefer_initializing_formals
-       _tiers = tiers;
+       _promotions = promotions;
 
   /// رقم الفاتورة في التبويبات — بيتعرض للكاشير عشان يفرّق بينها.
   final int number;
 
   double _taxRate;
 
-  /// العروض الشغالة ومستويات العملاء — نفس اللي السيرفر هيطبّقه وقت الاعتماد.
+  /// العروض الشغالة — نفس اللي السيرفر هيطبّقه وقت الاعتماد.
   List<Promotion> _promotions;
-  List<LoyaltyTier> _tiers;
 
   final List<CartLine> _lines = <CartLine>[];
   Customer _customer = const Customer.walkIn();
@@ -59,12 +54,8 @@ class CartController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPricingRules({
-    List<Promotion>? promotions,
-    List<LoyaltyTier>? tiers,
-  }) {
+  void setPricingRules({List<Promotion>? promotions}) {
     if (promotions != null) _promotions = promotions;
-    if (tiers != null) _tiers = tiers;
     notifyListeners();
   }
 
@@ -79,12 +70,6 @@ class CartController extends ChangeNotifier {
         unitPrice: line.product.price,
       );
 
-  /// نسبة خصم مستوى العميل — العميل العابر مالوش مستوى.
-  double get tierDiscountPercent =>
-      _customer.isWalkIn ? 0 : tierDiscountPercentFor(_customer.tier, _tiers);
-
-  String get tierName => tierNameFor(_customer.tier, _tiers);
-
   InvoiceTotals get totals => calculateTotals(
     lines: <PricedLine>[
       for (final CartLine l in _lines)
@@ -96,18 +81,16 @@ class CartController extends ChangeNotifier {
         ),
     ],
     taxRate: _taxRate,
-    // النسبة بتتحسب على الصافي بعد العروض وخصم المستوى، زي السيرفر.
+    // النسبة بتتحسب على الصافي بعد العروض، زي السيرفر.
     invoiceDiscount: _discount.isPercentage ? 0 : _discount.value,
     invoiceDiscountPercent: _discount.isPercentage ? _discount.value : 0,
-    tierDiscountPercent: tierDiscountPercent,
   );
 
   double get subtotal => totals.subtotal;
 
-  /// كل الخصومات مع بعض: العروض والمستوى واليدوي.
+  /// كل الخصومات مع بعض: العروض واليدوي.
   double get effectiveDiscount => totals.discountTotal;
   double get promotionDiscount => totals.lineDiscountTotal;
-  double get tierDiscount => totals.tierDiscount;
   double get manualDiscount => totals.manualDiscount;
   double get tax => totals.taxAmount;
   double get total => totals.total;

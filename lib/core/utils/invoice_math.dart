@@ -37,7 +37,6 @@ class InvoiceTotals {
     required this.taxableBase,
     required this.taxAmount,
     required this.total,
-    this.tierDiscount = 0,
     this.manualDiscount = 0,
   });
 
@@ -46,13 +45,9 @@ class InvoiceTotals {
   /// خصومات السطور — في الكاشير دي خصومات العروض.
   final double lineDiscountTotal;
 
-  /// خصم مستوى العميل، جزء من [invoiceDiscount].
-  final double tierDiscount;
-
-  /// الخصم اللي الكاشير حطه، جزء من [invoiceDiscount].
+  /// الخصم اللي الكاشير حطه — هو كل خصم الفاتورة.
   final double manualDiscount;
 
-  /// كل خصومات الفاتورة: المستوى + اليدوي.
   final double invoiceDiscount;
   final double taxableBase;
   final double taxAmount;
@@ -62,15 +57,13 @@ class InvoiceTotals {
   double get discountTotal => round2(lineDiscountTotal + invoiceDiscount);
 }
 
-/// خصومات الفاتورة بالترتيب: خصم مستوى العميل [tierDiscountPercent] على الصافي
-/// بعد خصومات السطور، وبعده الخصم اليدوي على اللي فاضل — بنسبة
+/// خصم الفاتورة اليدوي بيتحسب على الصافي بعد خصومات السطور — بنسبة
 /// [invoiceDiscountPercent] أو بمبلغ [invoiceDiscount].
 InvoiceTotals calculateTotals({
   required List<PricedLine> lines,
   required double taxRate,
   double invoiceDiscount = 0,
   double invoiceDiscountPercent = 0,
-  double tierDiscountPercent = 0,
 }) {
   final double subtotal = round2(
     lines.fold<double>(0, (double s, PricedLine l) => s + l.gross),
@@ -82,26 +75,14 @@ InvoiceTotals calculateTotals({
 
   final double afterLineDiscounts = round2(subtotal - lineDiscountTotal);
 
-  // كل خصم مبيعديش المبلغ اللي بيتحسب عليه ومبيبقاش سالب.
-  final double tierDiscount = tierDiscountPercent > 0
-      ? round2(
-          (afterLineDiscounts * tierDiscountPercent / 100)
-              .clamp(0, afterLineDiscounts)
-              .toDouble(),
-        )
-      : 0;
-
-  final double afterTierDiscount = round2(afterLineDiscounts - tierDiscount);
-
+  // الخصم مبيعديش المبلغ اللي بيتحسب عليه ومبيبقاش سالب.
   final double requestedManual = invoiceDiscountPercent > 0
-      ? afterTierDiscount * invoiceDiscountPercent / 100
+      ? afterLineDiscounts * invoiceDiscountPercent / 100
       : invoiceDiscount;
 
-  final double manualDiscount = round2(
-    requestedManual.clamp(0, afterTierDiscount).toDouble(),
+  final double discount = round2(
+    requestedManual.clamp(0, afterLineDiscounts).toDouble(),
   );
-
-  final double discount = round2(tierDiscount + manualDiscount);
 
   final double taxableAfterLine = round2(
     lines
@@ -120,8 +101,7 @@ InvoiceTotals calculateTotals({
   return InvoiceTotals(
     subtotal: subtotal,
     lineDiscountTotal: lineDiscountTotal,
-    tierDiscount: tierDiscount,
-    manualDiscount: manualDiscount,
+    manualDiscount: discount,
     invoiceDiscount: discount,
     taxableBase: taxableBase,
     taxAmount: taxAmount,

@@ -157,7 +157,7 @@ void main() {
       expect(find.text('محمد أحمد'), findsOneWidget);
     });
 
-    testWidgets('ملف العميل بتبويباته الثلاثة', (WidgetTester tester) async {
+    testWidgets('ملف العميل بتبويبيه', (WidgetTester tester) async {
       await _openScreen(tester, 'العملاء');
 
       await tester.tap(find.text('محمد أحمد'));
@@ -165,18 +165,11 @@ void main() {
 
       expect(find.text('ملف العميل'), findsOneWidget);
       expect(find.text('الحد الائتماني'), findsOneWidget);
-      expect(find.text('نقاط الولاء'), findsWidgets);
 
       // كشف الحساب — Timeline
       await tester.tap(find.text('كشف الحساب'));
       await tester.pumpAndSettle();
       expect(find.text('فاتورة بيع'), findsWidgets);
-
-      // نقاط الولاء
-      await tester.tap(find.text('نقاط الولاء').last);
-      await tester.pumpAndSettle();
-      expect(find.text('رصيد النقاط الحالي'), findsOneWidget);
-      expect(find.text('سجل النقاط'), findsOneWidget);
     });
   });
 
@@ -200,40 +193,4 @@ void main() {
     });
   });
 
-  group('الموظفين', () {
-    testWidgets('جدول الموظفين بيعرض آخر دخول', (WidgetTester tester) async {
-      await _openScreen(tester, 'الموظفين');
-
-      expect(find.text('قائمة الموظفين'), findsOneWidget);
-      expect(find.text('آخر دخول'), findsOneWidget);
-      expect(find.text('سارة الكاشير'), findsWidgets);
-    });
-
-    testWidgets('شاشة الصلاحيات بتبدّل الأدوار وتحفظ التغييرات', (
-      WidgetTester tester,
-    ) async {
-      await _openScreen(tester, 'الموظفين');
-
-      await tester.tap(find.text('الأدوار والصلاحيات'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('صلاحيات دور: كاشير'), findsOneWidget);
-      expect(find.text('يمكنه تطبيق خصم'), findsOneWidget);
-      expect(find.text('كل التغييرات محفوظة'), findsOneWidget);
-
-      // تبديل الدور
-      await tester.tap(find.text('محاسب'));
-      await tester.pumpAndSettle();
-      expect(find.text('صلاحيات دور: محاسب'), findsOneWidget);
-
-      // تفعيل صلاحية → الشريط السفلي بيتغير
-      await tester.tap(find.text('يمكنه تطبيق خصم'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('تغييرات غير محفوظة'), findsOneWidget);
-
-      await tester.tap(find.text('حفظ التغييرات'));
-      await tester.pumpAndSettle();
-      expect(find.text('كل التغييرات محفوظة'), findsOneWidget);
-    });
-  });
 }

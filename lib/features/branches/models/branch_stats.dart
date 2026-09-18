@@ -4,7 +4,6 @@ import '../../../core/models/branch.dart';
 class BranchStats {
   const BranchStats({
     required this.branch,
-    this.employeesCount = 0,
     this.todaySales = 0,
     this.todayInvoices = 0,
     this.monthSales = 0,
@@ -12,14 +11,12 @@ class BranchStats {
 
   factory BranchStats.fromJson(Map<String, dynamic> json) => BranchStats(
     branch: Branch.fromJson(json),
-    employeesCount: (json['employeesCount'] as num?)?.toInt() ?? 0,
     todaySales: (json['todaySales'] as num?)?.toDouble() ?? 0,
     todayInvoices: (json['todayInvoices'] as num?)?.toInt() ?? 0,
     monthSales: (json['monthSales'] as num?)?.toDouble() ?? 0,
   );
 
   final Branch branch;
-  final int employeesCount;
   final double todaySales;
   final int todayInvoices;
   final double monthSales;
@@ -30,7 +27,6 @@ class BranchesTotals {
   const BranchesTotals({
     this.branches = 0,
     this.open = 0,
-    this.employees = 0,
     this.todaySales = 0,
     this.yesterdaySales = 0,
     this.monthSales = 0,
@@ -40,7 +36,6 @@ class BranchesTotals {
   factory BranchesTotals.fromJson(Map<String, dynamic> json) => BranchesTotals(
     branches: (json['branches'] as num?)?.toInt() ?? 0,
     open: (json['open'] as num?)?.toInt() ?? 0,
-    employees: (json['employees'] as num?)?.toInt() ?? 0,
     todaySales: (json['todaySales'] as num?)?.toDouble() ?? 0,
     yesterdaySales: (json['yesterdaySales'] as num?)?.toDouble() ?? 0,
     monthSales: (json['monthSales'] as num?)?.toDouble() ?? 0,
@@ -49,7 +44,6 @@ class BranchesTotals {
 
   final int branches;
   final int open;
-  final int employees;
   final double todaySales;
   final double yesterdaySales;
   final double monthSales;
@@ -72,7 +66,6 @@ class BranchInput {
     required this.code,
     this.address = '',
     this.phone = '',
-    this.managerId,
     this.openFrom = '09:00',
     this.openTo = '23:00',
   });
@@ -81,7 +74,6 @@ class BranchInput {
   final String code;
   final String address;
   final String phone;
-  final String? managerId;
   final String openFrom;
   final String openTo;
 
@@ -90,8 +82,6 @@ class BranchInput {
     'code': code,
     'address': address,
     'phone': phone,
-    // null بتشيل المسؤول لو كان متعيّن قبل كده.
-    'manager': managerId,
     'openingHours': <String, String>{'from': openFrom, 'to': openTo},
   };
 }

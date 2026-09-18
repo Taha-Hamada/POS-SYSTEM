@@ -5,12 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/app_data_table.dart';
 import '../../../core/widgets/hover_row_button.dart';
 import '../../../core/widgets/phone_cell.dart';
-import '../../../core/widgets/status_badge.dart';
 import '../../../core/models/customer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/customers_list_controller.dart';
-import '../models/customer_tier_tone.dart';
 import 'customer_balance_cell.dart';
 import 'customers_table_footer.dart';
 
@@ -21,7 +19,6 @@ class CustomersTable extends StatelessWidget {
   static const List<AppTableColumn> _columns = <AppTableColumn>[
     AppTableColumn('العميل', size: ColumnSize.L, sortable: true),
     AppTableColumn('الهاتف', size: ColumnSize.M, sortable: true),
-    AppTableColumn('المجموعة', size: ColumnSize.S, sortable: true),
     AppTableColumn(
       'الرصيد',
       size: ColumnSize.M,
@@ -42,7 +39,6 @@ class CustomersTable extends StatelessWidget {
         subtitle: c.email ?? c.phone,
       ),
       PhoneCell(phone: c.phone),
-      StatusBadge(label: c.tierLabel, tone: c.tier.tierTone, showDot: false),
       CustomerBalanceCell(balance: c.balance),
       TableCells.twoLine(
         c.lastVisitAt == null ? 'مجاش لسه' : Fmt.date(c.lastVisitAt!),

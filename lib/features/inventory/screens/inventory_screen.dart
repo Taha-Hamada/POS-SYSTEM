@@ -18,12 +18,9 @@ class InventoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // الحساب المربوط بفرع بيفتح على فرعه، واللي مش مربوط (زي مدير النظام)
+    // الكنترولر بيجيب له الفروع ويختار واحد، ويبدّل بعدها من فلتر الفرع.
     final String? branchId = context.read<SessionController>().user?.branchId;
-
-    // المخزون بيتحسب لفرع، والمدير مش مربوط بفرع، فبيختار واحد من الفلتر.
-    if (branchId == null) {
-      return const _PickBranchFirst();
-    }
 
     return ChangeNotifierProvider<InventoryController>(
       create: (BuildContext context) => InventoryController(
@@ -56,6 +53,20 @@ class _InventoryBody extends StatelessWidget {
       );
     }
 
+    // مفيش فروع أصلًا — المخزون بيتحسب لفرع، فمفيش حاجة نعرضها
+    // ولا اختيار نقدمه.
+    if (inventory.hasNoBranches) {
+      return const Padding(
+        padding: AppSpacing.page,
+        child: EmptyView(
+          title: 'مفيش فروع متاحة',
+          description:
+              'المخزون بيتحسب لفرع واحد. ضيف فرع من شاشة الفروع عشان تشوف أرصدته.',
+          icon: Icons.store_outlined,
+        ),
+      );
+    }
+
     return Padding(
       padding: AppSpacing.page,
       child: Column(
@@ -77,24 +88,6 @@ class _InventoryBody extends StatelessWidget {
                 : const InventoryTable(),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// المدير مش مربوط بفرع، فلازم يحدد فرع قبل ما يشوف مخزونه.
-class _PickBranchFirst extends StatelessWidget {
-  const _PickBranchFirst();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: AppSpacing.page,
-      child: EmptyView(
-        title: 'حدد الفرع الأول',
-        description:
-            'حسابك مش مربوط بفرع. اربطه بفرع من شاشة الموظفين عشان تشوف مخزونه.',
-        icon: Icons.store_outlined,
       ),
     );
   }

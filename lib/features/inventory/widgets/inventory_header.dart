@@ -15,9 +15,13 @@ class InventoryHeader extends StatelessWidget {
     final InventoryController inventory =
         context.read<InventoryController>();
 
+    // التحويل بيتنفّذ من فرع لفرع، فمن غير فرع مصدر مفيش حاجة نفتحها.
+    final String? from = inventory.branchId;
+    if (from == null) return;
+
     final bool? done = await showStockTransferDialog(
       context,
-      fromBranchId: inventory.branchId,
+      fromBranchId: from,
     );
     if (done != true || !context.mounted) return;
 
@@ -27,6 +31,9 @@ class InventoryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasBranch =
+        context.select((InventoryController i) => i.hasBranch);
+
     return Row(
       children: <Widget>[
         Expanded(
@@ -40,7 +47,7 @@ class InventoryHeader extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                'متابعة الأرصدة والحركات عبر كل الفروع والمخازن',
+                'متابعة الأرصدة والحركات في الفرع المختار',
                 style: AppText.caption,
               ),
             ],
@@ -55,14 +62,14 @@ class InventoryHeader extends StatelessWidget {
         SecondaryButton(
           label: 'تحويل مخزون',
           icon: Icons.swap_horiz_rounded,
-          onPressed: () => _openTransferDialog(context),
+          onPressed: hasBranch ? () => _openTransferDialog(context) : null,
         ),
         const SizedBox(width: AppSpacing.md),
         SecondaryButton(
           label: 'بدء جرد',
           icon: Icons.fact_check_outlined,
           tone: SecondaryButtonTone.accent,
-          onPressed: () => context.go('/inventory/stocktake'),
+          onPressed: hasBranch ? () => context.go('/inventory/stocktake') : null,
         ),
       ],
     );
