@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_system/main.dart';
 import 'package:pos_system/core/widgets/placeholder_screen.dart';
+import 'package:pos_system/features/invoices/models/invoice_record.dart';
 import 'package:pos_system/widgets/app_shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,7 +30,7 @@ void main() {
     await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
     await tester.pumpAndSettle();
 
-    expect(kNavItems.length, 15);
+    expect(kNavItems.length, 14);
 
     for (final NavItem item in kNavItems) {
       final Finder navItem = find.text(item.label).first;
@@ -79,6 +80,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('إضافة منتج جديد'), findsNothing);
     expect(find.text('SKU'), findsOneWidget);
+  });
+
+  testWidgets('شاشة الفواتير فيها تبويبات الفواتير والمرتجعات', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = _desktop;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(PosSystemApp(api: FakeBackend().client()));
+    await tester.pumpAndSettle();
+
+    final Finder invoices = find.text('الفواتير والمرتجعات').first;
+    await tester.ensureVisible(invoices);
+    await tester.pumpAndSettle();
+    await tester.tap(invoices);
+    await tester.pumpAndSettle();
+
+    expect(find.text('الفواتير'), findsWidgets);
+    expect(find.text('المرتجعات'), findsWidgets);
+  });
+
+  test('حالة الفاتورة في سجل المبيعات لا تُظهر "مرتجع" كحالة بيع', () {
+    expect(invoiceStatusLabel('completed'), 'مكتملة');
+    expect(invoiceStatusLabel('partially_returned'), 'مكتملة');
+    expect(invoiceStatusLabel('returned'), 'مكتملة');
+    expect(invoiceStatusLabel('voided'), 'ملغاة');
   });
 
   testWidgets('شاشة التقارير بتبدّل بين أنواع التقارير', (

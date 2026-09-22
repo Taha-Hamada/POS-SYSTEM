@@ -90,4 +90,7 @@ class ReturnRecordLine {
   /// رجع للمخزون سليم ولا اتسجّل تالف.
   final bool restock;
   final String reason;
+
+  double get unitPrice => quantity == 0 ? 0 : lineTotal / quantity;
+  double get total => lineTotal;
 }

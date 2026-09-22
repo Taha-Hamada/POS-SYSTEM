@@ -27,14 +27,38 @@ class ReturnLinesCard extends StatelessWidget {
           ReturnInvoiceHeader(invoice: invoice),
           const ReturnLinesTableHeader(),
           Expanded(
-            child: ListView.builder(
-              itemCount: lines.length,
-              itemBuilder: (BuildContext context, int i) => ReturnRow(
-                key: ValueKey<String>(lines[i].source.invoiceLineId),
-                line: lines[i],
-                index: i,
-                isLast: i == lines.length - 1,
-              ),
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double tableMinWidth = 760;
+                final bool needHorizontalScroll =
+                    constraints.maxWidth < tableMinWidth;
+
+                return needHorizontalScroll
+                    ? SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: tableMinWidth,
+                          child: ListView.builder(
+                            itemCount: lines.length,
+                            itemBuilder: (BuildContext context, int i) => ReturnRow(
+                              key: ValueKey<String>(lines[i].source.invoiceLineId),
+                              line: lines[i],
+                              index: i,
+                              isLast: i == lines.length - 1,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: lines.length,
+                        itemBuilder: (BuildContext context, int i) => ReturnRow(
+                          key: ValueKey<String>(lines[i].source.invoiceLineId),
+                          line: lines[i],
+                          index: i,
+                          isLast: i == lines.length - 1,
+                        ),
+                      );
+              },
             ),
           ),
         ],

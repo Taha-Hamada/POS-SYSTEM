@@ -170,6 +170,14 @@ void main() {
     expect(reports.tax.taxRate, greaterThan(0));
     expect(reports.taxCollected, greaterThan(0));
     expect(reports.taxNet, closeTo(reports.taxCollected - reports.taxPaid, 0.01));
+
+    // الضريبة اللي رجعت مع المرتجعات مش محصّلة.
+    expect(
+      reports.taxCollected,
+      closeTo(reports.taxCharged - reports.taxRefunded, 0.01),
+    );
+    expect(reports.taxRefunded, greaterThanOrEqualTo(0));
+    expect(reports.taxCharged, greaterThanOrEqualTo(reports.taxCollected));
     expect(reports.monthlyTaxRows, isNotEmpty);
 
     final MonthlyTaxRow month = reports.monthlyTaxRows.first;

@@ -17,7 +17,9 @@ class CartItemsList extends StatelessWidget {
       padding: EdgeInsets.zero,
       itemCount: lines.length,
       itemBuilder: (BuildContext context, int i) => CartItemTile(
-        key: ValueKey<String>(lines[i].product.id),
+        key: ValueKey<String>(
+          '${lines[i].product.id}-${lines[i].pricingMode.name}-${i}',
+        ),
         line: lines[i],
       ),
     );

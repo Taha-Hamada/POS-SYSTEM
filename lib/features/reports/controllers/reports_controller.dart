@@ -192,6 +192,11 @@ class ReportsController extends ChangeNotifier with LoadState {
   List<InventoryReportRow> get inventoryRows => _inventory;
 
   TaxSummary get tax => _tax;
+  double get taxCharged => _tax.charged;
+
+  /// الضريبة اللي رجعت للعملاء مع المرتجعات.
+  double get taxRefunded => _tax.refunded;
+
   double get taxCollected => _tax.collected;
   double get taxPaid => _tax.paid;
   double get taxNet => _tax.net;

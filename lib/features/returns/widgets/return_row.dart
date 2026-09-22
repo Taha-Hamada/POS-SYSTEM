@@ -58,57 +58,129 @@ class _ReturnRowState extends State<ReturnRow> {
                 ? null
                 : const Border(bottom: BorderSide(color: AppColors.border)),
           ),
-          child: Row(
-            children: <Widget>[
-              SizedBox(
-                width: 48,
-                child: Checkbox(
-                  value: line.selected,
-                  activeColor: kReturnAccent,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: (bool? v) =>
-                      returns.setLineSelected(line, v ?? false),
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = constraints.maxWidth < 720;
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        SizedBox(
+                          width: 48,
+                          child: Checkbox(
+                            value: line.selected,
+                            activeColor: kReturnAccent,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onChanged: (bool? v) =>
+                                returns.setLineSelected(line, v ?? false),
+                          ),
+                        ),
+                        Expanded(
+                          child: ReturnProductCell(
+                            line: line,
+                            index: widget.index,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.md,
+                      runSpacing: AppSpacing.sm,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 90,
+                          child: Text(
+                            'مباعة: ${Fmt.count(line.maxQuantity)}',
+                            style: AppText.amountSm.copyWith(fontSize: 13),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 130,
+                          child: ReturnQuantityField(
+                            initialQuantity: line.returnQuantity,
+                            enabled: line.selected,
+                            onChanged: (double v) =>
+                                returns.setReturnQuantity(line, v),
+                          ),
+                        ),
+                        Text(
+                          line.selected ? Fmt.money(line.refundAmount) : '—',
+                          style: AppText.amountSm.copyWith(
+                            fontSize: 13.5,
+                            color: line.selected
+                                ? kReturnAccent
+                                : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 760),
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: 48,
+                      child: Checkbox(
+                        value: line.selected,
+                        activeColor: kReturnAccent,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (bool? v) =>
+                            returns.setLineSelected(line, v ?? false),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: ReturnProductCell(line: line, index: widget.index),
+                    ),
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        Fmt.count(line.maxQuantity),
+                        textAlign: TextAlign.center,
+                        style: AppText.amountSm.copyWith(fontSize: 13.5),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 130,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: ReturnQuantityField(
+                          initialQuantity: line.returnQuantity,
+                          enabled: line.selected,
+                          onChanged: (double v) =>
+                              returns.setReturnQuantity(line, v),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        line.selected ? Fmt.money(line.refundAmount) : '—',
+                        textAlign: TextAlign.end,
+                        style: AppText.amountSm.copyWith(
+                          fontSize: 13.5,
+                          color: line.selected
+                              ? kReturnAccent
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Expanded(
-                flex: 4,
-                child: ReturnProductCell(line: line, index: widget.index),
-              ),
-              SizedBox(
-                width: 110,
-                child: Text(
-                  Fmt.count(line.maxQuantity),
-                  textAlign: TextAlign.center,
-                  style: AppText.amountSm.copyWith(fontSize: 13.5),
-                ),
-              ),
-              SizedBox(
-                width: 130,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: ReturnQuantityField(
-                    initialQuantity: line.returnQuantity,
-                    enabled: line.selected,
-                    onChanged: (double v) =>
-                        returns.setReturnQuantity(line, v),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 120,
-                child: Text(
-                  line.selected ? Fmt.money(line.refundAmount) : '—',
-                  textAlign: TextAlign.end,
-                  style: AppText.amountSm.copyWith(
-                    fontSize: 13.5,
-                    color:
-                        line.selected ? kReturnAccent : AppColors.textMuted,
-                  ),
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

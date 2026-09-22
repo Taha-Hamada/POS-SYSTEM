@@ -50,7 +50,7 @@ class PricingTab extends StatelessWidget {
             const SizedBox(width: AppSpacing.xl),
             Expanded(
               child: AppFormField(
-                label: 'سعر البيع',
+                label: 'سعر البيع بالقطعة',
                 controller: form.priceController,
                 hint: '0.00',
                 required: true,
@@ -60,6 +60,41 @@ class PricingTab extends StatelessWidget {
                   decimal: true,
                 ),
                 inputFormatters: _decimalOnly,
+                onChanged: form.fieldChanged,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: AppFormField(
+                label: 'سعر البيع بالكرتونة',
+                controller: form.cartonPriceController,
+                hint: '0.00',
+                suffixText: Fmt.currencySymbol,
+                prefixIcon: Icons.inventory_2_outlined,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: _decimalOnly,
+                onChanged: form.fieldChanged,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xl),
+            Expanded(
+              child: AppFormField(
+                label: 'عدد القطع في الكرتونة',
+                controller: form.piecesPerCartonController,
+                hint: '12',
+                suffixText: 'قطعة',
+                prefixIcon: Icons.widgets_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 onChanged: form.fieldChanged,
               ),
             ),

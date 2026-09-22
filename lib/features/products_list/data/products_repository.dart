@@ -89,6 +89,8 @@ class ProductsRepository {
     required String categoryId,
     required double price,
     required double cost,
+    double? cartonPrice,
+    int piecesPerCarton = 1,
     String? unit,
     String? brand,
     String? description,
@@ -106,6 +108,8 @@ class ProductsRepository {
         'category': categoryId,
         'price': price,
         'cost': cost,
+        if (cartonPrice != null && cartonPrice > 0) 'cartonPrice': cartonPrice,
+        if (piecesPerCarton > 0) 'piecesPerCarton': piecesPerCarton,
         if (unit != null && unit.isNotEmpty) 'unit': unit,
         if (brand != null && brand.isNotEmpty) 'brand': brand,
         if (description != null && description.isNotEmpty)
@@ -165,6 +169,8 @@ class ProductsRepository {
     required String brand,
     required String description,
     required int minStock,
+    double? cartonPrice,
+    int piecesPerCarton = 1,
     String? barcode,
     List<ProductVariantInput> variants = const <ProductVariantInput>[],
   }) async {
@@ -180,6 +186,8 @@ class ProductsRepository {
         'brand': brand,
         'description': description,
         'minStock': minStock,
+        if (cartonPrice != null && cartonPrice > 0) 'cartonPrice': cartonPrice,
+        'piecesPerCarton': piecesPerCarton > 0 ? piecesPerCarton : 1,
         // null بتشيل الباركود لو المستخدم مسحه.
         'barcode': barcode,
         'variants': variants

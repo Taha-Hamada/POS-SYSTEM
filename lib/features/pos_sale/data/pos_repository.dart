@@ -144,16 +144,19 @@ class InvoiceLineInput {
     required this.quantity,
     this.discountType,
     this.discountValue,
+    this.pricingMode = SalePricingMode.piece,
   });
 
   final String productId;
   final double quantity;
   final String? discountType;
   final double? discountValue;
+  final SalePricingMode pricingMode;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'product': productId,
     'quantity': quantity,
+    'pricingMode': pricingMode.apiValue,
     if (discountType != null) 'discountType': discountType,
     if (discountValue != null) 'discountValue': discountValue,
   };

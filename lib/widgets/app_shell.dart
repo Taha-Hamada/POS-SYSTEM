@@ -58,14 +58,9 @@ const List<NavSection> kNavSections = <NavSection>[
         route: '/pos',
       ),
       NavItem(
-        label: 'الفواتير',
+        label: 'الفواتير والمرتجعات',
         icon: Icons.receipt_outlined,
         route: '/invoices',
-      ),
-      NavItem(
-        label: 'المرتجعات',
-        icon: Icons.assignment_return_outlined,
-        route: '/returns',
       ),
       NavItem(
         label: 'الورديات',

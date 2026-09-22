@@ -375,6 +375,44 @@ void main() {
     draft.dispose();
   });
 
+  test('أمر الشراء يحافظ على الرصيد في القطع ويحسب التحويل للكرتونة', () async {
+    if (skip()) return;
+
+    final CreatePurchaseOrderController draft = CreatePurchaseOrderController(
+      repository,
+      suppliersRepository,
+      productsRepository,
+      branchesRepository,
+      branchId: branchId,
+    );
+
+    await draft.load();
+    draft.setSupplier(supplierId);
+
+    final Product cartoned = Product(
+      id: 'carton-qty-prod',
+      name: 'ماء علب',
+      sku: 'WATER-BOX',
+      price: 12,
+      cost: 8,
+      stock: 40,
+      minStock: 0,
+      unit: 'كرتونة',
+      colorIndex: 0,
+      piecesPerCarton: 12,
+    );
+
+    draft.addProduct(cartoned);
+    draft.setQuantity(draft.lines.first, 25);
+
+    expect(draft.lines.first.quantity, 25);
+    expect(draft.lines.first.piecesPerCarton, 12);
+    expect(draft.lines.first.cartonQuantity, 2);
+    expect(draft.lines.first.pieceQuantity, 1);
+
+    draft.dispose();
+  });
+
   test('النموذج بيبعت الأمر ويأكده في خطوة واحدة', () async {
     if (skip()) return;
 

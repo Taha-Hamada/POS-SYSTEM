@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/product.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/formatters.dart';
 import '../controllers/cart_controller.dart';
@@ -90,11 +91,34 @@ class _CartItemTileState extends State<CartItemTile> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Text(
-                    '${Fmt.amount(line.product.price)} × ${Fmt.qty(line.quantity)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.caption.copyWith(fontSize: 11.5),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        '${Fmt.amount(line.unitPrice)} × ${Fmt.qty(line.quantity)} ${line.pricingMode.label}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption.copyWith(fontSize: 11.5),
+                      ),
+                      if (line.product.supportsCartonPricing)
+                        Row(
+                          children: <Widget>[
+                            _PricingModeChip(
+                              label: 'قطعة',
+                              selected: line.pricingMode == SalePricingMode.piece,
+                              onTap: () =>
+                                  cart.setPricingMode(line, SalePricingMode.piece),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            _PricingModeChip(
+                              label: 'كرتونة',
+                              selected: line.pricingMode == SalePricingMode.carton,
+                              onTap: () =>
+                                  cart.setPricingMode(line, SalePricingMode.carton),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
                 Text(
@@ -104,6 +128,40 @@ class _CartItemTileState extends State<CartItemTile> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PricingModeChip extends StatelessWidget {
+  const _PricingModeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accent : AppColors.surfaceHover,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: AppText.caption.copyWith(
+            fontSize: 10,
+            color: selected ? AppColors.surface : AppColors.textSecondary,
+          ),
         ),
       ),
     );

@@ -198,6 +198,8 @@ class MonthlyTaxRow {
 class TaxSummary {
   const TaxSummary({
     this.taxRate = 0,
+    this.charged = 0,
+    this.refunded = 0,
     this.collected = 0,
     this.paid = 0,
     this.net = 0,
@@ -206,6 +208,8 @@ class TaxSummary {
 
   factory TaxSummary.fromJson(Map<String, dynamic> json) => TaxSummary(
         taxRate: _num(json['taxRate']),
+        charged: _num(json['charged']),
+        refunded: _num(json['refunded']),
         collected: _num(json['collected']),
         paid: _num(json['paid']),
         net: _num(json['net']),
@@ -219,7 +223,13 @@ class TaxSummary {
 
   final double taxRate;
 
-  /// الضريبة المحصّلة من المبيعات.
+  /// الضريبة اللي اتحطّت على الفواتير.
+  final double charged;
+
+  /// الضريبة اللي رجعت للعملاء مع المرتجعات — مش محصّلة.
+  final double refunded;
+
+  /// المحصّل فعلًا = المحمّلة − المردودة.
   final double collected;
 
   /// الضريبة المدفوعة في المشتريات المستلمة.

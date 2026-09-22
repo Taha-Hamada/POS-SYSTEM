@@ -3,6 +3,23 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'category.dart';
 
+enum SalePricingMode {
+  piece,
+  carton,
+}
+
+extension SalePricingModeInfo on SalePricingMode {
+  String get apiValue => switch (this) {
+        SalePricingMode.piece => 'piece',
+        SalePricingMode.carton => 'carton',
+      };
+
+  String get label => switch (this) {
+        SalePricingMode.piece => 'قطعة',
+        SalePricingMode.carton => 'كرتونة',
+      };
+}
+
 /// منتج جاي من الـ API.
 ///
 /// بيقدّم نفس الحقول والخصائص المشتقة اللي الشاشات كانت بتستخدمها من البيانات
@@ -26,6 +43,8 @@ class Product {
     this.isTaxable = true,
     this.expiryDate,
     this.imageUrl,
+    this.cartonPrice,
+    this.piecesPerCarton = 1,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -44,6 +63,8 @@ class Product {
       unit: json['unit'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
       cost: (json['cost'] as num?)?.toDouble() ?? 0,
+      cartonPrice: (json['cartonPrice'] as num?)?.toDouble(),
+      piecesPerCarton: (json['piecesPerCarton'] as num?)?.toInt() ?? 1,
       // الرصيد بيتحسب للفرع المطلوب وبيتلزق جنب المنتج في الرد.
       // الرصيد ممكن يكون بكسور للأصناف اللي بتتباع بالكيلو أو اللتر.
       stock: (json['stock'] as num?)?.toDouble() ?? 0,
@@ -81,6 +102,8 @@ class Product {
         expiryDate: expiryDate,
         imageUrl: imageUrl,
         colorIndex: colorIndex,
+        cartonPrice: cartonPrice,
+        piecesPerCarton: piecesPerCarton,
       );
 
   final String id;
@@ -92,6 +115,8 @@ class Product {
   final String unit;
   final double price;
   final double cost;
+  final double? cartonPrice;
+  final int piecesPerCarton;
   final double stock;
   final int minStock;
   final bool trackStock;
@@ -116,6 +141,17 @@ class Product {
   }
 
   double get profitMargin => price <= 0 ? 0 : ((price - cost) / price) * 100;
+
+  bool get supportsCartonPricing =>
+      cartonPrice != null && cartonPrice! > 0 && piecesPerCarton > 1;
+
+  double priceForMode(SalePricingMode mode) {
+    if (mode == SalePricingMode.carton) {
+      if (!supportsCartonPricing) return price;
+      return cartonPrice! / piecesPerCarton;
+    }
+    return price;
+  }
 
   String get categoryId => category?.id ?? '';
   String get categoryName => category?.name ?? '—';

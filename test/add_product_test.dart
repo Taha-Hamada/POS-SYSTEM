@@ -110,6 +110,27 @@ void main() {
     form.dispose();
   });
 
+  test('السعر بالكرتونة وعدد القطع في الكرتونة بيُحفظ في المنتج', () async {
+    if (skip()) return;
+
+    final ProductFormController form = newForm();
+    await form.load();
+
+    form.nameController.text = 'منتج كرتونة';
+    form.skuController.text = uniqueSku();
+    form.costController.text = '20';
+    form.priceController.text = '30';
+    form.cartonPriceController.text = '250';
+    form.piecesPerCartonController.text = '12';
+    form.fieldChanged();
+
+    expect(form.cartonPrice, 250);
+    expect(form.piecesPerCarton, 12);
+    expect(form.canSave, isTrue);
+
+    form.dispose();
+  });
+
   test('حفظ منتج كامل بيرجّعه من السيرفر', () async {
     if (skip()) return;
 

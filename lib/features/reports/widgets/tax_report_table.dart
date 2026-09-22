@@ -54,6 +54,10 @@ class TaxReportTable extends StatelessWidget {
       ],
       footer: ReportFooterTotals(
         totals: <(String, String)>[
+          ('على الفواتير', Fmt.money(reports.taxCharged)),
+          // الضريبة اللي رجعت مع المرتجعات مش محصّلة، فبتتخصم.
+          if (reports.taxRefunded > 0)
+            ('ردّت للعملاء', '− ${Fmt.money(reports.taxRefunded)}'),
           ('محصّلة', Fmt.money(reports.taxCollected)),
           ('مشتريات', Fmt.money(reports.taxPaid)),
           ('الصافي', Fmt.money(reports.taxNet)),

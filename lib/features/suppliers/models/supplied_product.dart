@@ -24,6 +24,8 @@ class SuppliedProduct {
     this.colorIndex = 0,
     this.minStock = 0,
     this.trackStock = true,
+    this.piecesPerCarton = 1,
+    this.cartonPrice,
     this.lastOrderDate,
   });
 
@@ -44,6 +46,8 @@ class SuppliedProduct {
       stock: (json['stock'] as num?)?.toDouble() ?? 0,
       minStock: (json['minStock'] as num?)?.toInt() ?? 0,
       trackStock: json['trackStock'] as bool? ?? true,
+      piecesPerCarton: (json['piecesPerCarton'] as num?)?.toInt() ?? 1,
+      cartonPrice: (json['cartonPrice'] as num?)?.toDouble(),
       colorIndex: (json['colorIndex'] as num?)?.toInt() ?? 0,
       orderedQuantity: (json['orderedQuantity'] as num?)?.toDouble() ?? 0,
       receivedQuantity: (json['receivedQuantity'] as num?)?.toDouble() ?? 0,
@@ -67,6 +71,8 @@ class SuppliedProduct {
   final double stock;
   final int minStock;
   final bool trackStock;
+  final int piecesPerCarton;
+  final double? cartonPrice;
   final int colorIndex;
   final double orderedQuantity;
   final double receivedQuantity;

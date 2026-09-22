@@ -149,6 +149,7 @@ class CreatePurchaseOrderController extends ChangeNotifier with LoadState {
         stock: product.stock,
         quantity: _defaultQuantity,
         unitCost: product.cost,
+        piecesPerCarton: product.piecesPerCarton > 0 ? product.piecesPerCarton : 1,
       ),
     );
 
@@ -186,6 +187,7 @@ class CreatePurchaseOrderController extends ChangeNotifier with LoadState {
           quantity: _defaultQuantity,
           // آخر سعر اتدفع للمورد ده أقرب لسعر النهارده من متوسط التكلفة.
           unitCost: p.lastUnitCost > 0 ? p.lastUnitCost : p.cost,
+          piecesPerCarton: p.piecesPerCarton > 0 ? p.piecesPerCarton : 1,
         ),
       );
 

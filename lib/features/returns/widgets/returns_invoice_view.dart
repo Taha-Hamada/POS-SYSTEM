@@ -10,13 +10,30 @@ class ReturnsInvoiceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Expanded(flex: 3, child: ReturnLinesCard()),
-        SizedBox(width: AppSpacing.xl),
-        SizedBox(width: 380, child: ReturnsSidePanel()),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool narrow = constraints.maxWidth < 1100;
+
+        if (narrow) {
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(child: ReturnLinesCard()),
+              SizedBox(height: AppSpacing.xl),
+              SizedBox(height: 340, child: ReturnsSidePanel()),
+            ],
+          );
+        }
+
+        return const Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(flex: 3, child: ReturnLinesCard()),
+            SizedBox(width: AppSpacing.xl),
+            SizedBox(width: 380, child: ReturnsSidePanel()),
+          ],
+        );
+      },
     );
   }
 }

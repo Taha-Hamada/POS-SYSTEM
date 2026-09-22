@@ -18,8 +18,6 @@ class InvoicesHistoryController extends ChangeNotifier with LoadState {
 
   static const List<String> statuses = <String>[
     'completed',
-    'partially_returned',
-    'returned',
     'voided',
   ];
 

@@ -60,6 +60,12 @@ class ProductFormController extends ChangeNotifier with LoadState {
   // ── التسعير ──────────────────────────────────────────────────────────────
   final TextEditingController costController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController cartonPriceController = TextEditingController(
+    text: '0',
+  );
+  final TextEditingController piecesPerCartonController = TextEditingController(
+    text: '1',
+  );
 
   // ── المتغيرات ────────────────────────────────────────────────────────────
   final List<ProductVariant> _variants = <ProductVariant>[ProductVariant()];
@@ -161,6 +167,8 @@ class ProductFormController extends ChangeNotifier with LoadState {
     descriptionController.text = draft.description;
     costController.text = _number(p.cost);
     priceController.text = _number(p.price);
+    cartonPriceController.text = p.cartonPrice == null ? '0' : _number(p.cartonPrice!);
+    piecesPerCartonController.text = p.piecesPerCarton <= 1 ? '1' : p.piecesPerCarton.toString();
     reorderController.text = p.minStock.toString();
     _categoryId = p.category?.id;
     _barcode = p.barcode ?? '';
@@ -198,6 +206,9 @@ class ProductFormController extends ChangeNotifier with LoadState {
   // ── حسابات التسعير ───────────────────────────────────────────────────────
   double get cost => double.tryParse(costController.text.trim()) ?? 0;
   double get price => double.tryParse(priceController.text.trim()) ?? 0;
+  double get cartonPrice => double.tryParse(cartonPriceController.text.trim()) ?? 0;
+  int get piecesPerCarton =>
+      int.tryParse(piecesPerCartonController.text.trim()) ?? 1;
   double get profit => price - cost;
   double get margin => price <= 0 ? 0 : (profit / price) * 100;
   bool get hasPricing => cost > 0 && price > 0;
@@ -251,6 +262,12 @@ class ProductFormController extends ChangeNotifier with LoadState {
     notifyListeners();
   }
 
+  void ensureBarcode() {
+    if (_barcode.trim().isEmpty) {
+      generateBarcode();
+    }
+  }
+
   void goToTab(ProductFormTab tab) => tabController.animateTo(tab.index);
 
   /// بيحفظ المنتج على السيرفر. بيرجّع المنتج لو نجح، و`null` لو فشل.
@@ -262,6 +279,8 @@ class ProductFormController extends ChangeNotifier with LoadState {
     saveError = null;
 
     Product? created;
+
+    ensureBarcode();
 
     // الصفوف الفاضية موجودة عشان المستخدم يكتب فيها، مش عشان تتبعت.
     final List<ProductVariantInput> variantInputs = _variants
@@ -283,6 +302,8 @@ class ProductFormController extends ChangeNotifier with LoadState {
           unit: _unit,
           brand: brandController.text.trim(),
           description: descriptionController.text.trim(),
+          cartonPrice: cartonPrice > 0 ? cartonPrice : null,
+          piecesPerCarton: piecesPerCarton > 0 ? piecesPerCarton : 1,
           barcode: _barcode.isEmpty ? null : _barcode,
           minStock: int.tryParse(reorderController.text.trim()) ?? 0,
           variants: variantInputs,
@@ -296,6 +317,8 @@ class ProductFormController extends ChangeNotifier with LoadState {
         categoryId: _categoryId!,
         price: price,
         cost: cost,
+        cartonPrice: cartonPrice > 0 ? cartonPrice : null,
+        piecesPerCarton: piecesPerCarton > 0 ? piecesPerCarton : 1,
         unit: _unit,
         brand: brandController.text.trim(),
         description: descriptionController.text.trim(),
@@ -363,6 +386,8 @@ class ProductFormController extends ChangeNotifier with LoadState {
     descriptionController.dispose();
     costController.dispose();
     priceController.dispose();
+    cartonPriceController.dispose();
+    piecesPerCartonController.dispose();
     reorderController.dispose();
     openingStockController.dispose();
     super.dispose();

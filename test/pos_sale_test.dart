@@ -66,6 +66,42 @@ void main() {
       expect(c.addProduct(bag), isTrue);
       expect(c.lines.first.quantity, 2);
     });
+
+    test('بيع القطعة يحسب السعر الصحيح', () {
+      final CartController c = cart()..addProduct(product(price: 10, stock: 20));
+
+      expect(c.lines.first.pricingMode, SalePricingMode.piece);
+      expect(c.lines.first.quantity, 1);
+      expect(c.lines.first.total, 10);
+      expect(c.total, 10);
+      expect(c.toInvoiceLines().first.quantity, 1);
+    });
+
+    test('بيع الكرتونة يحافظ على الرصيد في القطع ويحسب السعر الكامل للكرتونة', () {
+      final Product cartoned = Product(
+        id: 'p-carton',
+        name: 'مياه',
+        sku: 'WATER',
+        price: 12,
+        cost: 7,
+        stock: 24,
+        minStock: 2,
+        unit: 'قطعة',
+        colorIndex: 0,
+        cartonPrice: 120,
+        piecesPerCarton: 12,
+      );
+
+      final CartController c = cart()..addProduct(cartoned);
+      c.setPricingMode(c.lines.first, SalePricingMode.carton);
+      c.setQuantity(c.lines.first, 2);
+
+      expect(c.lines.first.pricingMode, SalePricingMode.carton);
+      expect(c.lines.first.quantity, 2);
+      expect(c.lines.first.total, 240);
+      expect(c.total, 240);
+      expect(c.toInvoiceLines().first.quantity, 24);
+    });
   });
 
   group('الكميات', () {

@@ -100,8 +100,7 @@ class InvoiceRecord {
 
 String invoiceStatusLabel(String status) => switch (status) {
   'completed' => 'مكتملة',
-  'partially_returned' => 'مرتجع جزئي',
-  'returned' => 'مرتجعة',
+  'partially_returned' || 'returned' => 'مكتملة',
   'voided' => 'ملغاة',
   _ => status,
 };

@@ -104,6 +104,7 @@ class PeriodStats {
     this.discounts = 0,
     this.returns = 0,
     this.expenses = 0,
+    this.returnsProfit = 0,
     this.netProfit = 0,
     this.averageTicket = 0,
   });
@@ -119,6 +120,7 @@ class PeriodStats {
       discounts: DashboardData._num(value['discounts']),
       returns: DashboardData._num(value['returns']),
       expenses: DashboardData._num(value['expenses']),
+      returnsProfit: DashboardData._num(value['returnsProfit']),
       netProfit: DashboardData._num(value['netProfit']),
       averageTicket: DashboardData._num(value['averageTicket']),
     );
@@ -133,6 +135,9 @@ class PeriodStats {
   final double expenses;
 
   /// الربح بعد المرتجعات والمصروفات المعتمدة.
+  /// أثر المرتجعات على الربح — مش إجماليها، لأن التكلفة والضريبة رجعوا.
+  final double returnsProfit;
+
   final double netProfit;
   final double averageTicket;
 }

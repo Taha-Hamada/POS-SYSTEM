@@ -66,16 +66,16 @@ class CartController extends ChangeNotifier {
         _promotions,
         productId: line.product.id,
         categoryId: line.product.category?.id,
-        quantity: line.quantity,
-        unitPrice: line.product.price,
+        quantity: line.quantityInPieces,
+        unitPrice: line.unitPrice,
       );
 
   InvoiceTotals get totals => calculateTotals(
     lines: <PricedLine>[
       for (final CartLine l in _lines)
         PricedLine(
-          unitPrice: l.product.price,
-          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          quantity: l.quantityInPieces,
           isTaxable: l.product.isTaxable,
           discountAmount: promotionFor(l).amount,
         ),
@@ -107,7 +107,8 @@ class CartController extends ChangeNotifier {
     if (product.isOutOfStock) return false;
 
     final int index = _lines.indexWhere(
-      (CartLine l) => l.product.id == product.id,
+      (CartLine l) =>
+          l.product.id == product.id && l.pricingMode == SalePricingMode.piece,
     );
 
     if (index == -1) {
@@ -122,22 +123,38 @@ class CartController extends ChangeNotifier {
     return true;
   }
 
+  void setPricingMode(CartLine line, SalePricingMode mode) {
+    if (!line.product.supportsCartonPricing && mode == SalePricingMode.carton) {
+      return;
+    }
+
+    if (line.pricingMode == mode) return;
+
+    line.pricingMode = mode;
+    notifyListeners();
+  }
+
   /// بيزوّد أو بينقّص الكمية بمقدار [delta].
   /// بيرجّع false لو الزيادة هتعدّي الرصيد المتاح.
   bool changeQuantity(CartLine line, double delta) {
+    final double nextQuantity = line.quantity + delta;
     if (delta > 0 && _exceedsStock(line, delta)) return false;
 
-    return setQuantity(line, line.quantity + delta);
+    return setQuantity(line, nextQuantity);
   }
 
   /// بيحط كمية بعينها — الكاشير بيكتبها بإيده للأصناف اللي بالكيلو.
   /// بيرجّع false لو الكمية أكبر من الرصيد.
   bool setQuantity(CartLine line, double quantity) {
     final double next = _round3(quantity);
+    final double nextInPieces =
+        line.pricingMode == SalePricingMode.carton
+            ? next * line.product.piecesPerCarton
+            : next;
 
     if (line.product.trackStock &&
         line.product.stock > 0 &&
-        next > line.product.stock) {
+        nextInPieces > line.product.stock) {
       return false;
     }
 
@@ -156,7 +173,13 @@ class CartController extends ChangeNotifier {
 
   bool _exceedsStock(CartLine line, double delta) {
     if (!line.product.trackStock) return false;
-    return line.quantity + delta > line.product.stock;
+
+    final double proposed =
+        line.pricingMode == SalePricingMode.carton
+            ? (line.quantity + delta) * line.product.piecesPerCarton
+            : line.quantity + delta;
+
+    return proposed > line.product.stock;
   }
 
   void removeLine(CartLine line) {
@@ -206,7 +229,11 @@ class CartController extends ChangeNotifier {
   /// سطور الفاتورة بالشكل اللي السيرفر بيستقبله.
   List<InvoiceLineInput> toInvoiceLines() => <InvoiceLineInput>[
     for (final CartLine l in _lines)
-      InvoiceLineInput(productId: l.product.id, quantity: l.quantity),
+      InvoiceLineInput(
+        productId: l.product.id,
+        quantity: l.quantityInPieces,
+        pricingMode: l.pricingMode,
+      ),
   ];
 
   /// الخصم بالشكل اللي السيرفر بيستقبله، أو null لو مفيش خصم.

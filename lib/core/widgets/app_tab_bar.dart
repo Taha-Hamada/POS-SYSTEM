@@ -18,32 +18,37 @@ class AppTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 54,
+      height: 56,
       padding: const EdgeInsets.all(6),
-      decoration: AppDecorations.card(radius: AppRadius.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
       child: TabBar(
         controller: controller,
         isScrollable: true,
         tabAlignment: TabAlignment.start,
         padding: EdgeInsets.zero,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 10),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         splashFactory: NoSplash.splashFactory,
         overlayColor: WidgetStateProperty.all(Colors.transparent),
         indicator: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadius.sm + 2),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          boxShadow: AppShadows.soft,
         ),
         labelColor: Colors.white,
         unselectedLabelColor: AppColors.textSecondary,
         labelStyle: const TextStyle(
-          fontSize: 13.5,
+          fontSize: 14,
           fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: const TextStyle(
-          fontSize: 13.5,
-          fontWeight: FontWeight.w500,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
         tabs: <Widget>[
           for (final Widget tab in tabs) Tab(height: 42, child: tab),
